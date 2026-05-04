@@ -15,11 +15,11 @@ A detail-oriented weather and forecast card.
 
 **Getting Started** · [Installation](#installation) · [Examples](#examples) · [Setup](#setup)
 
-**Customization** · [Appearance](#appearance) · [CSS Variables](#css-variables) · [Color Mode](#color-mode)
+**Customization** · [Appearance](#appearance) · [CSS Variables](#css-variables)
 
 **Guides** · [Chips](#chips) · [Fonts & Icons](#fonts--icons) · [House Image](#custom-house-image)
 
-**Reference** · [Performance](#performance)
+**Reference** · [Color Mode](#color-mode) · [Performance](#performance)
 
 <br>
 
