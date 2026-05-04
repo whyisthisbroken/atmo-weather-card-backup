@@ -15,11 +15,11 @@ A flexible, detail-oriented weather and forecast card.
 
 **Getting Started** · [Installation](#installation) · [Examples](#examples) · [Setup](#setup)
 
-**Customization** · [Appearance](#appearance) · [Color Mode](#color-mode) · [CSS](#css-reference)
+**Customization** · [Appearance](#appearance) · [Color Mode](#color-mode)
 
-**Guides** · [Chips](#chips) · [Fonts & Icons](#fonts--icons) · [House Image](#custom-house-image) 
+**Guides** · [Chips](#chips) · [Fonts & Icons](#fonts--icons) · [House Image](#custom-house-image)
 
-**Reference** · [Performance](#performance)
+**Reference** · [CSS Variables](#css-variables) · [Performance](#performance)
 
 <br>
 
@@ -66,17 +66,11 @@ A flexible, detail-oriented weather and forecast card.
 
 ## Examples
 
-You can use either `card_style: standalone` for a card with dynamic weather backgrounds, or `card_style: immersive` so the card has no background at all.
-
-<br>
-
-### Standalone
-
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/fe604ab8-bd69-4710-9ec4-bf21d85a1c67" /><br>
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/bea6c454-97bb-4122-851d-5f13b0a7bea1" />
 
 <details>
-<summary><b>Example 1 — Basic Card</b></summary>
+<summary><b>Standalone | Example 1 — Basic Card</b></summary>
 
 <br>
 
@@ -108,9 +102,8 @@ tap_action:
 
 </details>
 
-
 <details>
-<summary><b>Example 2 — Chip Cards</b></summary>
+<summary><b>Standalone | Example 2 — Chip Cards</b></summary>
 
 <br>
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/f5b0afbb-8f88-4a28-8cbc-34007c3d29c6" />
@@ -206,20 +199,8 @@ chips:
 
 </details>
 
-
-
-<br>
-
-### Immersive
-
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/dd716851-b09a-4112-ad74-bbf605361857" />
-
-*(My dashboard: Immersive mode, a custom image, and a few chips. The theme and card colors follow the sun.)*
-
-<br>
-
 <details>
-<summary><b>Example 1 — Header Card</b></summary>
+<summary><b>Immersive | Example 1 — Header Card</b></summary>
 
 <br>
 
@@ -227,8 +208,6 @@ chips:
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/73427776-89f1-4831-9a71-fea18e8a2aff" />
 
 ```yaml
-
-
 type: custom:atmospheric-weather-card
 weather_entity: weather.your_weather_entity
 sun_entity: sun.sun
@@ -245,15 +224,12 @@ chips_position: bottom-left
 chips:
   - entity: weather.your_weather_entity
     icon: weather
-
-
 ```
-
 
 </details>
 
 <details>
-<summary><strong>Example 2 — Custom Image</strong></summary>
+<summary><b>Immersive | Example 2 — Custom Image</b></summary>
 
 <br>
 
@@ -292,9 +268,7 @@ chips:
     icon: mdi:window-open-variant
     name: Windows
 full_width: true
-
 ```
-
 
 </details>
 
@@ -351,7 +325,6 @@ Everything that controls how your card looks.
 <summary><strong>Sun & Moon</strong></summary>
 
 The sun and moon share a single position and the card swaps them based on your `sun_entity`. See [Colors](#color-mode) for the full details. The card also automatically generates a dynamic **sunrise and sunset effect** based on the sun's elevation, and **rotates the moon** accurately based on your Home Assistant latitude setting.
- 
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -389,7 +362,8 @@ Chips are the small detail elements below (or next to) the top text. Each chip c
 
 For a more detailed walkthrough — including how to set up forecast chips, per-chip styling, and free positioning — see the [Chips guide](#chips).
 
-**Row options**
+<details>
+<summary><strong>Row options</strong></summary>
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -416,7 +390,10 @@ For a more detailed walkthrough — including how to set up forecast chips, per-
 | `chips_background` | `boolean` | `false` | Adds a styled background behind each chip (the style is controlled by `background_style`). |
 | `disable_chips` | `boolean` | `false` | Hides the chips row entirely. |
 
-**Per-chip options**
+</details>
+
+<details>
+<summary><strong>Per-chip options</strong></summary>
 
 Each entry inside the `chips` list accepts the following keys.
 
@@ -445,7 +422,10 @@ Each entry inside the `chips` list accepts the following keys.
 | `position_x` | `string` | `0` | Horizontal offset for a free-positioned chip (e.g., `20px`, `10%`). |
 | `position_y` | `string` | `0` | Vertical offset for a free-positioned chip (e.g., `20px`, `10%`). |
 
-**Per-chip style overrides**
+</details>
+
+<details>
+<summary><strong>Per-chip style overrides</strong></summary>
 
 Every chip can override the global row styles individually. This is what makes it possible to mix completely different-looking chips in a single card — for example, a large stacked forecast chip next to a small inline live sensor.
 
@@ -462,6 +442,8 @@ Every chip can override the global row styles individually. This is what makes i
 | `icon_padding` | `string` | — | Overrides the icon padding for this chip. |
 | `icon_bg` | `boolean` | — | Overrides the global `chip_icon_bg` for this chip. |
 | `chip_align` | `string` | — | Content alignment within this chip. Options: `start`, `center`, `end`. |
+
+</details>
 
 **Basic example**
 
@@ -590,7 +572,166 @@ Useful if you want something like "dark after 9pm", "dark when it's overcast", o
 
 <br>
 
-## CSS Reference
+## Guides
+
+<details>
+<summary><h3>Chips</h3></summary>
+
+Chips are the core building blocks of this card. Each chip is its own independent display unit — it picks an entity, reads a value (live or forecasted), and shows it with an optional icon and label. You can style each chip individually and even pull it out of the row to place it anywhere on the card.
+
+<details>
+<summary><strong>Forecast chips</strong></summary>
+
+<br>
+
+By default, a chip reads the current state of its entity. Setting `forecast` to `daily` or `hourly` switches it to forecast mode instead. In this mode, the chip subscribes to the weather entity's forecast data and displays a specific future entry.
+
+Use `forecast_offset` to pick which entry: `0` is today (or now), `1` is tomorrow (or the next hour), and so on. The chip automatically generates a name label — day names like "Mon", "Tue" for daily, or times like "14:00" for hourly. You can still override this with `name` if you want a custom label.
+
+When using `icon: weather` on a forecast chip, the icon matches the **forecasted** condition for that entry, not the current weather.
+
+```yaml
+chips:
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    forecast_offset: 1
+    forecast_show_min: true
+    icon: weather
+    icon_path: /local/weather-icons/
+  - entity: weather.your_weather_entity
+    forecast: hourly
+    attribute: temperature
+    forecast_offset: 3
+    unit_format: "°"
+```
+
+The first chip shows tomorrow's temperature range (low – high) with a weather icon matching tomorrow's condition. The second chip shows the temperature 3 hours from now, with `°` directly after the value instead of the full unit.
+
+**Forecast-specific options at a glance:**
+
+| Option | What it does |
+| :--- | :--- |
+| `forecast` | `daily` or `hourly` — switches the chip to forecast mode. |
+| `forecast_offset` | Which entry to show (0 = today/now, 1 = tomorrow/+1h, etc.). |
+| `forecast_precision` | Decimal places for the value (0–2). |
+| `forecast_show_min` | Shows the low/high range. Daily temperature only. |
+| `unit_format` | Replaces the unit string (e.g., `°`). Works on both live and forecast chips. |
+
+</details>
+
+<details>
+<summary><strong>Per-chip styling</strong></summary>
+
+<br>
+
+Every chip can override the global row styles. This means you can mix different chip formats, backgrounds, sizes, and spacing in one card without needing separate rows or CSS hacks.
+
+For example, you might want most chips to be small inline elements but make one specific forecast chip larger with a stacked layout and its own background color:
+
+```yaml
+chip_format: inline
+chips_background: true
+chips:
+  - entity: sensor.outside_temperature
+  - entity: sensor.humidity
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    forecast_offset: 1
+    chip_format: stacked
+    chip_bg_color: "rgba(0, 0, 0, 0.3)"
+    chip_padding: 12px 16px
+    font_size: 18px
+    icon: weather
+    icon_path: /local/weather-icons/
+```
+
+The first two chips follow the global `inline` format and default background. The third chip overrides everything it needs to look different.
+
+All per-chip style overrides are listed in the [Chips reference table](#appearance) under "Per-chip style overrides".
+
+</details>
+
+<details>
+<summary><strong>Free positioning</strong></summary>
+
+<br>
+
+Any chip can be pulled out of the row and placed freely on the card. Set `position: custom` and use the anchor/offset system to put it exactly where you want.
+
+```yaml
+chips:
+  - entity: sensor.outside_temperature
+    position: custom
+    position_anchor: top-right
+    position_x: 20px
+    position_y: 10px
+    chip_background: true
+```
+
+This places the temperature chip 20px from the right and 10px from the top, independent of where the chips row sits. The `position_anchor` uses the same 9-cell grid as the other position options (`top-left`, `center`, `bottom-right`, etc.).
+
+Free-positioned chips can still use all the same styling and forecast options as regular chips.
+
+</details>
+
+</details>
+
+<details>
+<summary><h3>Fonts & Icons</h3></summary>
+
+If you want to use the exact fonts and weather icons from the screenshots in your own setup, here's how.
+
+<details>
+<summary><strong>Font family used in the examples</strong></summary>
+
+<br>
+
+The screenshots throughout this README use the **Montserrat** font, which you can download or embed directly from [Google Fonts](https://fonts.google.com/specimen/Montserrat). Once it's loaded into your Home Assistant frontend (for example via a custom theme), it applies to this card along with the rest of your dashboard — the card inherits whatever font your theme sets.
+
+</details>
+
+<details>
+<summary><strong>Custom SVG weather icons</strong></summary>
+
+<br>
+
+You can replace the default MDI icons inside a chip with your own animated SVG files. The examples use the set from [basmilius/weather-icons](https://github.com/basmilius/weather-icons).
+
+1. Download the SVG files and place them in a folder under `config/www/`, for example `config/www/weather-icons/`.
+2. In your chip config, set `icon` to `weather` and point `icon_path` to that folder:
+
+```yaml
+chips:
+  - entity: weather.your_weather_entity
+    icon: weather
+    icon_path: /local/weather-icons/
+```
+
+The card then resolves the icon by the current weather state. For example, `rainy` weather loads `/local/weather-icons/rainy.svg`.
+
+</details>
+
+</details>
+
+<details>
+<summary><h3>Custom House Image</h3></summary>
+
+This explains how to create an image for your own home and use it in the card.
+
+1. **Take a reference photo** from a corner angle to properly capture the depth of the house.
+2. **Generate a 3D model** using an AI image tool. Use a prompt similar to:
+   > *Isometric view of a modern minimalist architectural model section from the outside on solid white background. [Describe your floors/rooms]. Materials are matte white and light only. No complex textures, studio lighting, very clean, simplified shapes.*
+3. **Remove the background** with an online tool or image editor and save the resulting image as a transparent PNG.
+4. **Create day and night variants** by adjusting the prompt appropriately.
+5. **Upload the files** to your `config/www/images/` directory and reference them in the card config as `/local/images/my-house-day.png`.
+
+</details>
+
+<br>
+
+## CSS Variables
 
 > [!NOTE]
 > Most users won't need these. The options above cover all common use cases. These CSS variables are here for fine-tuning specific details like font sizes, shadows, and spacing — either in your theme or via `card_mod`.
@@ -698,161 +839,6 @@ These variables only apply when `chip_format` is set to `stacked` or `vertical`.
       }
   ```
 </details>
-
-
-<br>
-
-## Guides
-
-### Chips
-
-Chips are the core building blocks of this card. Each chip is its own independent display unit — it picks an entity, reads a value (live or forecasted), and shows it with an optional icon and label. You can style each chip individually and even pull it out of the row to place it anywhere on the card.
-
-<details>
-<summary><strong>Forecast chips</strong></summary>
-
-<br>
-
-By default, a chip reads the current state of its entity. Setting `forecast` to `daily` or `hourly` switches it to forecast mode instead. In this mode, the chip subscribes to the weather entity's forecast data and displays a specific future entry.
-
-Use `forecast_offset` to pick which entry: `0` is today (or now), `1` is tomorrow (or the next hour), and so on. The chip automatically generates a name label — day names like "Mon", "Tue" for daily, or times like "14:00" for hourly. You can still override this with `name` if you want a custom label.
-
-When using `icon: weather` on a forecast chip, the icon matches the **forecasted** condition for that entry, not the current weather.
-
-```yaml
-chips:
-  - entity: weather.your_weather_entity
-    forecast: daily
-    attribute: temperature
-    forecast_offset: 1
-    forecast_show_min: true
-    icon: weather
-    icon_path: /local/weather-icons/
-  - entity: weather.your_weather_entity
-    forecast: hourly
-    attribute: temperature
-    forecast_offset: 3
-    unit_format: "°"
-```
-
-The first chip shows tomorrow's temperature range (low – high) with a weather icon matching tomorrow's condition. The second chip shows the temperature 3 hours from now, with `°` directly after the value instead of the full unit.
-
-**Forecast-specific options at a glance:**
-
-| Option | What it does |
-| :--- | :--- |
-| `forecast` | `daily` or `hourly` — switches the chip to forecast mode. |
-| `forecast_offset` | Which entry to show (0 = today/now, 1 = tomorrow/+1h, etc.). |
-| `forecast_precision` | Decimal places for the value (0–2). |
-| `forecast_show_min` | Shows the low/high range. Daily temperature only. |
-| `unit_format` | Replaces the unit string (e.g., `°`). Works on both live and forecast chips. |
-
-</details>
-
-<details>
-<summary><strong>Per-chip styling</strong></summary>
-
-<br>
-
-Every chip can override the global row styles. This means you can mix different chip formats, backgrounds, sizes, and spacing in one card without needing separate rows or CSS hacks.
-
-For example, you might want most chips to be small inline elements but make one specific forecast chip larger with a stacked layout and its own background color:
-
-```yaml
-chip_format: inline
-chips_background: true
-chips:
-  - entity: sensor.outside_temperature
-  - entity: sensor.humidity
-  - entity: weather.your_weather_entity
-    forecast: daily
-    attribute: temperature
-    forecast_offset: 1
-    chip_format: stacked
-    chip_bg_color: "rgba(0, 0, 0, 0.3)"
-    chip_padding: 12px 16px
-    font_size: 18px
-    icon: weather
-    icon_path: /local/weather-icons/
-```
-
-The first two chips follow the global `inline` format and default background. The third chip overrides everything it needs to look different.
-
-All per-chip style overrides are listed in the [Chips reference table](#chips) under "Per-chip style overrides".
-
-</details>
-
-<details>
-<summary><strong>Free positioning</strong></summary>
-
-<br>
-
-Any chip can be pulled out of the row and placed freely on the card. Set `position: custom` and use the anchor/offset system to put it exactly where you want.
-
-```yaml
-chips:
-  - entity: sensor.outside_temperature
-    position: custom
-    position_anchor: top-right
-    position_x: 20px
-    position_y: 10px
-    chip_background: true
-```
-
-This places the temperature chip 20px from the right and 10px from the top, independent of where the chips row sits. The `position_anchor` uses the same 9-cell grid as the other position options (`top-left`, `center`, `bottom-right`, etc.).
-
-Free-positioned chips can still use all the same styling and forecast options as regular chips.
-
-</details>
-
-<br>
-
-### Fonts & Icons
-
-If you want to use the exact fonts and weather icons from the screenshots in your own setup, here's how.
-
-<details>
-<summary><strong>Font family used in the examples</strong></summary>
-
-<br>
-
-The screenshots throughout this README use the **Montserrat** font, which you can download or embed directly from [Google Fonts](https://fonts.google.com/specimen/Montserrat). Once it's loaded into your Home Assistant frontend (for example via a custom theme), it applies to this card along with the rest of your dashboard — the card inherits whatever font your theme sets.
-
-</details>
-
-<details>
-<summary><strong>Custom SVG weather icons</strong></summary>
-
-<br>
-
-You can replace the default MDI icons inside a chip with your own animated SVG files. The examples use the set from [basmilius/weather-icons](https://github.com/basmilius/weather-icons).
-
-1. Download the SVG files and place them in a folder under `config/www/`, for example `config/www/weather-icons/`.
-2. In your chip config, set `icon` to `weather` and point `icon_path` to that folder:
-
-```yaml
-chips:
-  - entity: weather.your_weather_entity
-    icon: weather
-    icon_path: /local/weather-icons/
-```
-
-The card then resolves the icon by the current weather state. For example, `rainy` weather loads `/local/weather-icons/rainy.svg`.
-
-</details>
-
-<br>
-
-### Custom House Image
-
-This explains how to create an image for your own home and use it in the card.
-
-1. **Take a reference photo** from a corner angle to properly capture the depth of the house.
-2. **Generate a 3D model** using an AI image tool. Use a prompt similar to:
-   > *Isometric view of a modern minimalist architectural model section from the outside on solid white background. [Describe your floors/rooms]. Materials are matte white and light only. No complex textures, studio lighting, very clean, simplified shapes.*
-3. **Remove the background** with an online tool or image editor and save the resulting image as a transparent PNG.
-4. **Create day and night variants** by adjusting the prompt appropriately.
-5. **Upload the files** to your `config/www/images/` directory and reference them in the card config as `/local/images/my-house-day.png`.
 
 <br>
 
