@@ -66,7 +66,7 @@ A detail-oriented weather and forecast card.
 
 ## Examples
 
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/ebc74f71-1e6e-4f31-aedb-0bb25105efe6" /><br>
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/42444b7c-628e-4570-99b1-23c84e0af40d" /><br>
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/e6ebd6f5-8eec-4f47-9247-60ee5dbcddf2" /> 
 
 <details>
@@ -131,6 +131,139 @@ chips:
     forecast_show_min: true
     forecast_precision: 0
     forecast_offset: 2
+grid_options:
+  rows: auto
+```
+
+</details>
+
+<details>
+<summary><b>Standalone — Detailed Forecast Slider</b></summary>
+
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/b39cd789-125d-4ea6-baae-45a7e32497b9" />
+
+
+<br>
+
+```yaml
+type: custom:atmospheric-weather-card
+weather_entity: weather.your_weather_entity
+sun_entity: sun.sun
+moon_phase_entity: sensor.moon_phase
+card_style: standalone
+card_height: 190px
+card_padding: 16px
+celestial_size: 50
+celestial_alignment: left
+celestial_x: "70"
+top_text_position: top-left
+chip_area_position: top-right
+top_text_hide: true
+top_text_size: 32px
+top_text_padding: 4px 8px
+chip_text_size: 13px
+chip_label_size: 13px
+chip_area_layout: horizontal-scroll
+chip_area_scroll_count: 3
+chip_area_align: center
+chip_area_width: 190px
+chip_area_full_width: false
+chip_padding: 12px
+chip_area_gap: 0px
+chip_gap: 10px
+chip_icon_size: 28px
+chip_style: vertical
+chip_area_background: true
+chip_area_grouped: true
+chip_area_separator: true
+chip_background_color: rgba(255,255,255,0.05)
+chip_icon_background_color: rgba(163,220,255,0.2)
+chip_area_background_color: rgba(255,255,255,0.1)
+chip_icon_background: true
+chips:
+  - icon: weather
+    position: custom
+    position_anchor: top-left
+    position_x: 16px
+    position_y: 16px
+    inner_gap: 8px
+    name_sensor: weather.your_weather_entity
+    width: 90px
+    entity: sensor.your_temperature_sensor
+    unit_format: °
+    style: stacked
+    align: start
+    background: false
+    padding: 4px 8px
+    hide_icon: true
+    text_size: 28px
+    label_size: 14px
+    text_gap: 6px
+  - icon: weather
+    icon_path: /local/your-icon-folder/
+    position: custom
+    position_anchor: bottom-right
+    position_x: 16px
+    position_y: 16px
+    inner_gap: 8px
+    name_sensor: sensor.your_weather_forecast_description
+    overflow: wrap
+    entity: sensor.time
+    style: inline
+    align: end
+    padding: 8px 12px
+    hide_icon: true
+    text_size: 14px
+    label_size: 14px
+    background_color: rgba(255,255,255,0.1)
+    label_overflow: marquee
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    icon: weather
+    forecast_precision: 0
+    icon_path: /local/your-icon-folder/
+    unit_format: °
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    forecast_offset: 1
+    icon: weather
+    forecast_precision: 0
+    icon_path: /local/your-icon-folder/
+    unit_format: °
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    forecast_offset: 2
+    icon: weather
+    forecast_precision: 0
+    icon_path: /local/your-icon-folder/
+    unit_format: °
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    forecast_offset: 3
+    icon: weather
+    unit_format: °
+    forecast_precision: 0
+    icon_path: /local/your-icon-folder/
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    forecast_offset: 4
+    icon: weather
+    unit_format: °
+    forecast_precision: 0
+    icon_path: /local/your-icon-folder/
+  - entity: weather.your_weather_entity
+    forecast: daily
+    attribute: temperature
+    forecast_offset: 5
+    icon: weather
+    unit_format: °
+    forecast_precision: 0
+    icon_path: /local/your-icon-folder/
 grid_options:
   rows: auto
 ```
