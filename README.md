@@ -3,7 +3,7 @@
 
 ## Atmospheric Weather Card
 
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/99b9a3cc-3512-42fa-9fda-4e8e4c758f13" />
+<img width="400" alt="image" src="https://github.com/user-attachments/assets/45e2dec3-60d9-48a6-8171-ec3c3310a7df" />
 
 
 A detail-oriented weather and forecast card.
@@ -77,8 +77,7 @@ A detail-oriented weather and forecast card.
 <br>
 
 ## Examples
-
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/45e2dec3-60d9-48a6-8171-ec3c3310a7df" /><br>
+<img width="400" alt="Image" src="https://github.com/user-attachments/assets/99b9a3cc-3512-42fa-9fda-4e8e4c758f13" /><br>
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/e6ebd6f5-8eec-4f47-9247-60ee5dbcddf2" /> 
 
 <details>
