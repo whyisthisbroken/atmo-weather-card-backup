@@ -1,83 +1,83 @@
-[cite_start]name: Bug Report # [cite: 1]
-[cite_start]description: Report an issue or visual bug # [cite: 1]
-[cite_start]body: # [cite: 1]
-  - [cite_start]type: markdown # [cite: 1]
-    [cite_start]attributes: # [cite: 1]
-      value: | [cite_start]# [cite: 1]
-        Please complete the troubleshooting steps below before submitting. This helps filter out conflicts with complex layouts or custom themes. [cite_start]# [cite: 2]
+name: Bug Report
+description: Report an issue or visual bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please complete the troubleshooting steps below before submitting. This helps filter out conflicts with complex layouts or custom themes.
 
         > [!WARNING]
         > **Please make it easy for me to help you.** I develop this card in my free time. Please provide your exact YAML and fill out this form directly—do not submit AI-generated reports with long analyses.
-  - [cite_start]type: checkboxes # [cite: 3]
-    [cite_start]id: troubleshooting # [cite: 3]
-    [cite_start]attributes: # [cite: 3]
-      [cite_start]label: Prerequisites & Troubleshooting # [cite: 3]
-      description: Please confirm these steps before submitting your issue. [cite_start]# [cite: 3]
-    [cite_start]options: # [cite: 4]
-        - label: I have read the relevant sections of the README and searched for existing issues. [cite_start]# [cite: 4]
-          [cite_start]required: true # [cite: 5]
-        - label: I have tested the card isolated as a single card on a brand new, blank dashboard and the issue persists. [cite_start]# [cite: 5]
-          [cite_start]required: true # [cite: 6]
-        - label: I have temporarily switched to the default Home Assistant theme and the issue persists. [cite_start]# [cite: 6]
-          [cite_start]required: true # [cite: 7]
-  - [cite_start]type: dropdown # [cite: 7]
-    [cite_start]id: theme-type # [cite: 7]
-    [cite_start]attributes: # [cite: 7]
-      [cite_start]label: Home Assistant Theme # [cite: 7]
-      description: What theme are you using when you experience this bug? [cite_start]# [cite: 7]
-    [cite_start]options: # [cite: 8]
-        - [cite_start]Default Theme (Auto) # [cite: 8]
-        - [cite_start]Default Theme (Light) # [cite: 8]
-        - [cite_start]Default Theme (Dark) # [cite: 8]
-        - [cite_start]Custom Theme # [cite: 8]
-    [cite_start]validations: # [cite: 8]
-      [cite_start]required: true # [cite: 8]
-  - [cite_start]type: textarea # [cite: 8]
-    [cite_start]id: bug-description # [cite: 8]
-    [cite_start]attributes: # [cite: 8]
-      [cite_start]label: Bug Description # [cite: 8]
+  - type: checkboxes
+    id: troubleshooting
+    attributes:
+      label: Prerequisites & Troubleshooting
+      description: Please confirm these steps before submitting your issue.
+    options:
+      - label: I have read the relevant sections of the README and searched for existing issues.
+        required: true
+      - label: I have tested the card isolated as a single card on a brand new, blank dashboard and the issue persists.
+        required: true
+      - label: I have temporarily switched to the default Home Assistant theme and the issue persists.
+        required: true
+  - type: dropdown
+    id: theme-type
+    attributes:
+      label: Home Assistant Theme
+      description: What theme are you using when you experience this bug?
+    options:
+      - Default Theme (Auto)
+      - Default Theme (Light)
+      - Default Theme (Dark)
+      - Custom Theme
+    validations:
+      required: true
+  - type: textarea
+    id: bug-description
+    attributes:
+      label: Bug Description
       description: Clearly describe the issue in your own words. Do NOT paste AI-generated content.
       value: |
-        What did you expect to happen, and what actually happened? # [cite: 9]
-    [cite_start]validations: # [cite: 10]
-      [cite_start]required: true # [cite: 10]
-  - [cite_start]type: input # [cite: 10]
-    [cite_start]id: card-version # [cite: 10]
-    [cite_start]attributes: # [cite: 10]
-      [cite_start]label: Card Version # [cite: 10]
-      description: What version of the card are you using? [cite_start]# [cite: 10]
-    [cite_start]validations: # [cite: 11]
-      [cite_start]required: true # [cite: 11]
-  - [cite_start]type: dropdown # [cite: 11]
-    [cite_start]id: browser # [cite: 11]
-    [cite_start]attributes: # [cite: 11]
-      [cite_start]label: Browser / App # [cite: 11]
-      description: Where are you seeing this bug? [cite_start]# [cite: 11]
-    [cite_start]options: # [cite: 12]
-        - [cite_start]Google Chrome # [cite: 12]
-        - [cite_start]Mozilla Firefox # [cite: 12]
-        - [cite_start]Apple Safari # [cite: 12]
-        - [cite_start]Microsoft Edge # [cite: 12]
-        - [cite_start]Home Assistant Companion App (iOS) # [cite: 12]
-        - [cite_start]Home Assistant Companion App (Android) # [cite: 12]
-        - [cite_start]Fully Kiosk Browser # [cite: 12]
-        - [cite_start]Other # [cite: 12]
-    [cite_start]validations: # [cite: 12]
-      [cite_start]required: true # [cite: 12]
-  - [cite_start]type: textarea # [cite: 13]
-    [cite_start]id: yaml-code # [cite: 13]
-    [cite_start]attributes: # [cite: 13]
-      [cite_start]label: ONLY Your Weather Card's YAML # [cite: 13]
-      description: Paste the exact YAML for the Atmospheric Weather Card ONLY. Do NOT paste your entire dashboard, wrapping layout cards, or custom grids here. [cite_start]# [cite: 13, 14]
-    [cite_start]render: yaml # [cite: 15]
-    [cite_start]validations: # [cite: 15]
-      [cite_start]required: true # [cite: 15]
-  - [cite_start]type: textarea # [cite: 15]
-    [cite_start]id: additional-context # [cite: 15]
-    [cite_start]attributes: # [cite: 15]
-      [cite_start]label: Additional Information # [cite: 15]
-      description: Add screenshots (highly recommended!) or browser console error logs. [cite_start]# [cite: 15]
+        What did you expect to happen, and what actually happened?
+    validations:
+      required: true
+  - type: input
+    id: card-version
+    attributes:
+      label: Card Version
+      description: What version of the card are you using?
+    validations:
+      required: true
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser / App
+      description: Where are you seeing this bug?
+    options:
+      - Google Chrome
+      - Mozilla Firefox
+      - Apple Safari
+      - Microsoft Edge
+      - Home Assistant Companion App (iOS)
+      - Home Assistant Companion App (Android)
+      - Fully Kiosk Browser
+      - Other
+    validations:
+      required: true
+  - type: textarea
+    id: yaml-code
+    attributes:
+      label: ONLY Your Weather Card's YAML
+      description: Paste the exact YAML for the Atmospheric Weather Card ONLY. Do NOT paste your entire dashboard, wrapping layout cards, or custom grids here.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Information
+      description: Add screenshots (highly recommended!) or browser console error logs.
       value: |
-        If you suspect a layout conflict and want to share your full dashboard YAML, drop that here. # [cite: 16]
-    [cite_start]validations: # [cite: 17]
-      [cite_start]required: false # [cite: 17]
+        If you suspect a layout conflict and want to share your full dashboard YAML, drop that here.
+    validations:
+      required: false
