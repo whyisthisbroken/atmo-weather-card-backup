@@ -1209,7 +1209,7 @@ Fast performance and impressive animations are basically natural enemies when bu
 
 The card uses every trick available to keep things running smoothly. Because of this, almost a third of the code exists purely to keep the card fast. I really dislike how much this adds to the size of the code, but that is just how it is.
 
-Even with all this effort, older setups might still struggle, and the birds may stutter. If that happens, try switching `perf_mode` to `low` — it disables the extra effects and lowers the rendering resolution. You can also fine-tune the frame rate, cloud detail, effects intensity, and canvas sharpness individually. See the [Performance Settings](#appearance) reference table for all options.
+Even with all this effort, older setups might still struggle, and the birds may stutter. If that happens, try switching `perf_mode` to `low` — it disables the extra effects and lowers the rendering resolution. You can also fine-tune the frame rate, cloud detail, effects intensity, and canvas sharpness individually.
 
 <details>
 <summary><b>View stress test results</b></summary>
