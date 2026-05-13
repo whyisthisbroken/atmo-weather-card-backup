@@ -77,86 +77,13 @@ A detail-oriented weather and forecast card.
 <br>
 
 ## Examples
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/e6ebd6f5-8eec-4f47-9247-60ee5dbcddf2" /> 
 
-<details>
-<summary><b>Basic Forecast Slider</b></summary>
-
-```yaml
-type: custom:atmospheric-weather-card
-weather_entity: weather.your_weather_entity
-sun_entity: sun.sun
-moon_phase_entity: sensor.moon_phase
-card_style: standalone
-card_height: 140px
-card_padding: 16px
-celestial_size: 50
-celestial_x: "-70"
-celestial_y: center
-chip_text_size: 14px
-chip_label_size: 14px
-chip_padding: 8px 16px 8px 8px
-chip_area_gap: 0px
-chip_gap: 8px
-chip_area_position: bottom-left
-chip_area_layout: horizontal-scroll
-chip_area_scroll_count: 1
-chip_area_align: center
-chip_area_width: 160px
-chip_area_background: true
-chip_icon_background: false
-chip_icon_padding: 4px
-chip_icon_size: 26px
-chip_area_grouped: true
-chip_area_separator: true
-chips:
-  - entity: weather.your_weather_entity
-    attribute: temperature
-    position: custom
-    position_anchor: top-left
-    position_x: 16px
-    position_y: 16px
-    text_size: 34px
-    background: false
-    padding: 0px 4px
-    hide_icon: true
-    hide_label: true
-    fancy_unit: true
-    value_weight: "600"
-    behind_effects: true
-  - icon: weather
-    entity: weather.your_weather_entity
-    icon_path: /local/Icons/weather/variant-1/ # Change to your local icon path
-    forecast: daily
-    attribute: temperature
-    forecast_show_min: true
-    forecast_precision: 0
-  - icon: weather
-    entity: weather.your_weather_entity
-    icon_path: /local/Icons/weather/variant-1/ # Change to your local icon path
-    forecast: daily
-    attribute: temperature
-    forecast_show_min: true
-    forecast_precision: 0
-    forecast_offset: 1
-  - icon: weather
-    entity: weather.your_weather_entity
-    icon_path: /local/Icons/weather/variant-1/ # Change to your local icon path
-    forecast: daily
-    attribute: temperature
-    forecast_show_min: true
-    forecast_precision: 0
-    forecast_offset: 2
-grid_options:
-  rows: auto
-```
-
-</details>
+All examples use scrollable chips and you can change and mix the elements as needed.
 
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/7081d651-29ef-4a83-a53f-5b40870a6002" />
 
 <details>
-<summary><b>Detailed Forecast Slider</b></summary>
+<summary><b>Forecast Slider</b></summary>
 
 ```yaml
 type: custom:atmospheric-weather-card
@@ -296,15 +223,14 @@ grid_options:
 
 ```
 
-<br>
-
 </details>
 
+<br>
 
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/e0781ab6-abee-4783-8ee4-4cd6791cbce7" />
 
 <details>
-<summary><b>Weather Card & Mini-Graph</b></summary>
+<summary><b>Featuring Mini-graph</b></summary>
 
 This example embeds a mini-graph-card with a bit of card-mod styling. For extra drama, the large header text is layered behind the weather elements.
 
@@ -368,7 +294,7 @@ chips:
     attribute: temperature
     forecast_show_min: true
     forecast_precision: 0
-    name: Heute
+    name: Today
     icon: weather
     label_overflow: marquee
     icon_path: /local/your-icon-folder/
@@ -380,7 +306,7 @@ chips:
     forecast_offset: 1
     icon: weather
     label_overflow: marquee
-    name: Morgen
+    name: Tomorrow
     icon_path: /local/your-icon-folder/
 chip_icon_padding: 0px
 grid_options:
@@ -601,43 +527,6 @@ grid_options:
 </details>
 
 <br>
-
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/7993b6cf-f339-4024-9399-8d985781e86a" />
-
-<details>
-<summary><b>Immersive — Simple Header</b></summary>
-
-```yaml
-type: custom:atmospheric-weather-card
-weather_entity: weather.your_weather_entity
-sun_entity: sun.sun
-moon_phase_entity: sensor.moon_phase
-card_height: 130px
-card_padding: 16px
-celestial_size: 45px
-celestial_x: "-65"
-celestial_y: center
-chip_area_position: bottom-left
-chip_area_background: true
-card_mask_vertical: true
-card_mask_horizontal: true
-chips:
-  - entity: sensor.time
-    position: custom
-    position_anchor: top-left
-    position_x: 16px
-    position_y: 16px
-    text_size: 42px
-    background: false
-    padding: 0px 4px
-    hide_icon: true
-    hide_label: true
-    value_weight: "700"
-  - entity: weather.your_weather_entity
-    icon: weather
-```
-
-</details>
 
 <br>
 
