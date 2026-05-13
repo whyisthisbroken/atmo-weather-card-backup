@@ -3,7 +3,7 @@
 
 ## Atmospheric Weather Card
 
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/45e2dec3-60d9-48a6-8171-ec3c3310a7df" />
+<img width="400" alt="Image" src="https://github.com/user-attachments/assets/e0781ab6-abee-4783-8ee4-4cd6791cbce7" />
 
 
 A detail-oriented weather and forecast card.
@@ -77,15 +77,10 @@ A detail-oriented weather and forecast card.
 <br>
 
 ## Examples
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/99b9a3cc-3512-42fa-9fda-4e8e4c758f13" /><br>
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/e6ebd6f5-8eec-4f47-9247-60ee5dbcddf2" /> 
 
 <details>
-<summary><b>Standalone — Basic Forecast Slider</b></summary>
-
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/e54fe71a-1349-4bd2-ba40-24958a27ffa4" />
-
-<br>
+<summary><b>Basic Forecast Slider</b></summary>
 
 ```yaml
 type: custom:atmospheric-weather-card
@@ -158,13 +153,10 @@ grid_options:
 
 </details>
 
+<img width="400" alt="Image" src="https://github.com/user-attachments/assets/7081d651-29ef-4a83-a53f-5b40870a6002" />
+
 <details>
-<summary><b>Standalone — Detailed Forecast Slider</b></summary>
-
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/b39cd789-125d-4ea6-baae-45a7e32497b9" />
-
-
-<br>
+<summary><b>Detailed Forecast Slider</b></summary>
 
 ```yaml
 type: custom:atmospheric-weather-card
@@ -172,68 +164,74 @@ weather_entity: weather.your_weather_entity
 sun_entity: sun.sun
 moon_phase_entity: sensor.moon_phase
 card_style: standalone
-card_height: 190px
+card_height: 160px
 card_padding: 16px
 celestial_size: 50
 celestial_alignment: left
-celestial_x: "70"
+celestial_x: "60"
 chip_area_position: top-right
-chip_text_size: 13px
-chip_label_size: 13px
+chip_text_size: 14px
+chip_label_size: 11px
 chip_area_layout: horizontal-scroll
 chip_area_scroll_count: 3
 chip_area_align: center
-chip_area_width: 190px
-chip_area_full_width: false
-chip_padding: 12px
-chip_area_gap: 0px
-chip_gap: 10px
-chip_icon_size: 28px
+chip_area_width: 180px
+chip_area_height: 100%
+chip_padding: 0px
+chip_area_padding: 16px
+chip_area_gap: 2px
+chip_gap: 6px
+chip_icon_size: 32px
 chip_style: vertical
 chip_area_background: true
 chip_area_grouped: true
 chip_area_separator: true
-chip_background_color: rgba(255,255,255,0.05)
-chip_icon_background_color: rgba(163,220,255,0.2)
-chip_area_background_color: rgba(255,255,255,0.1)
-chip_icon_background: true
+chip_icon_background_color: rgba(255,255,255,0.55)
+card_offset: 40px 0px 40px 0px
+chip_icon_background: false
+custom_cards_position: bottom-left
+perf_fps: 60
+perf_cloud_quality: 2
+perf_effects: 2
+perf_dpr: 2
 chips:
-  - icon: weather
+  - entity: weather.your_weather_entity
     position: custom
     position_anchor: top-left
-    position_x: 16px
     position_y: 16px
-    inner_gap: 8px
-    name_sensor: weather.your_weather_entity
-    width: 90px
-    entity: sensor.your_temperature_sensor
-    unit_format: °
-    style: stacked
-    align: start
+    text_size: 32px
+    hide_icon: true
+    hide_label: true
+    attribute: temperature
     background: false
-    padding: 4px 8px
-    hide_icon: true
-    text_size: 28px
-    label_size: 14px
-    text_gap: 6px
-  - icon: weather
-    icon_path: /local/your-icon-folder/
-    position: custom
-    position_anchor: bottom-right
     position_x: 16px
-    position_y: 16px
-    inner_gap: 8px
-    name_sensor: sensor.your_weather_forecast_description
-    overflow: wrap
-    entity: sensor.time
-    style: inline
-    align: end
-    padding: 8px 12px
+    padding: 0px 8px
+    fancy_unit: true
+    value_weight: "700"
+  - attribute: uv_index
+    entity: weather.your_weather_entity
+    position: custom
+    position_anchor: bottom-left
+    position_x: 20px
+    position_y: 20px
+    style: vertical
+    icon_size: 14px
+    padding: 6px
+    ring_width: 4px
+    text_size: 13px
+    type: ring
+    align: center
+    forecast: daily
     hide_icon: true
-    text_size: 14px
-    label_size: 14px
-    background_color: rgba(255,255,255,0.1)
-    label_overflow: marquee
+    label_size: 8px
+    ring_gap: 4px
+    ring_min: 0
+    ring_max: 11
+    ring_color: "#ffffff"
+    height: 50px
+    marquee_speed: 55
+    forecast_precision: 1
+    name: UV
   - entity: weather.your_weather_entity
     forecast: daily
     attribute: temperature
@@ -241,6 +239,8 @@ chips:
     forecast_precision: 0
     icon_path: /local/your-icon-folder/
     unit_format: °
+    forecast_show_min: true
+    forecast_low_position: below
   - entity: weather.your_weather_entity
     forecast: daily
     attribute: temperature
@@ -249,6 +249,8 @@ chips:
     forecast_precision: 0
     icon_path: /local/your-icon-folder/
     unit_format: °
+    forecast_show_min: true
+    forecast_low_position: below
   - entity: weather.your_weather_entity
     forecast: daily
     attribute: temperature
@@ -257,41 +259,52 @@ chips:
     forecast_precision: 0
     icon_path: /local/your-icon-folder/
     unit_format: °
+    forecast_show_min: true
+    forecast_low_position: below
   - entity: weather.your_weather_entity
     forecast: daily
     attribute: temperature
     forecast_offset: 3
     icon: weather
-    unit_format: °
     forecast_precision: 0
     icon_path: /local/your-icon-folder/
+    unit_format: °
+    forecast_show_min: true
+    forecast_low_position: below
   - entity: weather.your_weather_entity
     forecast: daily
     attribute: temperature
     forecast_offset: 4
     icon: weather
-    unit_format: °
     forecast_precision: 0
     icon_path: /local/your-icon-folder/
+    unit_format: °
+    forecast_show_min: true
+    forecast_low_position: below
   - entity: weather.your_weather_entity
     forecast: daily
     attribute: temperature
     forecast_offset: 5
     icon: weather
-    unit_format: °
     forecast_precision: 0
     icon_path: /local/your-icon-folder/
+    unit_format: °
+    forecast_show_min: true
+    forecast_low_position: below
 grid_options:
   rows: auto
+
 ```
+
+<br>
 
 </details>
 
-<details>
-<summary><b>Standalone — Weather Card & Mini-Graph</b></summary>
 
-<br>
-<img width="400" alt="image" src="https://github.com/user-attachments/assets/e2118f91-0eae-4784-871f-cc75142a75cf" />
+<img width="400" alt="Image" src="https://github.com/user-attachments/assets/e0781ab6-abee-4783-8ee4-4cd6791cbce7" />
+
+<details>
+<summary><b>Weather Card & Mini-Graph</b></summary>
 
 This example embeds a mini-graph-card with a bit of card-mod styling. For extra drama, the large header text is layered behind the weather elements.
 
@@ -303,25 +316,38 @@ weather_entity: weather.your_weather_entity
 sun_entity: sun.sun
 moon_phase_entity: sensor.moon_phase
 card_style: standalone
-card_height: 180px
+card_height: 160px
 card_padding: 16px
+card_square: false
 celestial_size: 50
 celestial_alignment: left
 celestial_x: "50"
 celestial_y: 0
 chip_area_position: top-right
 card_hide_text: false
-chip_text_size: 13px
-chip_label_size: 13px
-chip_area_align: center
-chip_area_width: 240px
-chip_padding: 8px 12px
+chip_text_size: 14px
+chip_label_size: 12px
+chip_area_layout: horizontal-scroll
+chip_area_scroll_count: 1
+chip_area_width: 160px
+chip_padding: 12px 14px 12px 12px
 chip_area_padding: 0px
 chip_area_gap: 8px
-chip_gap: 8px
-chip_icon_size: 16px
+chip_gap: 12px
+chip_text_gap: 5px
+chip_icon_size: 32px
+chip_style: stacked
 chip_area_background: true
+chip_area_grouped: false
+chip_icon_background_color: rgba(255,255,255,0.1)
+card_offset: 40px 0px 40px 0px
+card_stack_order: 1
+chip_icon_background: true
 custom_cards_position: bottom-left
+perf_fps: 30
+perf_cloud_quality: 2
+perf_effects: 2
+perf_dpr: 2
 chips:
   - entity: weather.your_weather_entity
     position: custom
@@ -334,32 +360,28 @@ chips:
     background: false
     position_x: 16px
     padding: 0px 8px
-    behind_effects: true
     fancy_unit: true
+    behind_effects: true
     value_weight: "700"
   - entity: weather.your_weather_entity
     forecast: daily
     attribute: temperature
     forecast_show_min: true
     forecast_precision: 0
-    forecast_offset: 1
-    style: inline
-    align: start
-    icon_background: false
     name: Heute
     icon: weather
     label_overflow: marquee
+    icon_path: /local/your-icon-folder/
   - entity: weather.your_weather_entity
     forecast: daily
-    attribute: precipitation_probability
+    attribute: temperature
     forecast_show_min: true
     forecast_precision: 0
     forecast_offset: 1
-    style: inline
-    align: end
-    icon_background: false
-    name: Regen
-    unit_format: " %"
+    icon: weather
+    label_overflow: marquee
+    name: Morgen
+    icon_path: /local/your-icon-folder/
 chip_icon_padding: 0px
 grid_options:
   rows: auto
@@ -378,7 +400,7 @@ custom_cards:
       points: false
       legend: false
     animate: false
-    height: 80
+    height: 70
     line_width: 4
     hours_to_show: 24
     points_per_hour: 2
@@ -406,6 +428,7 @@ custom_cards:
     card_mod:
       style: |
         ha-card {
+          z-index: -1 !important;
           border-radius: 0px;
           box-shadow: none;
           background-color: transparent;
@@ -438,18 +461,14 @@ custom_cards:
         }
 ```
 
-<br>
-
 </details>
 
-
-<details>
-<summary><b>Standalone — Circular Gauge Chip</b></summary>
-
 <br>
+
 <img width="400" alt="Image" src="https://github.com/user-attachments/assets/b060b527-5d48-42de-8541-16fc4883ce10" />
 
-<br>
+<details>
+<summary><b>Circular Gauge Chip</b></summary>
 
 ```yaml
 type: custom:atmospheric-weather-card
@@ -581,13 +600,12 @@ grid_options:
 
 </details>
 
-<details>
-<summary><b>Immersive — Simple Header</b></summary>
-
 <br>
 
 <img width="400" alt="image" src="https://github.com/user-attachments/assets/7993b6cf-f339-4024-9399-8d985781e86a" />
 
+<details>
+<summary><b>Immersive — Simple Header</b></summary>
 
 ```yaml
 type: custom:atmospheric-weather-card
@@ -617,58 +635,6 @@ chips:
     value_weight: "700"
   - entity: weather.your_weather_entity
     icon: weather
-```
-
-</details>
-
-<details>
-<summary><b>Immersive — Custom Image</b></summary>
-
-<br>
-
-This example uses a custom house image. See the [Custom House Image](#custom-house-image) tutorial for how to create your own.
-
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/305972c9-35f2-4705-94b1-30111ea07d03" />
-
-```yaml
-type: custom:atmospheric-weather-card
-weather_entity: weather.your_weather_entity
-sun_entity: sun.sun
-moon_phase_entity: sensor.moon_phase
-card_padding: 24px
-celestial_size: 55
-celestial_position: fixed
-celestial_x: 100
-celestial_y: 80
-image_day: /local/home-day.png
-image_night: /local/home-night.png
-image_scale: 90
-status_entity: binary_sensor.contact_sensor_door
-status_day: /local/home-day-door-open.png
-status_night: /local/home-night-door-open.png
-chip_area_position: top-right
-chip_area_width: 70%
-chip_padding: 10px 14px
-chip_area_background: true
-custom_cards_position: top-right
-card_full_width: true
-chips:
-  - entity: sensor.time
-    position: custom
-    position_anchor: bottom-left
-    position_x: 16px
-    position_y: 16px
-    text_size: 34px
-    background: false
-    padding: 0px 4px
-    hide_icon: true
-    hide_label: true
-    value_weight: "700"
-  - entity: sensor.temperature
-  - entity: sensor.humidity
-  - entity: sensor.open_windows
-    icon: mdi:window-open-variant
-    name: Windows
 ```
 
 </details>
