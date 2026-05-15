@@ -1056,7 +1056,7 @@ The screenshots throughout this README use the **Montserrat** font, which you ca
 
 You can replace the default MDI icons inside a chip with your own animated SVG files. The examples use [these](https://github.com/basmilius/weather-icons).
 
-1. Download the SVG icons and name them after the weather conditions (such as `sunny.svg` or `rainy.svg`).
+1. Download the SVG icons and name them after the weather conditions (such as `sunny.svg` or `rainy.svg`). The names for the states are standardized; you can find the possible weather states in the official [HA documentation](https://www.home-assistant.io/integrations/weather/#condition-mapping).
 2. Put the files into a folder like `config/www/weather-icons/`.
 3. In your chip config, set `icon` to `weather` and add the folder path to `icon_path`:
 
