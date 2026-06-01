@@ -1132,6 +1132,4 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 
 ## Support the project
 
-If you enjoy using this card and want to say thanks, a coffee is always appreciated :)
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/X8X31WXQHF)
+If you find this card useful, consider leaving a star. It helps with motivation :)
