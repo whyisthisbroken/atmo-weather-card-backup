@@ -1,20 +1,19 @@
+(function() {
+"use strict";
 /**
  * ATMOSPHERIC WEATHER CARD
- * Version: 4.5
+ * Version: 5.0
  * https://github.com/shpongledsummer/atmospheric-weather-card
  */
 console.info(
-    "%c ATMOSPHERIC WEATHER CARD ",
+    "%c Atmospheric Weather Card ",
     "color: white; font-weight: 700; background: linear-gradient(90deg, #355C7D 0%, #6C5B7B 50%, #C06C84 100%); padding: 6px 12px; border-radius: 6px; font-family: sans-serif; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);"
 );
 try { CSS.registerProperty({ name: '--awc-ring-pct', syntax: '<percentage>', inherits: true, initialValue: '0%' }); } catch (_) {}
-// CONSTANTS & CONFIGURATION
-const NIGHT_MODES = Object.freeze([
-    'dark', 'night', 'evening', 'on', 'true', 'below_horizon'
-]);
 const ACTIVE_STATES = Object.freeze([
     'on', 'true', 'open', 'unlocked', 'home', 'active'
 ]);
+
 const FALLBACK_WEATHER = Object.freeze({
     state: 'cloudy',
     attributes: {
@@ -25,99 +24,76 @@ const FALLBACK_WEATHER = Object.freeze({
         friendly_name: 'Weather Unavailable'
     }
 });
-// WEATHER CONFIGURATION
-const WEATHER_MAP = Object.freeze({
-    'clear-night': Object.freeze({
-        type: 'stars', count: 280, cloud: 0, wind: 0.1, sunCloudWarm: false, atmosphere: 'night', stars: 420, vapor: 6, vaporScale: 0.4,
-        celestial: null, glow: null, types: null
-    }),
-    'cloudy': Object.freeze({
-        type: 'cloud', count: 0, cloud: 24, wind: 0.3, dark: false, sunCloudWarm: false, atmosphere: 'overcast', stars: 140, scale: 1.2, vapor: 28, vaporScale: 0.6,
-        celestial: Object.freeze({ count: 7, baseScale: 0.70, baseOpacity: 0.8 }),
-        glow: Object.freeze([255, 248, 220, 1.10, 0.5, 1.7, 1.3]),
-        types: Object.freeze([['cumulus','cirrus','organic','cumulus','cumulus','cumulus','organic','cirrus','organic']])
-    }),
-    'fog': Object.freeze({
-        type: 'fog', count: 0, cloud: 18, wind: 0.2, sunCloudWarm: false, atmosphere: 'mist', foggy: true, stars: 125, scale: 1.2, vapor: 12, vaporScale: 1.1,
-        celestial: Object.freeze({ count: 3, baseScale: 0.74, baseOpacity: 0.60 }),
-        glow: Object.freeze([250, 240, 215, 0.80, 0.4, 2.0, 1.05]),
-        types: Object.freeze([['organic','cumulus','organic','cumulus','organic'], ['organic','cumulus','organic','organic','cumulus']])
-    }),
-    'hail': Object.freeze({
-        type: 'hail', count: 150, cloud: 18, wind: 0.8, dark: true, sunCloudWarm: false, atmosphere: 'storm', stars: 50, scale: 1.5, vapor: 20, vaporScale: 1.1,
-        celestial: Object.freeze({ count: 4, baseScale: 0.63, baseOpacity: 0.58 }),
-        glow: Object.freeze([232, 222, 200, 0.18, 0.1, 3.0, 1.0]),
-        types: Object.freeze([['organic','organic','cumulus','organic','organic','stratus','cumulus'], ['organic','cumulus','organic','organic','cumulus','organic','stratus'], ['organic','organic','organic','cumulus','stratus','cumulus','organic']])
-    }),
-    'lightning': Object.freeze({
-        type: 'rain', count: 200, cloud: 24, wind: 1.0, thunder: true, dark: true, sunCloudWarm: false, atmosphere: 'storm', stars: 50, scale: 1.4, vapor: 22, vaporScale: 1.1,
-        celestial: Object.freeze({ count: 4, baseScale: 0.63, baseOpacity: 0.58 }),
-        glow: Object.freeze([232, 222, 200, 0.18, 0.1, 3.0, 1.0]),
-        types: Object.freeze([['cumulus', 'organic', 'cumulus', 'organic', 'cumulus', 'cumulus', 'cumulus']])
-    }),
-    'lightning-rainy': Object.freeze({
-        type: 'rain', count: 150, cloud: 18, wind: 1.0, thunder: true, dark: true, sunCloudWarm: false, atmosphere: 'storm', stars: 50, scale: 1.4, vapor: 22, vaporScale: 1.1,
-        celestial: Object.freeze({ count: 4, baseScale: 0.63, baseOpacity: 0.58 }),
-        glow: Object.freeze([232, 222, 200, 0.18, 0.1, 3.0, 1.0]),
-        types: Object.freeze([['organic','organic','cumulus','organic','organic','stratus','cumulus'], ['organic','cumulus','organic','organic','cumulus','organic','cumulus'], ['organic','organic','organic','cumulus','cumulus','cumulus','organic']])
-    }),
-    'pouring': Object.freeze({
-        type: 'rain', count: 220, cloud: 24, wind: 0.6, dark: true, sunCloudWarm: false, atmosphere: 'pouring', stars: 40, scale: 1.4, vapor: 20, vaporScale: 1.0,
-        celestial: Object.freeze({ count: 4, baseScale: 0.58, baseOpacity: 0.55 }),
-        glow: Object.freeze([240, 225, 195, 0.40, 0.2, 2.2, 1.0]),
-        types: Object.freeze([['cumulus', 'cumulus', 'cumulus', 'cumulus', 'cumulus', 'cumulus', 'cumulus']])
-    }),
-    'rainy': Object.freeze({
-        type: 'rain', count: 120, cloud: 24, wind: 0.3, sunCloudWarm: false, atmosphere: 'rain', stars: 60, scale: 1.2, vapor: 16, vaporScale: 0.9,
-        celestial: Object.freeze({ count: 5, baseScale: 0.70, baseOpacity: 0.65 }),
-        glow: Object.freeze([250, 238, 210, 0.55, 0.3, 2.0, 1.0]),
-        types: Object.freeze([['cumulus', 'organic', 'cumulus', 'organic', 'cumulus', 'organic', 'cumulus']])
-    }),
-    'snowy': Object.freeze({
-        type: 'snow', count: 60, cloud: 24, wind: 0.3, sunCloudWarm: false, atmosphere: 'snow', stars: 90, scale: 1.2, vapor: 14, vaporScale: 0.8,
-        celestial: Object.freeze({ count: 6, baseScale: 0.66, baseOpacity: 0.68 }),
-        glow: Object.freeze([248, 244, 230, 0.70, 0.3, 1.8, 1.0]),
-        types: Object.freeze([['cumulus', 'organic', 'cumulus', 'organic', 'cumulus', 'cumulus', 'cumulus']])
-    }),
-    'snowy-rainy': Object.freeze({
-        type: 'mix', count: 100, cloud: 16, wind: 0.4, sunCloudWarm: false, atmosphere: 'snow', stars: 125, scale: 1.4, vapor: 14, vaporScale: 0.8,
-        celestial: Object.freeze({ count: 6, baseScale: 0.66, baseOpacity: 0.68 }),
-        glow: Object.freeze([248, 244, 230, 0.70, 0.3, 1.8, 1.0]),
-        types: Object.freeze([['organic','organic','cumulus','organic','stratus','cumulus','cirrus'], ['organic','cumulus','organic','cirrus','stratus','organic'], ['organic','organic','organic','stratus','cumulus','cumulus','cirrus']])
-    }),
-    'partlycloudy': Object.freeze({
-        type: 'cloud', count: 0, cloud: 18, wind: 0.2, sunCloudWarm: true, atmosphere: 'fair', stars: 160, scale: 1.2, vapor: 18, vaporScale: 0.8,
-        celestial: null, glow: Object.freeze([255, 240, 200, 0.95, 1.0, 1.1, 1.0]),
-        types: Object.freeze([['cumulus','cirrus','cumulus','cumulus','organic','organic','cirrus'], ['cumulus','cumulus','cumulus','organic','cirrus','cirrus','organic'], ['cumulus','cumulus','cumulus','organic','organic','cumulus','stratus'], ['cumulus','organic','cirrus','cirrus','cirrus','organic','cumulus']])
-    }),
-    'windy': Object.freeze({
-        type: 'cloud', count: 0, cloud: 22, wind: 2.2, windVapor: true, sunCloudWarm: false, atmosphere: 'windy', stars: 125, scale: 1.3, vapor: 28, vaporScale: 1.2,
-        celestial: Object.freeze({ count: 3, baseScale: 0.52, baseOpacity: 0.55 }),
-        glow: Object.freeze([252, 248, 225, 0.95, 0.6, 1.4, 1.0]),
-        types: Object.freeze([['cumulus','cumulus','organic','cumulus','cumulus','cumulus','organic','organic','organic']])
-    }),
-    'windy-variant': Object.freeze({
-        type: 'cloud', count: 0, cloud: 15, wind: 2.4, dark: false, windVapor: true, sunCloudWarm: false, atmosphere: 'windy', stars: 125, scale: 1.2, vapor: 26, vaporScale: 1.1,
-        celestial: Object.freeze({ count: 3, baseScale: 0.52, baseOpacity: 0.55 }),
-        glow: Object.freeze([252, 248, 225, 0.95, 0.6, 1.4, 1.0]),
-        types: Object.freeze([['organic','cumulus','cumulus','organic','organic','cumulus','organic'], ['cumulus','organic','cumulus','organic','cumulus','organic','organic'], ['cumulus','organic','organic','cumulus','organic','cumulus','organic']])
-    }),
-    'sunny': Object.freeze({
-        type: 'sun', count: 0, cloud: 18, wind: 0.1, sunCloudWarm: true, atmosphere: 'clear', stars: 0, vapor: 26, vaporScale: 0.9,
-        celestial: null, glow: Object.freeze([255, 244, 210, 1.00, 1.0, 1.0, 1.0]),
-        types: Object.freeze([['cirrus','stratus','cirrus','organic','cirrus'], ['cirrus','cirrus','organic','cirrus','organic'], ['cirrus','cirrus','cirrus','cirrus','organic']])
-    }),
-    'exceptional': Object.freeze({
-        type: 'sun', count: 0, cloud: 12, wind: 0.1, sunCloudWarm: false, atmosphere: 'exceptional', stars: 420, vapor: 24, vaporScale: 0.8,
-        celestial: null, glow: Object.freeze([255, 246, 215, 1.00, 1.0, 1.0, 1.0]),
-        types: Object.freeze([['cirrus','cirrus'], ['cirrus','cirrus'], ['stratus','cirrus']])
-    }),
-    'default': Object.freeze({
-        type: 'none', count: 0, cloud: 6, wind: 0.1, sunCloudWarm: false, atmosphere: 'fair', stars: 260, vapor: 12, vaporScale: 0.7,
-        celestial: null, glow: Object.freeze([255, 240, 200, 0.95, 1.0, 1.1, 1.0]),
-        types: Object.freeze([['cumulus','cumulus','organic','organic','stratus','cirrus'], ['organic','organic','cumulus','cumulus','stratus','stratus'], ['cirrus','cirrus','cumulus','organic','stratus','stratus']])
-    })
+
+const _h = s => [parseInt(s.slice(1,3),16)/255, parseInt(s.slice(3,5),16)/255, parseInt(s.slice(5,7),16)/255];
+
+const SKY_HEX = {
+    'sunny':           { day: ['#B0E8FF','#60B8FF','#4098F0','#3888E0'], night: ['#2E2480','#0F1247','#05081F','#000108'] },
+    'clear-night':     { day: ['#B0E0FF','#80B8F0','#6098D8','#5080C8'], night: ['#264080','#262947','#0D0F1F','#030408'] },
+    'partlycloudy':    { day: ['#B0E0FF','#80B8F0','#6098D8','#5080C8'], night: ['#404D80','#0D1433','#030514','#000004'] },
+    'cloudy':          { day: ['#EDF7FB','#B9D5F1','#96BBDD','#8DA9D5'], night: ['#264080','#262947','#0D0F1F','#030408'] },
+    'windy':           { day: ['#ECF7FE','#C5DDF5','#96B9E0','#7FA0D1'], night: ['#1A3359','#0D1A40','#050D26','#000314'] },
+    'windy-variant':   { day: ['#ECF7FE','#C5DDF5','#96B9E0','#7FA0D1'], night: ['#1A3359','#0D1A40','#050D26','#000314'] },
+    'exceptional':     { day: ['#B0ECFF','#60C0FF','#40A0F0','#3890E0'], night: ['#33758F','#1A3D80','#1A1457','#05051A'] },
+    'default':         { day: ['#A8E4FF','#70B8F0','#4898E0','#3888D0'], night: ['#2D2474','#101141','#06081D','#000107'] },
+    'fog':             { day: ['#E0F0F4','#C2D8E2','#A2B6C6','#8493A6'], night: ['#323F53','#141E35','#06080F','#010204'] },
+    'snowy':           { day: ['#EDF4FC','#CADCF2','#AAC6E6','#93B2D6'], night: ['#1C374E','#0F1E33','#080F20','#040812'] },
+    'snowy-rainy':     { day: ['#E6EDF7','#C0D4EC','#A2BEDC','#8AAAC9'], night: ['#1C374E','#0F1E33','#080F20','#040812'] },
+    'hail':            { day: ['#7A94B8','#94B8D6','#B3DBED','#D6F2FA'], night: ['#263541','#0F1932','#080920','#01030A'] },
+    'rainy':           { day: ['#D7E7F0','#A6C2D6','#5E7E9C','#39506E'], night: ['#193658','#192B45','#0F0A20','#04050A'] },
+    'pouring':         { day: ['#BFD4E0','#85A2BB','#4E6B89','#2E445F'], night: ['#152E4A','#15253A','#0D081B','#040408'] },
+    'lightning':       { day: ['#B6D0DA','#789AA6','#41607A','#243B54'], night: ['#263541','#0F1932','#080920','#01030A'] },
+    'lightning-rainy': { day: ['#B6D0DA','#789AA6','#41607A','#243B54'], night: ['#263541','#0F1932','#080920','#01030A'] },
+};
+
+const SKY_COLORS = Object.fromEntries(Object.entries(SKY_HEX).map(
+    ([k, v]) => [k, { skyDay: v.day.map(_h), skyNight: v.night.map(_h) }]
+));
+
+const VISUAL_DEFAULTS = Object.freeze({
+    engine: 'sky',
+    cloudCover: 0.00,
+    cloudScale: 1.00,
+    cloudShadow: 0.00,
+    cloudThickness: 0.00,
+    clearing: 0.42,
+    cloudSpeed: 1.00,
+    rain: 0.00,
+    lightning: 0.00,
+    snowfall: 0.00,
+    flakeSize: 1.00,
+    hail: 0.00,
+    stars: false,
+    starCount: 0,
+    starsOpacity: 0.00,
+    sunrays: false,
+    skyDay: null,
+    skyNight: null,
 });
+
+const WEATHER_VISUALS = Object.freeze({
+    'sunny':            { engine: 'sky', cloudCover: 0.05, cloudScale: 1.85, cloudShadow: 0.12, cloudSpeed: 0.20, sunrays: true, stars: true, starsOpacity: 0.90, starCount: 700 },
+    'clear-night':      { engine: 'sky', cloudCover: 0.05, cloudScale: 1.35, cloudShadow: 0.10, cloudSpeed: 0.10, stars: true, starsOpacity: 1.00, starCount: 800 },
+    'partlycloudy':     { engine: 'sky', cloudCover: 0.28, cloudScale: 2.10, cloudShadow: 0.10, cloudThickness: 0.20, cloudSpeed: 0.45, sunrays: true, stars: true, starsOpacity: 0.70, starCount: 450 },
+    'cloudy':           { engine: 'sky', cloudCover: 0.34, cloudScale: 2.20, cloudShadow: 0.35, cloudThickness: 0.25, cloudSpeed: 0.60, stars: true, starsOpacity: 0.50, starCount: 300 },
+    'windy':            { engine: 'sky', cloudCover: 0.39, cloudScale: 2.30, cloudShadow: 0.22, cloudThickness: 0.25, cloudSpeed: 1.20, stars: true, starsOpacity: 0.80, starCount: 500 },
+    'windy-variant':    { engine: 'sky', cloudCover: 0.34, cloudScale: 1.50, cloudShadow: 0.12, cloudSpeed: 1.20, stars: true, starsOpacity: 0.80, starCount: 600 },
+    'exceptional':      { engine: 'sky', cloudCover: 0.01, cloudScale: 1.75, cloudShadow: 0.10, cloudSpeed: 0.10, sunrays: true, stars: true, starsOpacity: 1.00, starCount: 800 },
+    'default':          { engine: 'sky', cloudCover: 0.30, cloudScale: 1.45, cloudSpeed: 1.00, stars: true, starsOpacity: 0.80, starCount: 800 },
+    'fog':              { engine: 'sky', cloudCover: 0.15, cloudScale: 2.20, cloudShadow: 0.05, clearing: 0.00, cloudSpeed: 0.10, stars: true, starsOpacity: 0.35, starCount: 250 },
+    'snowy':            { engine: 'sky', cloudCover: 0.33, cloudScale: 1.80, cloudShadow: 0.22, cloudSpeed: 0.35, snowfall: 1.00, flakeSize: 1.50, stars: true, starsOpacity: 0.40, starCount: 600 },
+    'snowy-rainy':      { engine: 'sky', cloudCover: 0.38, cloudScale: 1.70, cloudShadow: 0.26, cloudSpeed: 0.45, snowfall: 0.70, flakeSize: 1.40, stars: true, starsOpacity: 0.30, starCount: 450 },
+    'hail':             { engine: 'sky', cloudCover: 0.33, cloudScale: 1.60, cloudShadow: 0.34, cloudSpeed: 0.70, snowfall: 0.90, flakeSize: 2.00, hail: 1.00, stars: true, starsOpacity: 0.45, starCount: 350 },
+    'rainy':            { engine: 'water', rain: 0.70 },
+    'pouring':          { engine: 'water', rain: 1.00 },
+    'lightning':        { engine: 'water', rain: 1.00, lightning: 1.00 },
+    'lightning-rainy':  { engine: 'water', rain: 1.00, lightning: 1.00 },
+});
+
+function resolveVisuals(weatherState) {
+    const key = WEATHER_VISUALS[weatherState] ? weatherState : 'default';
+    return { ...VISUAL_DEFAULTS, ...WEATHER_VISUALS[key], ...SKY_COLORS[key] };
+}
 const WEATHER_ICONS = Object.freeze({
     'clear-night': 'mdi:weather-night',
     'cloudy': 'mdi:weather-cloudy',
@@ -133,7 +109,7 @@ const WEATHER_ICONS = Object.freeze({
     'sunny': 'mdi:weather-sunny',
     'windy': 'mdi:weather-windy',
     'windy-variant': 'mdi:weather-windy-variant',
-    'exceptional': 'mdi:weather-sunny-alert',
+    'exceptional': 'mdi:weather-sunny',
     'default': 'mdi:weather-cloudy'
 });
 const WEATHER_ATTR_ICONS = Object.freeze({
@@ -155,113 +131,46 @@ const FORECAST_ATTR_ICONS = Object.freeze({
     condition: 'mdi:weather-partly-cloudy', templow: 'mdi:thermometer-low',
     precipitation: 'mdi:weather-rainy', precipitation_probability: 'mdi:weather-rainy',
 });
-const MOON_PHASES = Object.freeze({
-    'new_moon':         { illumination: 0.0,  direction: 'right' },
-    'waxing_crescent':  { illumination: 0.25, direction: 'right' },
-    'first_quarter':    { illumination: 0.5,  direction: 'right' },
-    'waxing_gibbous':   { illumination: 0.75, direction: 'right' },
-    'full_moon':        { illumination: 1.0,  direction: 'none' },
-    'waning_gibbous':   { illumination: 0.75, direction: 'left' },
-    'last_quarter':     { illumination: 0.5,  direction: 'left' },
-    'waning_crescent':  { illumination: 0.25, direction: 'left' }
+// Weather icon glyphs remixed from Lucide (https://lucide.dev), ISC License.
+const AWC_BUILTIN_ICONS = Object.freeze({
+    'clear-night':     '<g><animateTransform attributeName="transform" type="translate" values="0,0; -0.7,0.7; 0,0" dur="3.5s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="rotate" values="-4 12 12; 4 12 12; -4 12 12" dur="4s" repeatCount="indefinite" additive="sum"/><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401" fill="currentColor" fill-opacity="0.12"><animate attributeName="fill-opacity" values="0.06;0.22;0.06" dur="4s" repeatCount="indefinite"/></path></g>',
+    'cloudy':          '<g><animateTransform attributeName="transform" type="translate" values="0,0;0.6,0;0,0;-0.6,0;0,0" dur="6s" repeatCount="indefinite"/><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" fill="currentColor" fill-opacity="0.08"/></g>',
+    'fog':             '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" fill="currentColor" fill-opacity="0.08"/><path d="M16 17H7" stroke-dasharray="2 2.5"><animate attributeName="stroke-dashoffset" values="0;9" dur="3s" repeatCount="indefinite"/></path><path d="M17 21H9" stroke-dasharray="2 2.5"><animate attributeName="stroke-dashoffset" values="0;-9" dur="4s" repeatCount="indefinite"/></path>',
+    'hail':            '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" fill="currentColor" fill-opacity="0.08"/><path d="M16 14v2" stroke-opacity="0.8"><animate attributeName="stroke-opacity" values="0.8;0.3;0.8" dur="0.8s" repeatCount="indefinite"/></path><path d="M8 14v2" stroke-opacity="0.8"><animate attributeName="stroke-opacity" values="0.8;0.3;0.8" dur="0.8s" begin="0.3s" repeatCount="indefinite"/></path><circle cx="16" cy="20" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="18;20;19.2;20" dur="1s" repeatCount="indefinite"/></circle><circle cx="8" cy="20" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="18;20;19.2;20" dur="1s" begin="0.35s" repeatCount="indefinite"/></circle><path d="M12 16v2" stroke-opacity="0.8"><animate attributeName="stroke-opacity" values="0.8;0.3;0.8" dur="0.8s" begin="0.15s" repeatCount="indefinite"/></path><circle cx="12" cy="22" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="20;22;21.2;22" dur="1s" begin="0.2s" repeatCount="indefinite"/></circle>',
+    'lightning':       '<path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973" fill="currentColor" fill-opacity="0.08"/><path d="m13 12-3 5h4l-3 5" stroke-width="1.75"><animate attributeName="stroke-opacity" values="1;1;0.15;1;1;1;0.1;0.8;1;1;1;1;0.12;1" dur="4s" repeatCount="indefinite"/></path>',
+    'lightning-rainy': '<path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" fill="currentColor" fill-opacity="0.06"><animate attributeName="fill-opacity" values="0.06;0.06;0.2;0.06;0.06;0.06;0.15;0.06" dur="3.5s" repeatCount="indefinite"/><animate attributeName="stroke-opacity" values="1;1;0.2;1;1;1;0.15;1" dur="3.5s" repeatCount="indefinite"/></path>',
+    'partlycloudy':    '<g stroke-opacity="0.5"><animate attributeName="stroke-opacity" values="0.5;0.7;0.5" dur="3s" repeatCount="indefinite"/><path d="M12 2v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="M20 12h2"/><path d="m19.07 4.93-1.41 1.41"/></g><path d="M15.947 12.65a4 4 0 0 0-5.925-4.128"/><g><animateTransform attributeName="transform" type="translate" values="0,0;0.5,0;0,0;-0.5,0;0,0" dur="7s" repeatCount="indefinite"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" fill="currentColor" fill-opacity="0.08"/></g>',
+    'partlycloudy-night': '<path d="M18.376 14.512a6 6 0 0 0 3.461-4.127c.148-.625-.659-.97-1.248-.714a4 4 0 0 1-5.259-5.26c.255-.589-.09-1.395-.716-1.248a6 6 0 0 0-4.594 5.36" fill="currentColor" fill-opacity="0.12"><animate attributeName="fill-opacity" values="0.06;0.22;0.06" dur="4s" repeatCount="indefinite"/></path><g><animateTransform attributeName="transform" type="translate" values="0,0;0.5,0;0,0;-0.5,0;0,0" dur="7s" repeatCount="indefinite"/><path d="M13 22H7a5 5 0 1 1 4.9-6H13a3 3 0 0 1 0 6Z" fill="currentColor" fill-opacity="0.08"/></g>',
+    'pouring':         '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" fill="currentColor" fill-opacity="0.08"/><path d="m9.2 22 3-7" stroke-opacity="0.7"><animate attributeName="stroke-opacity" values="0.7;0.2;0.7" dur="0.7s" repeatCount="indefinite"/></path><path d="m9 13-3 7" stroke-opacity="0.7"><animate attributeName="stroke-opacity" values="0.7;0.2;0.7" dur="0.7s" begin="0.25s" repeatCount="indefinite"/></path><path d="m17 13-3 7" stroke-opacity="0.7"><animate attributeName="stroke-opacity" values="0.7;0.2;0.7" dur="0.7s" begin="0.5s" repeatCount="indefinite"/></path>',
+    'rainy':           '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" fill="currentColor" fill-opacity="0.08"/><path d="M16 14v6" stroke-dasharray="3 2"><animate attributeName="stroke-dashoffset" values="0;-5" dur="1s" repeatCount="indefinite"/></path><path d="M8 14v6" stroke-dasharray="3 2"><animate attributeName="stroke-dashoffset" values="0;-5" dur="1s" begin="0.35s" repeatCount="indefinite"/></path><path d="M12 16v6" stroke-dasharray="3 2"><animate attributeName="stroke-dashoffset" values="0;-5" dur="1s" begin="0.7s" repeatCount="indefinite"/></path>',
+    'snowy':           '<g><animateTransform attributeName="transform" type="rotate" values="0 12 12;360 12 12" dur="12s" repeatCount="indefinite"/><path d="m10 20-1.25-2.5L6 18"/><path d="M10 4 8.75 6.5 6 6"/><path d="m14 20 1.25-2.5L18 18"/><path d="m14 4 1.25 2.5L18 6"/><path d="m17 21-3-6h-4"/><path d="m17 3-3 6 1.5 3"/><path d="M2 12h6.5L10 9"/><path d="m20 10-1.5 2 1.5 2"/><path d="M22 12h-6.5L14 15"/><path d="m4 10 1.5 2L4 14"/><path d="m7 21 3-6-1.5-3"/><path d="m7 3 3 6h4"/></g>',
+    'snowy-rainy':     '<path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" fill="currentColor" fill-opacity="0.08"/><circle cx="8" cy="15.5" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="15;16.5;15" dur="2s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2s" repeatCount="indefinite"/></circle><circle cx="8" cy="19.5" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="19;20.5;19" dur="2.2s" begin="0.6s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="0.6s" repeatCount="indefinite"/></circle><circle cx="12" cy="17.5" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="17;18.5;17" dur="1.8s" begin="0.3s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="1.8s" begin="0.3s" repeatCount="indefinite"/></circle><circle cx="12" cy="21.5" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="21;22.5;21" dur="2.4s" begin="0.9s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.4s" begin="0.9s" repeatCount="indefinite"/></circle><circle cx="16" cy="15.5" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="15;16.5;15" dur="2.1s" begin="0.45s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.1s" begin="0.45s" repeatCount="indefinite"/></circle><circle cx="16" cy="19.5" r="0.5" fill="currentColor" stroke="none"><animate attributeName="cy" values="19;20.5;19" dur="1.9s" begin="0.75s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="1.9s" begin="0.75s" repeatCount="indefinite"/></circle>',
+    'sunny':           '<g><animateTransform attributeName="transform" type="rotate" values="0 12 12;360 12 12" dur="30s" repeatCount="indefinite"/><circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity="0.1"><animate attributeName="fill-opacity" values="0.1;0.18;0.1" dur="3s" repeatCount="indefinite"/><animate attributeName="r" values="4;4.25;4" dur="3s" repeatCount="indefinite"/></circle><g stroke-opacity="1"><animate attributeName="stroke-opacity" values="1;0.6;1" dur="3s" repeatCount="indefinite"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g></g>',
+    'windy':           '<path d="M12.8 19.6A2 2 0 1 0 14 16H2" stroke-dasharray="22" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="0;-3;0" dur="2.5s" repeatCount="indefinite"/></path><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2" stroke-dasharray="26" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="0;-4;0" dur="3s" begin="0.3s" repeatCount="indefinite"/></path><path d="M9.8 4.4A2 2 0 1 1 11 8H2" stroke-dasharray="18" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="0;-3;0" dur="2s" begin="0.6s" repeatCount="indefinite"/></path>',
+    'windy-variant':   '<path d="M10 2v8" stroke-opacity="0.5"/><path d="M12.8 21.6A2 2 0 1 0 14 18H2" stroke-dasharray="22" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="0;-3;0" dur="2.5s" repeatCount="indefinite"/></path><path d="M17.5 10a2.5 2.5 0 1 1 2 4H2" stroke-dasharray="26" stroke-dashoffset="0"><animate attributeName="stroke-dashoffset" values="0;-4;0" dur="3s" begin="0.3s" repeatCount="indefinite"/></path><g stroke-opacity="0.5"><animate attributeName="stroke-opacity" values="0.5;0.8;0.5" dur="2s" repeatCount="indefinite"/><path d="m6 6 4 4 4-4"/></g>',
+    'exceptional':     '<g><animateTransform attributeName="transform" type="rotate" values="0 12 12;360 12 12" dur="30s" repeatCount="indefinite"/><circle cx="12" cy="12" r="4" fill="currentColor" fill-opacity="0.1"><animate attributeName="fill-opacity" values="0.1;0.18;0.1" dur="3s" repeatCount="indefinite"/><animate attributeName="r" values="4;4.25;4" dur="3s" repeatCount="indefinite"/></circle><g stroke-opacity="1"><animate attributeName="stroke-opacity" values="1;0.6;1" dur="3s" repeatCount="indefinite"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></g></g>',
+    'default':         '<g><animateTransform attributeName="transform" type="translate" values="0,0;0.6,0;0,0;-0.6,0;0,0" dur="6s" repeatCount="indefinite"/><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" fill="currentColor" fill-opacity="0.08"/></g>'
 });
-const LIMITS = Object.freeze({
-    MAX_SHOOTING_STARS: 2,
-    MAX_BOLTS: 4
+// Colored weather icon glyphs remixed from Meteocons by Bas Milius (https://github.com/basmilius/meteocons), MIT License.
+const AWC_COLORED_ICONS = Object.freeze({
+    'clear-night':        '<defs><linearGradient id="mo" x1="5" y1="3" x2="15" y2="20" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#86c3db"/><stop offset=".5" stop-color="#86c3db"/><stop offset="1" stop-color="#5eafcf"/></linearGradient></defs><path d="M20.6 13.5A8.6 8.6 0 0 1 11 3.9 8.5 8.5 0 1 0 20.6 13.5Z" fill="url(#mo)" stroke="#72b9d5" stroke-width="0.6" stroke-linejoin="round"><animateTransform attributeName="transform" type="rotate" values="-12 12 12;7 12 12;-12 12 12" dur="6s" repeatCount="indefinite"/></path>',
+    'cloudy':             '<g><animateTransform attributeName="transform" type="translate" values="-1 0;1 0;-1 0" dur="6s" repeatCount="indefinite"/><defs><linearGradient id="cl1" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M18.5 18.5H7a5 5 0 0 1-.4-9.98A7 7 0 0 1 19.6 11h.4a4 4 0 0 1-1.5 7.5Z" fill="url(#cl1)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/></g>',
+    'fog':                '<defs><linearGradient id="fg" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#d4d7dd"/><stop offset=".55" stop-color="#d4d7dd"/><stop offset="1" stop-color="#bec1c6"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#fg)" stroke="#cfd3d9" stroke-width="0.5" stroke-miterlimit="10"/><path d="M5 20.5h10" stroke="#a9aeb6" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="6 3"><animate attributeName="stroke-dashoffset" values="0;9" dur="3s" repeatCount="indefinite"/></path><path d="M8 22.7h10" stroke="#a9aeb6" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="6 3"><animate attributeName="stroke-dashoffset" values="0;-9" dur="4s" repeatCount="indefinite"/></path>',
+    'hail':               '<defs><linearGradient id="ha" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#ha)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/><g fill="#86c3db" stroke="none"><circle cx="8" cy="21" r="1.1"><animate attributeName="cy" values="19.6;21.4;20.6;21.4" dur="1s" begin="0.0s" repeatCount="indefinite"/></circle><circle cx="12" cy="21" r="1.1"><animate attributeName="cy" values="19.6;21.4;20.6;21.4" dur="1s" begin="0.25s" repeatCount="indefinite"/></circle><circle cx="16" cy="21" r="1.1"><animate attributeName="cy" values="19.6;21.4;20.6;21.4" dur="1s" begin="0.5s" repeatCount="indefinite"/></circle></g>',
+    'lightning':          '<defs><linearGradient id="li" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#li)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/><defs><linearGradient id="bo" x1="10" y1="13" x2="14" y2="23" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f7b23b"/><stop offset=".5" stop-color="#f7b23b"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><path d="M13.4 13 9.5 18.7h2.7l-2.2 4.6 6.3-7.1h-3.2l2.1-3.2z" fill="url(#bo)" stroke="#f6a823" stroke-width="0.4" stroke-linejoin="round"><animate attributeName="opacity" values="1;1;0.2;1;0.4;1;1" dur="3s" repeatCount="indefinite"/></path>',
+    'lightning-rainy':    '<defs><linearGradient id="lr" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#lr)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/><g fill="none" stroke="#0b65ed" stroke-width="1.5" stroke-linecap="round"><path d="M8 19.4 8 21.8"><animate attributeName="opacity" values="1;0.2;1" dur="0.9s" begin="0.0s" repeatCount="indefinite"/></path><path d="M16 19.4 16 21.8"><animate attributeName="opacity" values="1;0.2;1" dur="0.9s" begin="0.3s" repeatCount="indefinite"/></path></g><defs><linearGradient id="bo" x1="10" y1="13" x2="14" y2="23" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f7b23b"/><stop offset=".5" stop-color="#f7b23b"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><path d="M13.4 13 9.5 18.7h2.7l-2.2 4.6 6.3-7.1h-3.2l2.1-3.2z" fill="url(#bo)" stroke="#f6a823" stroke-width="0.4" stroke-linejoin="round"><animate attributeName="opacity" values="1;1;0.2;1;0.4;1;1" dur="3s" repeatCount="indefinite"/></path>',
+    'partlycloudy':       '<defs><linearGradient id="su2" x1="6" y1="3" x2="11" y2="12" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fbbf24"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><g><animateTransform attributeName="transform" type="rotate" values="0 9 8;45 9 8" dur="6s" repeatCount="indefinite"/><path d="M9 1.8v1.6M9 12.6v1.6M14.2 8h1.6M2.2 8h1.6M12.7 4.3l1.1-1.1M4.2 11.8l1.1-1.1M5.3 4.3 4.2 3.2M13.8 11.8l-1.1-1.1" fill="none" stroke="#fbbf24" stroke-width="1.3" stroke-linecap="round"/><circle cx="9" cy="8" r="3" fill="url(#su2)" stroke="#f8af18" stroke-width="0.5"/></g><g><animateTransform attributeName="transform" type="translate" values="-0.8 0;0.8 0;-0.8 0" dur="7s" repeatCount="indefinite"/><defs><linearGradient id="cl2" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#cl2)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/></g>',
+    'partlycloudy-night': '<defs><linearGradient id="mo2" x1="4" y1="2" x2="12" y2="14" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#86c3db"/><stop offset=".5" stop-color="#86c3db"/><stop offset="1" stop-color="#5eafcf"/></linearGradient></defs><path d="M13.8 8.8A5.5 5.5 0 0 1 8.3 3.3 5.4 5.4 0 1 0 13.8 8.8Z" fill="url(#mo2)" stroke="#72b9d5" stroke-width="0.5" stroke-linejoin="round"><animateTransform attributeName="transform" type="rotate" values="-10 9 7;6 9 7;-10 9 7" dur="6s" repeatCount="indefinite"/></path><g><animateTransform attributeName="transform" type="translate" values="-0.8 0;0.8 0;-0.8 0" dur="7s" repeatCount="indefinite"/><defs><linearGradient id="cl3" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#cl3)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/></g>',
+    'pouring':            '<defs><linearGradient id="po" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#po)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/><g fill="none" stroke="#0b65ed" stroke-width="1.6" stroke-linecap="round"><path d="M8 18.8 6.8 22.6"><animate attributeName="opacity" values="1;0.2;1" dur="0.7s" begin="0.0s" repeatCount="indefinite"/></path><path d="M11 18.8 9.8 22.6"><animate attributeName="opacity" values="1;0.2;1" dur="0.7s" begin="0.18s" repeatCount="indefinite"/></path><path d="M14 18.8 12.8 22.6"><animate attributeName="opacity" values="1;0.2;1" dur="0.7s" begin="0.36s" repeatCount="indefinite"/></path><path d="M17 18.8 15.8 22.6"><animate attributeName="opacity" values="1;0.2;1" dur="0.7s" begin="0.54s" repeatCount="indefinite"/></path></g>',
+    'rainy':              '<defs><linearGradient id="rn" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#rn)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/><g fill="none" stroke="#0b65ed" stroke-width="1.6" stroke-linecap="round"><path d="M8 19.4 8 22.2"><animate attributeName="opacity" values="1;0.2;1" dur="1s" begin="0.0s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0 -1;0 1;0 -1" dur="1s" begin="0.0s" repeatCount="indefinite" additive="sum"/></path><path d="M12 19.4 12 22.2"><animate attributeName="opacity" values="1;0.2;1" dur="1s" begin="0.3s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0 -1;0 1;0 -1" dur="1s" begin="0.3s" repeatCount="indefinite" additive="sum"/></path><path d="M16 19.4 16 22.2"><animate attributeName="opacity" values="1;0.2;1" dur="1s" begin="0.6s" repeatCount="indefinite"/><animateTransform attributeName="transform" type="translate" values="0 -1;0 1;0 -1" dur="1s" begin="0.6s" repeatCount="indefinite" additive="sum"/></path></g>',
+    'snowy':              '<defs><linearGradient id="sn" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#sn)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/><g fill="#86c3db" stroke="none"><circle cx="8" cy="20.6" r="1"><animate attributeName="cy" values="19.8;21.400000000000002;19.8" dur="2.2s" begin="0.0s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="0.0s" repeatCount="indefinite"/></circle><circle cx="12" cy="21.8" r="1"><animate attributeName="cy" values="21.0;22.6;21.0" dur="2.2s" begin="0.35s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="0.35s" repeatCount="indefinite"/></circle><circle cx="16" cy="20.6" r="1"><animate attributeName="cy" values="19.8;21.400000000000002;19.8" dur="2.2s" begin="0.7s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="0.7s" repeatCount="indefinite"/></circle><circle cx="10" cy="22.8" r="1"><animate attributeName="cy" values="22.0;23.6;22.0" dur="2.2s" begin="1.05s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="1.05s" repeatCount="indefinite"/></circle><circle cx="14" cy="22.8" r="1"><animate attributeName="cy" values="22.0;23.6;22.0" dur="2.2s" begin="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="1.4s" repeatCount="indefinite"/></circle></g>',
+    'snowy-rainy':        '<defs><linearGradient id="sr" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M17 19H8a4 4 0 0 1-.3-7.99A5.5 5.5 0 0 1 18 12.5a3.25 3.25 0 0 1-1 6.5Z" fill="url(#sr)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/><g fill="#86c3db" stroke="none"><circle cx="8" cy="20.6" r="1"><animate attributeName="cy" values="19.8;21.4;19.8" dur="2.2s" begin="0.0s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="0.0s" repeatCount="indefinite"/></circle><circle cx="14" cy="20.6" r="1"><animate attributeName="cy" values="19.8;21.4;19.8" dur="2.2s" begin="0.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="1;0.4;1" dur="2.2s" begin="0.4s" repeatCount="indefinite"/></circle></g><g fill="none" stroke="#0b65ed" stroke-width="1.5" stroke-linecap="round"><path d="M11 19.8 11 22.4"><animate attributeName="opacity" values="1;0.2;1" dur="1s" begin="0.0s" repeatCount="indefinite"/></path><path d="M17 19.8 17 22.4"><animate attributeName="opacity" values="1;0.2;1" dur="1s" begin="0.3s" repeatCount="indefinite"/></path></g>',
+    'sunny':              '<defs><linearGradient id="su" x1="8" y1="6" x2="14" y2="17" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fbbf24"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><g><animateTransform attributeName="transform" type="rotate" values="0 12 12;45 12 12" dur="6s" repeatCount="indefinite"/><path d="M12 2.5v2M12 19.5v2M19.5 12h2M2.5 12h2M17.3 6.7l1.4-1.4M5.3 18.7l1.4-1.4M6.7 6.7 5.3 5.3M18.7 18.7l-1.4-1.4" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="4.2" fill="url(#su)" stroke="#f8af18" stroke-width="0.6"/></g>',
+    'windy':              '<g fill="none" stroke="#9aa3ae" stroke-width="1.7" stroke-linecap="round"><path d="M3 9h11a2.4 2.4 0 1 0-2.4-2.4"><animate attributeName="stroke-dashoffset" values="0;-3;0" dur="3s" repeatCount="indefinite"/></path><path d="M3 13h15a2.6 2.6 0 1 1-2.6 2.6"><animate attributeName="stroke-dashoffset" values="0;-4;0" dur="2.6s" begin="0.3s" repeatCount="indefinite"/></path><path d="M3 17h9a2.2 2.2 0 1 0-2.2 2.2"><animate attributeName="stroke-dashoffset" values="0;-3;0" dur="2.2s" begin="0.6s" repeatCount="indefinite"/></path></g>',
+    'windy-variant':      '<g fill="none" stroke="#9aa3ae" stroke-width="1.7" stroke-linecap="round"><path d="M3 9h11a2.4 2.4 0 1 0-2.4-2.4"><animate attributeName="stroke-dashoffset" values="0;-3;0" dur="3s" repeatCount="indefinite"/></path><path d="M3 13h15a2.6 2.6 0 1 1-2.6 2.6"><animate attributeName="stroke-dashoffset" values="0;-4;0" dur="2.6s" begin="0.3s" repeatCount="indefinite"/></path><path d="M3 17h9a2.2 2.2 0 1 0-2.2 2.2"><animate attributeName="stroke-dashoffset" values="0;-3;0" dur="2.2s" begin="0.6s" repeatCount="indefinite"/></path></g>',
+    'exceptional':        '<defs><linearGradient id="su" x1="8" y1="6" x2="14" y2="17" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#fbbf24"/><stop offset=".5" stop-color="#fbbf24"/><stop offset="1" stop-color="#f59e0b"/></linearGradient></defs><g><animateTransform attributeName="transform" type="rotate" values="0 12 12;45 12 12" dur="6s" repeatCount="indefinite"/><path d="M12 2.5v2M12 19.5v2M19.5 12h2M2.5 12h2M17.3 6.7l1.4-1.4M5.3 18.7l1.4-1.4M6.7 6.7 5.3 5.3M18.7 18.7l-1.4-1.4" fill="none" stroke="#fbbf24" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="12" r="4.2" fill="url(#su)" stroke="#f8af18" stroke-width="0.6"/></g>',
+    'default':            '<g><animateTransform attributeName="transform" type="translate" values="-1 0;1 0;-1 0" dur="6s" repeatCount="indefinite"/><defs><linearGradient id="cl1" x1="7" y1="4" x2="14" y2="19" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#f3f7fe"/><stop offset=".55" stop-color="#f3f7fe"/><stop offset="1" stop-color="#deeafb"/></linearGradient></defs><path d="M18.5 18.5H7a5 5 0 0 1-.4-9.98A7 7 0 0 1 19.6 11h.4a4 4 0 0 1-1.5 7.5Z" fill="url(#cl1)" stroke="#e6effc" stroke-width="0.5" stroke-miterlimit="10"/></g>'
 });
-const PARTICLE_ARRAYS = Object.freeze([
-    '_rain', '_snow', '_hail', '_clouds', '_fgClouds', '_stars',
-    '_bolts', '_fogBanks', '_windVapor', '_shootingStars',
-    '_planes', '_birds', '_comets', '_celestialClouds'
-]);
-// GEOMETRY TABLES — named pixel offsets for icon glyph positions
-const MOON_CRATERS = Object.freeze({
-    maria: [
-        { dx: -9, dy:  2, rx: 7, ry: 9, rot:  0.2 },
-        { dx:  8, dy: -6, rx: 6, ry: 4, rot: -0.3 },
-        { dx: -2, dy: 10, rx: 5, ry: 3, rot:  0.1 }
-    ],
-    mariaInner: [
-        { dx: -9, dy:  2, rx: 4, ry: 6, rot:  0.2 },
-        { dx:  8, dy: -6, rx: 3, ry: 2, rot: -0.3 },
-        { dx: -2, dy: 10, rx: 2.5, ry: 1.5, rot: 0.1 }
-    ],
-    detail: [
-        { dx:  6, dy:  5, r: 2.2 },
-        { dx: -5, dy: -8, r: 1.8 },
-        { dx:  3, dy: -12, r: 1.6 },
-        { dx: -13, dy: -3, r: 1.5 },
-        { dx: 11, dy:  4, r: 1.5 }
-    ],
-    rimHighlights: [
-        { dx: -12, dy: -1, r: 1.0 },
-        { dx:  5,  dy: -9, r: 1.0 },
-        { dx:  4,  dy:  3, r: 0.9 }
-    ]
-});
-const MOON_STYLE_COLORS = Object.freeze({
-    newMoon: {
-        yellow: [{ rgb: '210,205,190', op: 0.10 }],
-        blue:   [{ rgb: '140,155,180', op: 0.10 }],
-        purple: [{ rgb: '155,140,170', op: 0.10 }],
-        grey:   [{ rgb: '145,148,155', op: 0.10 }],
-        light:  [{ rgb: '200,210,225', op: 0.20 }],
-        dark:   [{ rgb: '40,45,55', op: 0.80 }, { rgb: '80,90,110', op: 0.15 }]
-    },
-    darkSide: {
-        yellow: { rgb: '210,205,190', op: 0.15 },
-        blue:   { rgb: '120,135,165', op: 0.14 },
-        purple: { rgb: '138,125,155', op: 0.14 },
-        grey:   { rgb: '130,132,140', op: 0.14 },
-        light:  { rgb: '175,188,208', op: 0.55 },
-        dark:   { rgb: '35,40,50', op: 0.90 }
-    },
-    ringStroke: {
-        blue:   { rgb: '100,125,168', op: 0.22 },
-        purple: { rgb: '140,118,165', op: 0.22 },
-        grey:   { rgb: '110,112,122', op: 0.22 },
-        yellow: { rgb: '155,182,228', op: 0.28 }
-    },
-    glow: {
-        yellow: { peak: 1.10, stops: [[0,'255,220,80',1.10],[0.35,'255,180,40',0.60],[0.65,'255,140,0',0.22],[1,'255,140,0',0]] },
-        blue:   { peak: 0.75, stops: [[0,'90,115,170',0.75],[0.30,'100,125,175',0.35],[0.60,'115,138,180',0.12],[1,'130,150,190',0]] },
-        purple: { peak: 0.75, stops: [[0,'140,115,170',0.75],[0.30,'148,125,172',0.35],[0.60,'155,138,175',0.12],[1,'165,150,180',0]] },
-        grey:   { peak: 0.70, stops: [[0,'105,110,120',0.70],[0.30,'115,118,128',0.32],[0.60,'125,128,138',0.10],[1,'140,142,150',0]] },
-        light:  { peak: 1.10, stops: [[0,'140,175,255',1.10],[0.35,'155,190,255',0.60],[0.65,'175,205,255',0.22],[1,'200,220,255',0]] }
-    },
-    fullDisc: {
-        yellow: { peak: 0.95, stops: [[0,'245,230,140',0.95],[0.5,'240,210,80',0.85],[1,'235,180,40',0.75]] },
-        blue:   { peak: 0.88, stops: [[0,'165,180,210',0.88],[0.5,'125,145,185',0.80],[1,'95,115,160',0.70]] },
-        purple: { peak: 0.88, stops: [[0,'185,170,200',0.88],[0.5,'155,138,175',0.80],[1,'125,108,150',0.70]] },
-        grey:   { peak: 0.88, stops: [[0,'175,178,185',0.88],[0.5,'140,142,150',0.80],[1,'110,112,120',0.70]] },
-        light:  { peak: 0.85, stops: [[0,'255,255,255',0.85],[0.5,'238,242,250',0.78],[1,'210,220,238',0.65]] },
-        dark:   { peak: 0.95, stops: [[0,'255,255,250',0.95],[0.7,'230,235,245',0.90],[1,'200,210,230',0.85]] }
-    },
-    partDisc: {
-        yellow: { peak: 0.90, stops: [[0,'245,230,140',0.90],[0.6,'240,210,80',0.80],[1,'235,180,40',0.70]] },
-        blue:   { peak: 0.85, stops: [[0,'165,180,210',0.85],[0.6,'125,145,185',0.75],[1,'95,115,160',0.65]] },
-        purple: { peak: 0.85, stops: [[0,'185,170,200',0.85],[0.6,'155,138,175',0.75],[1,'125,108,150',0.65]] },
-        grey:   { peak: 0.85, stops: [[0,'175,178,185',0.85],[0.6,'140,142,150',0.75],[1,'110,112,120',0.65]] },
-        light:  { peak: 0.82, stops: [[0,'255,255,255',0.82],[0.6,'240,244,252',0.72],[1,'218,228,242',0.58]] },
-        dark:   { peak: 0.95, stops: [[0,'255,255,250',0.95],[0.6,'235,240,248',0.90],[1,'210,220,235',0.85]] }
-    },
-    lightDisc: {
-        yellow: 'rgb(250,245,225)',
-        blue:   'rgb(225,232,248)',
-        purple: 'rgb(235,228,245)',
-        grey:   'rgb(232,233,238)',
-        light:  'rgb(228,234,248)'
-    }
-});
-const PLANE_PATH = Object.freeze([
-    [  6, 0, -6,  0 ],
-    [ -5, 0, -8, -4 ],
-    [  1, 0, -2,  2 ]
-]);
-const TWO_PI = Math.PI * 2;
-function fillCircle(ctx, x, y, r) {
-    ctx.beginPath(); ctx.arc(x, y, r, 0, TWO_PI); ctx.fill();
-}
 function parseCSSVal(v) {
     const s = String(v).trim(); if (!s || s === '0') return '0px';
     return /[%a-z]/i.test(s) ? s : s + 'px';
@@ -309,8 +218,6 @@ function computeGauge(rawVal, min, max, colorRaw, thresholds, mode) {
     }
     return { pct, gradient, barGradient, hasSegments, effectiveColor };
 }
-// Forecast helpers
-const _fcCache = new Map(); // module-level: survives HA editor destroy/recreate cycles
 function fcFilterPast(raw, daily) {
     const now = new Date(), cut = daily ? new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() : now.getTime();
     return raw.filter(f => Date.parse(f.datetime) >= cut);
@@ -324,442 +231,84 @@ function fcLabel(dt, daily, locale) {
     const d = new Date(dt);
     return daily ? d.toLocaleDateString(locale, { weekday: 'short' }) : d.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 }
+const _AWC_FC_CACHE = new Map();
+const _AWC_FC_CACHE_MAX = 50;
 const _FC_UNIT_MAP = { temperature: 'temperature_unit', templow: 'temperature_unit', wind_speed: 'wind_speed_unit', precipitation: 'precipitation_unit', pressure: 'pressure_unit', visibility: 'visibility_unit', dew_point: 'temperature_unit' };
 const _FC_UNIT_FALLBACK = { humidity: '%', precipitation_probability: '%', cloud_coverage: '%', wind_bearing: '°', uv_index: '' };
-const STAR_TIER_PROPS = Object.freeze({
-    bg:   [1.2, 0.4, 0.35, 0.2, 0.04, 0.04],
-    mid:  [1.8, 0.6, 0.60, 0.25, 0.02, 0.02],
-    hero: [2.2, 0.8, 0.85, 0.15, 0.005, 0.01]
-});
-const STAR_PALETTE_GOLDEN = Object.freeze([
-    [0.3,  42, 90, 42],
-    [0.85, 36, 85, 46],
-    [1,    28, 90, 38]
-]);
-const STAR_PALETTE_GLOW = Object.freeze([
-    [0.3, 215, 30, 88],
-    [0.85, 200, 5, 95],
-    [1, 35, 35, 85]
-]);
-function hslToRgb(h, s, l) {
-    h /= 360; s /= 100; l /= 100; let r, g, b;
-    if (s === 0) {
-        r = g = b = l;
-    } else {
-        const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t;
-            if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
-            return p;
-        };
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
-        r = hue2rgb(p, q, h + 1/3); g = hue2rgb(p, q, h); b = hue2rgb(p, q, h - 1/3);
-    }
-    return [(r * 255 + 0.5) | 0, (g * 255 + 0.5) | 0, (b * 255 + 0.5) | 0];
-}
-const CONTRAIL_OFFSETS = Object.freeze([3, -3]);
-const BAD_WEATHER_TYPES = Object.freeze(new Set([
-    'rain', 'hail', 'fog', 'lightning', 'lightning-rainy', 'pouring', 'rainy', 'snowy-rainy'
-]));
-const STORM_TYPES = Object.freeze(new Set([
-    'lightning', 'lightning-rainy', 'pouring'
-]));
-const LIGHT_BAD_BOOST_TYPES = Object.freeze(new Set([
-    'rain', 'rainy', 'hail', 'snowy-rainy', 'fog'
-]));
-const CLOUD_PALETTES = Object.freeze({
-    darkNight:    [215,225,245,  58, 72,112,  15, 22, 45,  0.72, 0.66, 0.05],
-    darkDay:      [218,228,250, 110,128,176,  52, 66,114,  0.86, 0.62, 0.07],
-    lightStorm:   [255,255,255, 198,208,228, 114,129,165,  1.00, 0.89, 0.15],
-    lightRain:    [255,255,255, 202,212,232, 120,136,174,  1.00, 0.88, 0.14],
-    lightFair:    [255,255,255, 222,228,240, 138,152,190,  1.00, 0.76, 0.14],
-    lightOvercast:[255,255,255, 222,228,240, 138,152,190,  1.00, 0.76, 0.14],
-    lightDefault: [252,254,255, 210,218,234, 118,134,174,  1.00, 0.77, 0.14]
-});
-// Cloud type specs: shape, placement, bake profile, and palette tint unified.
-// layers: [lo,hi] depth tier. jitterX/Y: [base,range] puff scatter. stretch: [base,range] horizontal.
-// flattenMul: vCompress multiplier. yBand: [min, max] — negative max = heightLimit offset.
-// profile: [shadowCut, surfaceCut, hlMul, shadowRadMul, surfaceRadMul] for gradient baking.
-// tint: [litR,litG,litB, midR,midG,midB, shadR,shadG,shadB] additive palette offset per type.
-// uncinus (cirrus only): [probability, hStretch_base, hStretch_range, flattenMul].
-const CLOUD_TYPES = Object.freeze({
-    cumulus:  Object.freeze({ layers:[1,2], jitterX:[0.92,0.20],  jitterY:[0.88,0.22],  stretch:[1.12,0.12], flattenMul:1.35, yBand:[0.20,-0.06], profile:[0.25,0.68,1.15,1.12,0.90], tint:[0,0,-3, 0,2,4, -6,0,10] }),
-    organic: Object.freeze({ layers:[1,2], jitterX:[0.855,0.18], jitterY:[0.945,0.21], stretch:[1.0,0],     flattenMul:1.15, yBand:[0.12,-0.04], profile:[0.26,0.72,0.90,1.04,0.92], tint:[0,0,0, 0,0,0, 0,0,0] }),
-    stratus: Object.freeze({ layers:[2,3], jitterX:[0.95,0.15],  jitterY:[0.92,0.12],  stretch:[1.15,0.25], flattenMul:1.0,  yBand:[0.10,0.42],  profile:[0.15,0.85,0.75,1.18,0.95], tint:[0,-2,0, -8,-6,6, -2,-2,4] }),
-    cirrus:  Object.freeze({ layers:[3,4], jitterX:[0.95,0.15],  jitterY:[0.92,0.12],  stretch:[1.35,0.35], flattenMul:0.82, yBand:[0.04,0.22],  profile:[0.12,0.40,0.62,1.00,0.88], tint:[0,0,-6, 4,2,-4, 4,4,-2], uncinus:[0.60,1.15,0.20,0.85] }),
-    storm:   Object.freeze({ layers:[1,2], jitterX:[0.855,0.18], jitterY:[0.945,0.21], stretch:[1.0,0],     flattenMul:1.0,  yBand:[0.12,-0.04], profile:[0.40,0.78,1.05,1.15,0.88], tint:[0,0,0, 0,0,0, -3,0,4] }),
-    scud:    Object.freeze({ layers:[5,5], jitterX:[1.0,0],      jitterY:[1.0,0],      stretch:[1.0,0],     flattenMul:1.0,  yBand:[0,0.75],     profile:[0.20,0.65,1.00,1.08,0.93], tint:[0,0,0, -6,-4,8, -4,-2,6] }),
-});
-const CELESTIAL_CLOUD_PALETTES = Object.freeze({
-    warm: Object.freeze({
-        litR: 255, litG: 252, litB: 235,
-        midR: 252, midG: 230, midB: 188,
-        shadowR: 220, shadowG: 188, shadowB: 142
-    }),
-    cool: Object.freeze({
-        litR: 255, litG: 255, litB: 255,
-        midR: 215, midG: 224, midB: 240,
-        shadowR: 148, shadowG: 162, shadowB: 192
-    }),
-    moon: Object.freeze({
-        litR: 218, litG: 228, litB: 250,
-        midR: 65, midG: 80, midB: 125,
-        shadowR: 18, shadowG: 26, shadowB: 52
-    }),
-    moonLight: Object.freeze({
-        litR: 248, litG: 250, litB: 255,
-        midR: 218, midG: 226, midB: 242,
-        shadowR: 142, shadowG: 156, shadowB: 196
-    }),
-    darkDay: Object.freeze({
-        litR: 222, litG: 232, litB: 252,
-        midR: 148, midG: 165, midB: 208,
-        shadowR: 60, shadowG: 76, shadowB: 122
-    })
-});
-const TRAIL_CAP_SHOOTING_STAR = 22, TRAIL_CAP_COMET = 100, TRAIL_CAP_PLANE = 500, CLOUD_ATLAS_SIZE_DEFAULT = 2048;
-const CLOUD_ATLAS_MAX = 4;
-const PERFORMANCE_CONFIG = Object.freeze({
-    RESIZE_DEBOUNCE_MS: 150,
-    VISIBILITY_THRESHOLD: 0.01,
-    REVEAL_TRANSITION_MS: 0,
-    MAX_DPR: 2.0,
-    MAX_PIXELS: 2073600
-});
-const PERF_PRESETS = Object.freeze({
-    low:     { perf_cloud_quality: 0.5, perf_effects: 0, perf_fauna: 0, perf_dpr: 1.0 },
-    default: { perf_cloud_quality: 1.5, perf_effects: 1, perf_fauna: 2, perf_dpr: 2.0 },
-    ultra:   { perf_cloud_quality: 2.0, perf_effects: 2, perf_fauna: 2, perf_dpr: 2.0 }
-});
-const FILTER_PRESETS = Object.freeze({
-    'darken':  'brightness(0.72) contrast(1.1)',
-    'vivid':   'saturate(1.5) contrast(1.12) brightness(1.02)',
-    'muted':   'saturate(0.55) brightness(1.08)',
-    'warm':    'sepia(0.25) saturate(1.15) brightness(1.0)'
-});
-const WEATHER_CLASSES = Object.freeze([
-    'weather-overcast','weather-rainy','weather-storm',
-    'weather-snow','weather-partly','weather-fog','weather-exceptional','weather-pouring'
-]);
 const POS_CLASSES = Object.freeze(['pos-top-left','pos-top-center','pos-top-right','pos-left','pos-center','pos-right','pos-bottom-left','pos-bottom-center','pos-bottom-right']);
-const ATMOSPHERE_CSS = Object.freeze({
-    mist:'weather-fog', fog:'weather-fog', overcast:'weather-overcast', windy:'weather-overcast',
-    fair:'weather-partly', rain:'weather-rainy', pouring:'weather-pouring',
-    storm:'weather-storm', snow:'weather-snow', exceptional:'weather-exceptional'
-});
-// CLOUD SHAPE GENERATOR
-class CloudShapeGenerator {
-    static generateOrganicPuffs(isStorm, seed, baseUnit = 100, quality = 1.0) {
-        const puffs = [], seededRandom = this._seededRandom(seed), s = baseUnit / 100, puffCount = Math.max(4, Math.round((isStorm ? 14 : 12) * quality));
-        const baseWidth = (isStorm ? 110 : 105) * s, baseHeight = (isStorm ? 60 : 42) * s;
-        for (let i = 0; i < puffCount; i++) {
-            const angle = (i / puffCount) * TWO_PI + seededRandom() * 0.5, distFromCenter = seededRandom() * 0.6 + 0.2;
-            let dx = Math.cos(angle) * (baseWidth / 2) * distFromCenter, dy = Math.sin(angle) * (baseHeight / 2) * distFromCenter * 0.6;
-            if (isStorm) {
-                if (dy > 0) {
-                    dy *= 0.4;
-                } else if (Math.abs(dx) < baseWidth * 0.4) {
-                    dy -= (seededRandom() * 28 * s);
-                }
-            }
-            const centerDist = Math.sqrt(dx * dx + dy * dy) / (baseWidth / 2), baseRad = (isStorm ? 62 : 50) * s, radVariation = (isStorm ? 22 : 16) * s;
-            const rad = baseRad + seededRandom() * radVariation - centerDist * 12 * s;
-            const verticalShade = 0.4 + (1 - (dy + baseHeight / 2) / baseHeight) * 0.4;
-            const shade = verticalShade + seededRandom() * 0.05, softness = 0.3 + seededRandom() * 0.4, squash = 0.75 + seededRandom() * 0.25;
-            const rotation = (seededRandom() - 0.5) * 0.60;
-            puffs.push({ offsetX: dx, offsetY: dy, rad: Math.max(15 * s, rad), shade: Math.min(1, shade), softness, squash, rotation, depth: seededRandom() });
-        }
-        const detailCount = Math.max(1, Math.round((isStorm ? 8 : 6) * quality));
-        for (let i = 0; i < detailCount; i++) {
-            const angle = seededRandom() * TWO_PI, dist = 0.3 + seededRandom() * 0.45;
-            puffs.push({ offsetX: Math.cos(angle) * (baseWidth / 2) * dist, offsetY: Math.sin(angle) * (baseHeight / 2) * dist * 0.5 - 10 * s, rad: (14 + seededRandom() * 16) * s, shade: 0.5 + seededRandom() * 0.3, softness: 0.5 + seededRandom() * 0.3, squash: 0.6 + seededRandom() * 0.3, rotation: (seededRandom() - 0.5) * 0.80, depth: 0.8 + seededRandom() * 0.2 });
-        }
-        puffs.sort((a, b) => a.depth - b.depth);
-        return puffs;
-    }
-    static generateWispyPuffs(seed, baseUnit = 100, quality = 1.0) {
-        const puffs = [], seededRandom = this._seededRandom(seed), s = baseUnit / 100, puffCount = Math.max(3, Math.round((8 + Math.floor(seededRandom() * 4)) * quality));
-        // Per-cloud aspect variance: 1.3x-1.8x horizontal. Real clouds vary in shape;
-        // fixed aspect produces uniform blobs that read as fake.
-        const aspectH = 30 + seededRandom() * 10, aspectV = 20 + seededRandom() * 6;
-        for (let i = 0; i < puffCount; i++) {
-            const angle = (i / puffCount) * TWO_PI + seededRandom() * 0.8, dist = 0.05 + seededRandom() * 0.85;
-            puffs.push({ offsetX: Math.cos(angle) * aspectH * s * dist, offsetY: Math.sin(angle) * aspectV * s * dist, rad: (15 + seededRandom() * 18) * s, shade: 0.5 + seededRandom() * 0.4, softness: 0.4 + seededRandom() * 0.4, squash: 0.85 + seededRandom() * 0.18, rotation: seededRandom() * 0.5, depth: seededRandom() });
-        }
-        puffs.sort((a, b) => a.depth - b.depth);
-        return puffs;
-    }
-    static generateSunDecorationPuffs(seed, baseUnit = 100, quality = 1.0) {
-        const puffs = [], seededRandom = this._seededRandom(seed), s = baseUnit / 100, halfWidth = (54 + seededRandom() * 16) * s;
-        const baselineY = (10 + seededRandom() * 4) * s, totalSpan = halfWidth * 2, bottomCount = Math.max(2, Math.round((6 + Math.floor(seededRandom() * 2)) * quality));
-        for (let i = 0; i < bottomCount; i++) {
-            const t = bottomCount === 1 ? 0.5 : i / (bottomCount - 1);
-            const x = -halfWidth + totalSpan * t + (seededRandom() - 0.5) * 22 * s;
-            const edge = Math.abs(x) / (halfWidth + 1), taper = 1 - Math.pow(edge, 1.6) * 0.30, rad = (20 + seededRandom() * 14) * s * taper;
-            const y = baselineY - rad * (0.70 + seededRandom() * 0.25) + (seededRandom() - 0.5) * 10 * s;
-            puffs.push({ offsetX: x, offsetY: y, rad, shade: 0.42 + seededRandom() * 0.14, softness: 0.38 + seededRandom() * 0.14, squash: 0.62 + seededRandom() * 0.18, rotation: (seededRandom() - 0.5) * 0.55, depth: seededRandom() * 0.28 });
-        }
-        const bodyCount = Math.max(2, Math.round((6 + Math.floor(seededRandom() * 3)) * quality));
-        for (let i = 0; i < bodyCount; i++) {
-            const t = bodyCount === 1 ? 0.5 : i / (bodyCount - 1);
-            const x = -halfWidth * 0.85 + totalSpan * 0.85 * t + (seededRandom() - 0.5) * 26 * s;
-            const edge = Math.abs(x) / (halfWidth + 1), taper = 1 - Math.pow(edge, 1.6) * 0.35, rad = (16 + seededRandom() * 18) * s * taper;
-            const y = baselineY - rad - (6 + seededRandom() * 14) * s + (seededRandom() - 0.5) * 12 * s;
-            puffs.push({ offsetX: x, offsetY: y, rad, shade: 0.58 + seededRandom() * 0.18, softness: 0.32 + seededRandom() * 0.14, squash: 0.68 + seededRandom() * 0.18, rotation: (seededRandom() - 0.5) * 0.45, depth: 0.32 + seededRandom() * 0.30 });
-        }
-        const crownCount = Math.max(1, Math.round((3 + Math.floor(seededRandom() * 3)) * quality));
-        for (let i = 0; i < crownCount; i++) {
-            const t = crownCount === 1 ? 0.5 : i / (crownCount - 1);
-            const x = -halfWidth * 0.55 + totalSpan * 0.55 * t + (seededRandom() - 0.5) * 24 * s;
-            const edge = Math.abs(x) / (halfWidth + 1), taper = 1 - Math.pow(edge, 1.8) * 0.35, rad = (12 + seededRandom() * 14) * s * taper;
-            const y = baselineY - (26 + seededRandom() * 16) * s - rad * 0.5 + (seededRandom() - 0.5) * 10 * s;
-            puffs.push({ offsetX: x, offsetY: y, rad, shade: 0.74 + seededRandom() * 0.18, softness: 0.28 + seededRandom() * 0.14, squash: 0.70 + seededRandom() * 0.18, rotation: (seededRandom() - 0.5) * 0.50, depth: 0.70 + seededRandom() * 0.30 });
-        }
-        puffs.sort((a, b) => a.depth - b.depth);
-        return puffs;
-    }
-    static generateCirrusLayeredPuffs(seed, baseUnit = 100, quality = 1.0) {
-        const puffs = [], seededRandom = this._seededRandom(seed), s = baseUnit / 100, layerCount = 2 + Math.floor(seededRandom() * 2);
-        const layerSpan = 90 * s;
-        for (let L = 0; L < layerCount; L++) {
-            const layerY = (seededRandom() - 0.5) * 14 * s, layerOpacity = 0.65 + seededRandom() * 0.35, puffsInLayer = Math.max(3, Math.round((7 + Math.floor(seededRandom() * 3)) * quality));
-            const spacing = layerSpan / (puffsInLayer - 1);
-            for (let i = 0; i < puffsInLayer; i++) {
-                const x = -layerSpan / 2 + i * spacing + (seededRandom() - 0.5) * spacing * 0.45;
-                const yJitter = (seededRandom() - 0.5) * 8 * s;
-                const taper = Math.max(0.60, 1 - Math.pow(Math.abs(x) / (layerSpan / 2 + 1), 1.6) * 0.40);
-                puffs.push({ offsetX: x, offsetY: layerY + yJitter, rad: (14 + seededRandom() * 10) * s * taper, shade: (0.55 + seededRandom() * 0.30) * layerOpacity, softness: 0.45 + seededRandom() * 0.30, squash: 0.70 + seededRandom() * 0.20, rotation: (seededRandom() - 0.5) * 0.25, depth: L * 0.3 + seededRandom() * 0.3 });
-            }
-        }
-        puffs.sort((a, b) => a.depth - b.depth);
-        return puffs;
-    }
-    static generateCirrusUncinusPuffs(seed, baseUnit = 100, quality = 1.0) {
-        const puffs = [], seededRandom = this._seededRandom(seed), s = baseUnit / 100, length = (170 + seededRandom() * 80) * s;
-        const waveAmp = (14 + seededRandom() * 10) * s, waveFreq = 0.7 + seededRandom() * 0.5, hookStart = 0.70 + seededRandom() * 0.10;
-        const hookDir = seededRandom() < 0.5 ? -1 : 1, hookAmp = (24 + seededRandom() * 18) * s, strokeCount = seededRandom() < 0.55 ? 2 : 1;
-        const sampleCurve = (t) => {
-            const x = -length / 2 + t * length; let y = Math.sin(t * waveFreq * TWO_PI) * waveAmp;
-            if (t > hookStart) {
-                const h = (t - hookStart) / (1 - hookStart); y += hookDir * hookAmp * h * h;
-            }
-            return { x, y };
-        };
-        for (let stroke = 0; stroke < strokeCount; stroke++) {
-            const echoOffsetY = stroke === 0 ? 0 : (9 + seededRandom() * 9) * s, echoOpacity = stroke === 0 ? 1.0 : 0.55 + seededRandom() * 0.20;
-            const startT = stroke === 0 ? 0 : 0.15 + seededRandom() * 0.20, endT   = stroke === 0 ? 1 : 0.70 + seededRandom() * 0.20;
-            const puffCount = Math.max(4, Math.round((13 + Math.floor(seededRandom() * 5)) * quality));
-            for (let i = 0; i < puffCount; i++) {
-                const tNorm = i / (puffCount - 1), t = startT + (endT - startT) * tNorm, p = sampleCurve(t), pNext = sampleCurve(Math.min(1, t + 0.004));
-                const rawTangent = Math.atan2(pNext.y - p.y, pNext.x - p.x), tangent = Math.max(-0.38, Math.min(0.38, rawTangent));
-                const edge = Math.min(tNorm, 1 - tNorm) * 2, taper = 0.65 + edge * 0.35;
-                puffs.push({ offsetX: p.x + (seededRandom() - 0.5) * 4 * s, offsetY: p.y + echoOffsetY + (seededRandom() - 0.5) * 3 * s, rad: (12 + seededRandom() * 7) * s * taper, shade: (0.50 + seededRandom() * 0.28) * echoOpacity, softness: 0.45 + seededRandom() * 0.22, squash: 0.55 + seededRandom() * 0.15, rotation: tangent + (seededRandom() - 0.5) * 0.12, depth: stroke * 0.35 + seededRandom() * 0.55 });
-            }
-        }
-        puffs.sort((a, b) => a.depth - b.depth);
-        return puffs;
-    }
-    static generateMixedPuffs(seed, variety = 'cumulus', baseUnit = 100, quality = 1.0) {
-        const puffs = [], seededRandom = this._seededRandom(seed), s = baseUnit / 100;
-        if (variety === 'cumulus') {
-            const baseWidth   = 110 * s, towerFactor = 0.5 + seededRandom() * 0.9, asymShift   = (seededRandom() - 0.5) * 22 * s;
-            const baseCount = Math.max(2, Math.round((4 + Math.floor(seededRandom() * 2)) * quality));
-            for (let i = 0; i < baseCount; i++) {
-                const t = baseCount > 1 ? (i / (baseCount - 1)) - 0.5 : 0;
-                puffs.push({ offsetX: t * baseWidth * 0.88 + (seededRandom() - 0.5) * 15 * s, offsetY: (6 + seededRandom() * 10) * s, rad: (26 + seededRandom() * 18) * s, shade: 0.38 + seededRandom() * 0.05, softness: 0.35, squash: 1.0, rotation: 0, depth: seededRandom() * 0.25 });
-            }
-            const bodyCount = Math.max(2, Math.round((8 + Math.floor(seededRandom() * 4)) * quality));
-            for (let i = 0; i < bodyCount; i++) {
-                puffs.push({ offsetX: (seededRandom() - 0.5) * baseWidth * (0.40 + seededRandom() * 0.25) + asymShift * 0.35, offsetY: -(20 + seededRandom() * 58) * s, rad: (22 + seededRandom() * 20) * s, shade: 0.62 + seededRandom() * 0.08, softness: 0.28, squash: 1.0, rotation: 0, depth: 0.22 + seededRandom() * 0.48 });
-            }
-            const crownCount = Math.max(1, Math.round((4 + Math.floor(seededRandom() * 2 + towerFactor * 1.5)) * quality));
-            for (let i = 0; i < crownCount; i++) {
-                puffs.push({ offsetX: (seededRandom() - 0.5) * baseWidth * 0.42 + asymShift * 0.60, offsetY: -(82 + towerFactor * 54 + seededRandom() * 52) * s, rad: (16 + seededRandom() * 18) * s, shade: 0.80 + seededRandom() * 0.05, softness: 0.22, squash: 1.0, rotation: 0, depth: 0.68 + seededRandom() * 0.32 });
-            }
-            const detailMixed = Math.max(0, Math.round(3 * quality));
-            for (let i = 0; i < detailMixed; i++) {
-                const a = seededRandom() * TWO_PI;
-                puffs.push({ offsetX: Math.cos(a) * (baseWidth * 0.35 + seededRandom() * 10 * s), offsetY: -(28 + seededRandom() * 48) * s, rad: (14 + seededRandom() * 15) * s, shade: 0.60 + seededRandom() * 0.10, softness: 0.38, squash: 1.0, rotation: 0, depth: seededRandom() });
-            }
-        } else if (variety === 'stratus') {
-            const puffCount = Math.max(4, Math.round((14 + Math.floor(seededRandom() * 6)) * quality));
-            for (let i = 0; i < puffCount; i++) {
-                const spreadX = (i - puffCount / 2) * 18 * s + (seededRandom() - 0.5) * 10 * s;
-                const spreadY = (seededRandom() - 0.5) * 14 * s, normalY = (spreadY + 7 * s) / (14 * s);
-                puffs.push({ offsetX: spreadX, offsetY: spreadY, rad: (16 + seededRandom() * 14) * s, shade: 0.48 + (1 - normalY) * 0.30 + seededRandom() * 0.06, softness: 0.2 + seededRandom() * 0.3, squash: 0.55, rotation: 0, depth: seededRandom() });
-            }
-            const coreCount = Math.max(1, Math.round((4 + Math.floor(seededRandom() * 3)) * quality));
-            for (let i = 0; i < coreCount; i++) {
-                const spreadX = (i - coreCount / 2) * 26 * s + (seededRandom() - 0.5) * 12 * s;
-                puffs.push({ offsetX: spreadX, offsetY: (seededRandom() - 0.5) * 6 * s, rad: (18 + seededRandom() * 12) * s, shade: 0.60 + seededRandom() * 0.15, softness: 0.25 + seededRandom() * 0.2, squash: 0.6, rotation: 0, depth: 0.4 + seededRandom() * 0.3 });
-            }
-        } else if (variety === 'cirrus') {
-            const layerCount = 2 + Math.floor(seededRandom() * 2), layerGap = 11 * s, layerSpan = 95 * s, baseY = -((layerCount - 1) * layerGap) / 2;
-            for (let L = 0; L < layerCount; L++) {
-                const layerY = baseY + L * layerGap + (seededRandom() - 0.5) * 5 * s, layerOpacity = 0.65 + seededRandom() * 0.35;
-                const puffsInLayer = Math.max(3, Math.round((13 + Math.floor(seededRandom() * 4)) * quality)), stepX = layerSpan / (puffsInLayer - 1);
-                for (let i = 0; i < puffsInLayer; i++) {
-                    const x = -layerSpan / 2 + i * stepX + (seededRandom() - 0.5) * stepX * 0.40;
-                    const taper = 1 - Math.pow(Math.abs(x) / (layerSpan / 2 + 1), 1.6) * 0.45;
-                    const rad = (15 + seededRandom() * 9) * s * taper;
-                    puffs.push({ offsetX: x, offsetY: layerY + (seededRandom() - 0.5) * 4 * s, rad, shade: (0.50 + seededRandom() * 0.30) * layerOpacity, softness: 0.50 + seededRandom() * 0.25, squash: 0.50 + seededRandom() * 0.20, rotation: (seededRandom() - 0.5) * 0.20, depth: seededRandom() });
-                }
-            }
-        }
-        puffs.sort((a, b) => a.depth - b.depth);
-        return puffs;
-    }
-    static _seededRandom(seed) {
-        let s = seed;
-        return () => {
-            s = (s * 9301 + 49297) % 233280;
-            return s / 233280;
-        };
-    }
-}
-// ── MIGRATION BLOCK ─────────────────────────
-function _migrateConfig(raw) {
-    const c = { ...raw };
-    const rename = (oldKey, newKey) => {
-        if (c[oldKey] !== undefined && c[newKey] === undefined) c[newKey] = c[oldKey];
-        delete c[oldKey];
-    };
-    rename('offset',              'card_offset'); rename('square',              'card_square'); rename('stack_order',         'card_stack_order');
-    rename('full_width',          'card_full_width'); rename('filter',              'card_filter');
-    rename('css_mask_vertical',   'card_mask_vertical'); rename('css_mask_horizontal', 'card_mask_horizontal');
-    rename('disable_text',        'card_hide_text'); rename('tap_action',          'card_tap_action');
-    rename('background_style',    'card_background_style'); rename('day',                 'image_day'); rename('night',               'image_night');
-    rename('theme',               'card_color_mode'); rename('sun_moon_size', 'celestial_size'); rename('moon_style',    'celestial_moon_style');
-    if (c.celestial_alignment === undefined) {
-        const oldX = c.sun_moon_x_position != null ? c.sun_moon_x_position : c.celestial_x, oldY = c.sun_moon_y_position != null ? c.sun_moon_y_position : c.celestial_y;
-        if (oldX !== undefined || oldY !== undefined) {
-            const xStr = String(oldX != null ? oldX : '').trim().toLowerCase(), yStr = String(oldY != null ? oldY : '').trim().toLowerCase(), xIsCenter = xStr === 'center';
-            const yIsCenter = yStr === 'center', xVal = xIsCenter ? 0 : parseInt(xStr, 10) || 0, yVal = yIsCenter ? 0 : parseInt(yStr, 10) || 0;
-            const hSide = xIsCenter ? 'center' : (xVal < 0 ? 'right' : 'left'), vSide = yIsCenter ? 'center' : 'top';
-            if (hSide === 'center' && vSide === 'center') {
-                c.celestial_alignment = 'center';
-            } else if (vSide === 'center') {
-                c.celestial_alignment = hSide;
-            } else {
-                c.celestial_alignment = `${vSide}-${hSide}`;
-            }
-            c.celestial_x = xIsCenter ? 0 : Math.max(0, Math.abs(xVal) - 31); c.celestial_y = yIsCenter ? 0 : Math.max(0, Math.abs(yVal) - 31);
-        }
-    }
-    delete c.sun_moon_x_position; delete c.sun_moon_y_position; rename('image_offset_x',     'image_x');
-    rename('image_offset_y',     'image_y'); rename('status_image_day',   'status_day'); rename('status_image_night', 'status_night');
-    rename('disable_top_text',        'top_text_hide'); rename('top_text_sensor',         'top_text_entity');
-    rename('top_position',            'top_text_position'); rename('top_font_size',           'top_text_size');
-    rename('top_unit_format',         'top_text_unit'); rename('top_text_behind_weather', 'top_text_behind');
-    const hasTopTextKeys = c.top_text_hide !== undefined || c.top_text_entity !== undefined
-        || c.top_text_position !== undefined || c.top_text_size !== undefined
-        || c.top_text_unit !== undefined || c.top_text_padding !== undefined
-        || c.top_text_background !== undefined || c.top_text_behind !== undefined;
-    if (hasTopTextKeys && c.top_text_hide !== true) {
-        const topChip = {
-            entity: c.top_text_entity || c.weather_entity || 'weather.home',
-            position: 'custom',
-            position_anchor: c.top_text_position || 'top-left',
-            position_x: 'pad', position_y: 'pad',
-            text_size: c.top_text_size || 'clamp(24px, 11cqw, 52px)',
-            padding: c.top_text_padding || '0px 4px',
-            background: false, hide_icon: true, hide_label: true,
-        };
-        if (!c.top_text_entity) { topChip.attribute = 'temperature'; topChip.fancy_unit = true; }
-        if (c.top_text_unit !== undefined) topChip.unit_format = c.top_text_unit;
-        if (c.top_text_background === true) topChip.background = true; if (c.top_text_behind === true) topChip.behind_effects = true;
-        c.chips = [topChip, ...(Array.isArray(c.chips) ? c.chips : [])];
-    }
-    delete c.top_text_hide; delete c.top_text_entity; delete c.top_text_position;
-    delete c.top_text_size; delete c.top_text_unit; delete c.top_text_padding;
-    delete c.top_text_background; delete c.top_text_behind; rename('disable_chips',           'chip_area_hide');
-    rename('chips_position',          'chip_area_position'); rename('chips_layout',            'chip_area_layout');
-    rename('chips_columns',           'chip_area_columns'); rename('chips_visible',           'chip_area_scroll_count');
-    rename('chips_width',             'chip_area_width'); rename('chips_height',            'chip_area_height');
-    rename('chips_align',             'chip_area_align'); rename('chips_grouped',           'chip_area_grouped');
-    rename('chips_separator',         'chip_area_separator'); rename('chips_full_width',        'chip_area_full_width');
-    rename('chips_container_padding', 'chip_area_padding'); rename('chips_container_bg_color','chip_area_background_color');
-    rename('chips_background',        'chip_area_background');
-    if (c.chip_inner_gap !== undefined) {
-        if (c.chip_area_gap === undefined && c.chip_gap !== undefined) c.chip_area_gap = c.chip_gap;
-        c.chip_gap = c.chip_inner_gap; delete c.chip_inner_gap;
-    } else if (c.chip_gap !== undefined && c.chip_area_gap === undefined) {
-        const hasAnyOldKey = c.chips_position !== undefined || c.chips_layout !== undefined ||
-            c.chips_background !== undefined || c.disable_chips !== undefined;
-        if (hasAnyOldKey) {
-            c.chip_area_gap = c.chip_gap; delete c.chip_gap;
-        }
-    }
-    rename('chip_format',         'chip_style'); rename('chips_font_size',     'chip_text_size'); rename('chips_name_font_size','chip_label_size');
-    rename('chips_padding',       'chip_padding'); rename('chip_icon_width',     'chip_icon_size');
-    rename('chip_icon_bg',        'chip_icon_background'); rename('chips_bg_color',      'chip_background_color');
-    rename('chips_icon_bg_color', 'chip_icon_background_color'); rename('chip_bg_color',            'chip_background_color');
-    rename('chip_icon_bg_color',       'chip_icon_background_color'); rename('chip_area_bg_color',       'chip_area_background_color');
-    if (c.chip_area_layout === 'scroll') c.chip_area_layout = 'horizontal-scroll';
-    if (Array.isArray(c.chips)) {
-        c.chips = c.chips.map(chip => {
-            if (!chip || typeof chip !== 'object') return chip;
-            const s = { ...chip };
-            const r = (o, n) => {
-                if (s[o] !== undefined && s[n] === undefined) s[n] = s[o]; delete s[o];
-            };
-            r('chip_format',       'style'); r('chip_align',        'align'); r('chip_background',   'background');
-            r('chip_bg_color',     'background_color'); r('bg_color',          'background_color'); r('chip_icon_bg_color','icon_background_color');
-            r('icon_bg_color',     'icon_background_color'); r('icon_bg',           'icon_background'); r('chip_padding',      'padding');
-            r('disable_icon',      'hide_icon'); r('font_size',         'text_size'); r('name_font_size',    'label_size');
-            r('behind',            'behind_effects');
-            r('card_tap_action',   'tap_action');
-            if (s.forecast_show_min && s.forecast && s.attribute === 'temperature') {
-                if (!s.sub_value_attribute) s.sub_value_attribute = 'templow';
-                if (s.forecast_low_position !== 'below') s.sub_value_position = 'beside';
-            }
-            delete s.forecast_show_min; delete s.forecast_low_position;
-            return s;
-        });
-    }
-    return c;
-}
-// ── END MIGRATION BLOCK ─────────────────────────────────────────────────
-// MAIN CARD CLASS
+
 class AtmosphericWeatherCard extends HTMLElement {
-    // CONSTRUCTOR & LIFECYCLE
     constructor() {
         super();
         this.attachShadow({ mode: 'open' });
-        this._animID = null; this._lastFrameTime = 0; this._boundAnimate = this._animate.bind(this);
-        for (const key of PARTICLE_ARRAYS) this[key] = []; this._aurora = null; this._params = WEATHER_MAP['default'];
-        this._flashOpacity = 0; this._flashHold = 0; this._isTimeNight = false;
-        this._isThemeDark = false; this._lastState = null; this._stateInitialized = false;
-        this._hasReceivedFirstHass = false; this._renderState = null; this._celestialSize = null;
-        this._moonPhaseState = 'full_moon'; this._moonPhaseConfig = MOON_PHASES['full_moon'];
-        this._windGust = 0; this._gustPhase = 0; this._windSpeed = 0.1; this._windKmh = 0; this._microGustPhase = 0;
-        this._layerFadeProgress = { stars: 1, clouds: 1, precipitation: 1, effects: 1 };
-        this._sunPulsePhase = 0; this._initialized = false; this._initializationComplete = false;
-        this._isVisible = false; this._intersectionObserver = null;
-        this._renderGate = { hasValidDimensions: false, hasFirstHass: false, isRevealed: false };
-        this._resizeDebounceTimer = null; this._pendingResize = false; this._needsReinit = false;
+        this._animId = null;
+        this._boundAnimate = this._animate.bind(this);
+        this._lastFrameTime = 0;
+        this._frameInterval = 1000 / 24;
+        this._weatherState = 'default';
+        this._isTimeNight = false;
+        this._isThemeDark = false;
+        this._lastState = null;
+        this._stateInitialized = false;
+        this._hasReceivedFirstHass = false;
+        this._windKmh = 0;
+        this._initialized = false;
+        this._initializationComplete = false;
+        this._isVisible = false;
+        this._intersectionObserver = null;
+        this._renderGate = { hasValidDimensions: false, hasFirstHass: false };
+        this._resizeDebounceTimer = null;
         this._cachedDimensions = { width: 0, height: 0, dpr: 1 };
-        this._perfCloudRes = CLOUD_ATLAS_SIZE_DEFAULT;
-        this._perfCloudQuality = 1.5; this._perfEffects = true; this._perfFauna = 2; this._perfDpr = PERFORMANCE_CONFIG.MAX_DPR;
-        this._lastInitWidth = 0; this._lastLocStr = null; this._lastSnapshot = null; this._prevStyleSig = this._prevPosSig = this._prevCcSig = null;
-        this._entityErrors = new Map(); this._lastErrorLog = 0;
-        this._customCardElements = []; this._hass = null; this._prevCustomCssClasses = null;
-        this._boundVisibilityChange = this._handleVisibilityChange.bind(this); this._boundTap = this._handleTap.bind(this);
-        this._fcData = new Map(_fcCache); this._fcSubs = new Map(); this._fcFmtCache = null;
+        this._lastInitWidth = 0;
+        this._lastSnapshot = null;
+        this._prevStyleSig = null;
+        this._prevCcSig = null;
+        this._prevWeatherClass = null;
+        this._prevBottomFade = null;
+        this._prevCardPadParsed = null;
+        this._entityErrors = new Map();
+        this._lastErrorLog = 0;
+        this._hass = null;
+        this._customCardElements = [];
+        this._prevCustomCssClasses = null;
+        this._boundVisibilityChange = this._handleVisibilityChange.bind(this);
+        this._boundTap = this._handleTap.bind(this);
+        this._boundDocVisibility = this._handleDocVisibility.bind(this);
+        this._fcData = new Map();
+        this._fcSubs = new Map();
+        this._fcFmtCache = null;
+        this._gl = null;
+        this._glProg = null;
+        this._glUniforms = null;
+        this._shaderParams = null;
+        this._shaderBank = null;
+        this._activeShaderKey = null;
+        this._glBuf = null;
+        this._prevShaderParams = null;
+        this._prevFxSpeed = null;
+        this._glNoiseTex = null;
+        this._glSeed = Math.random() * 1000;
+        this._starHeroes = null;
+        this._starDpr = 1;
+        this._starMasterOpacity = 0;
+        this._starBgCtx = null;
+        this._starCtx = null;
+        this._starBgPainted = false;
+        this._currentBakedStarCount = 0;
+        this._starsDirty = false;
+        this._shootingStars = [];
+        this._comets = [];
+        this._weatherBgActive = false;
+        this._weatherBgState = null;
+        this._weatherBgDark = null;
+        this._weatherBgResolved = null;
+        this._simpleBgActive = false;
+        this._simpleBgDark = null;
     }
-    get _isLightBackground() { return !this._isThemeDark; }
-    get _isNight()           { return this._isTimeNight; }
-    get _isImmersive()       { return this._config.card_style !== 'standalone'; }
-    get _isDarkDayImmersive(){ return this._isImmersive && this._isThemeDark && !this._isTimeNight; }
-    // HOME ASSISTANT LIFECYCLE
     connectedCallback() {
         if (!this._resizeObserver) {
             this._resizeObserver = new ResizeObserver((entries) => {
                 if (!entries.length) return;
-                // Use borderBoxSize to capture the full visual dimension including
-                // padding. contentRect strips padding, which breaks full-width mode
-                // where negative margins + positive padding create edge-to-edge bleed.
-                // borderBoxSize is layout-free (no forced reflow). Fallback to
-                // offsetWidth/Height for older Safari WebViews that lack borderBoxSize.
                 const entry = entries[0]; let w, h;
                 if (entry.borderBoxSize && entry.borderBoxSize[0]) {
                     w = entry.borderBoxSize[0].inlineSize; h = entry.borderBoxSize[0].blockSize;
@@ -770,23 +319,18 @@ class AtmosphericWeatherCard extends HTMLElement {
                 if (!this._initializationComplete) {
                     this._tryInitialize();
                 } else if (changed) {
-                    this._scheduleParticleReinit();
+                    this._scheduleResize();
                 }
             });
         }
         if (!this._intersectionObserver) {
-            this._intersectionObserver = new IntersectionObserver(
-                this._boundVisibilityChange,
-                {
-                    threshold: PERFORMANCE_CONFIG.VISIBILITY_THRESHOLD,
-                    rootMargin: '200px'
-                }
-            );
+            this._intersectionObserver = new IntersectionObserver(this._boundVisibilityChange, { threshold: 0.01, rootMargin: '0px' });
         }
         if (this._elements && this._elements.root) {
             this._resizeObserver.observe(this._elements.root); this.addEventListener('click', this._boundTap);
             this._intersectionObserver.observe(this._elements.root);
         }
+        document.addEventListener('visibilitychange', this._boundDocVisibility);
         if (this._initializationComplete) {
             this._startAnimation();
         } else if (this._renderGate.hasFirstHass) {
@@ -800,20 +344,16 @@ class AtmosphericWeatherCard extends HTMLElement {
         if (this._resizeDebounceTimer) {
             clearTimeout(this._resizeDebounceTimer); this._resizeDebounceTimer = null;
         }
-        this._isVisible = false; this.removeEventListener('click', this._boundTap); this._clearAllParticles();
-        this._customCardElements = []; this._initializationComplete = false;
+        this._destroyGL();
+        this._isVisible = false; this.removeEventListener('click', this._boundTap); document.removeEventListener('visibilitychange', this._boundDocVisibility); this._customCardElements = []; this._initializationComplete = false; this._lastSnapshot = null; this._starHeroes = null; this._starDpr = 1; this._starMasterOpacity = 0; this._starCtx = null; this._starBgCtx = null; this._starBgPainted = false; this._shootingStars = []; this._comets = [];
     }
     setConfig(config) {
-        config = _migrateConfig(config); this._config = config; this._chips = this._deriveChips(this._config);
+        const prevAreaCount = this._areas ? this._areas.length : -1;
+        this._config = config; this._areas = this._deriveAreas(this._config); this._allButtonsCache = null;
+        if (this._areas.length !== prevAreaCount) this._areaRenderCache = null;
         this._initDOM();
-        if (config.card_stack_order !== undefined) {
-            this.style.setProperty('--awc-stack-order', config.card_stack_order);
-        } else {
-            this.style.removeProperty('--awc-stack-order');
-        }
-        if (config.card_square) {
-            this.style.height = 'auto'; this.style.minHeight = '0'; this.style.aspectRatio = '1 / 1';
-        } else if (String(config.card_height).toLowerCase() === 'auto') {
+
+        if (String(config.card_height).toLowerCase() === 'auto') {
             this.style.height = '100%'; this.style.minHeight = '0'; this.style.aspectRatio = 'auto';
         } else {
             const heightConfig = config.card_height || '200px';
@@ -826,7 +366,7 @@ class AtmosphericWeatherCard extends HTMLElement {
             slot.style.height = `${scale}%`;
             const align = (config.image_alignment || 'top-right').toLowerCase(); slot.style.top = ''; slot.style.bottom = '';
             slot.style.left = ''; slot.style.right = ''; slot.style.transform = '';
-                const padH = 'var(--_awc-pad-h, var(--awc-card-padding, var(--ha-space-4, 16px)))';
+            const padH = 'var(--_awc-pad-h, var(--awc-card-padding, var(--ha-space-4, 16px)))';
             const padV = 'var(--_awc-pad-v, var(--awc-card-padding, var(--ha-space-4, 16px)))';
             const [v, h] = align === 'center' ? ['center', 'center'] : align.split('-');
             const t = [];
@@ -848,26 +388,22 @@ class AtmosphericWeatherCard extends HTMLElement {
             const ox = config.image_x !== undefined ? String(config.image_x).trim() : '';
             const oy = config.image_y !== undefined ? String(config.image_y).trim() : '';
             if (ox || oy) {
-                const tx2 = ox ? `translateX(${/[%a-z]/i.test(ox) ? ox : ox + 'px'})` : '';
-                let oyEffective = oy;
-                if (oy && v === 'bottom') {
-                    oyEffective = oy.startsWith('-') ? oy.slice(1) : `-${oy}`;
-                }
-                const ty2 = oyEffective ? `translateY(${/[%a-z]/i.test(oyEffective) ? oyEffective : oyEffective + 'px'})` : '';
+                // Positive offset always increases the gap from the anchored edge.
+                const flip = o => o.startsWith('-') ? o.slice(1) : `-${o}`;
+                const unit = o => /[%a-z]/i.test(o) ? o : o + 'px';
+                const oxe = ox && h === 'right' ? flip(ox) : ox;
+                const oye = oy && v === 'bottom' ? flip(oy) : oy;
+                const tx2 = oxe ? `translateX(${unit(oxe)})` : '';
+                const ty2 = oye ? `translateY(${unit(oye)})` : '';
                 const extra = [tx2, ty2].filter(Boolean).join(' ');
                 slot.style.transform = t.length ? `${t.join(' ')} ${extra}` : extra;
             }
         }
         const root = this._elements.root;
-        root.classList.toggle('no-mask-v', config.card_mask_vertical === false);
-        root.classList.toggle('no-mask-h', config.card_mask_horizontal === false);
+
         const hasTapAction = config.card_tap_action && config.card_tap_action.action && config.card_tap_action.action !== 'none';
         root.classList.toggle('clickable', !!hasTapAction);
-        const filterVal = FILTER_PRESETS[(config.card_filter || '').toLowerCase()] || '';
-        root.style.setProperty('--_canvas-filter', filterVal || 'none');
-        this._hasStatusFeature = !!(config.status_entity && (config.status_day || config.status_night));
-        const csz = config.celestial_size != null ? parseInt(config.celestial_size, 10) : null;
-        this._celestialSize = (csz && csz > 0) ? csz : null; this._customCardElements = []; this._prevCcSig = null;
+        this._hasStatusFeature = !!(config.status_entity && (config.status_day || config.status_night)); this._customCardElements = []; this._prevCcSig = null;
         if (this._elements && this._elements.customCardsWrapper) {
             this._elements.customCardsWrapper.innerHTML = '';
             this._elements.customCardsWrapper.classList.toggle('has-cards', false);
@@ -893,24 +429,32 @@ class AtmosphericWeatherCard extends HTMLElement {
                 }
             });
         }
-        this._lastSnapshot = this._prevRowOverflow = this._prevRowWidth =
-            this._prevRowHeight = this._prevFullWidth = this._prevChipPad = this._prevContainerPad =
-            this._prevChipsGap = this._prevChipGap = this._prevRowCols = this._prevChipAlign =
-            this._prevConfigSig = this._prevGrouped = this._prevVisKey =
-            this._lastFreeSig = this._prevCardPadding = this._prevCardPadParsed =
-            this._prevBottomFS = this._prevChipNameFS =
-            this._prevChipIconWidth = this._prevChipIconPad = this._prevImageOffset =
-            this._prevContainerBgColor = this._prevChipTextGap = null;
-        this._nativeIconCache = null; this._prevHadVertVis = false; this._syncFc();
-        const preset = PERF_PRESETS[config.perf_mode] || PERF_PRESETS.default;
-        this._perfCloudQuality = config.perf_cloud_quality != null ? config.perf_cloud_quality : preset.perf_cloud_quality;
-        this._perfCloudRes = this._perfCloudQuality <= 1.0 ? 1024 : CLOUD_ATLAS_SIZE_DEFAULT;
-        const rawEffects = config.perf_effects != null ? config.perf_effects : preset.perf_effects;
-        this._perfEffects = (rawEffects === true) ? 2 : (rawEffects === false) ? 0 : (parseInt(rawEffects, 10) || 0);
-        const rawFauna = config.perf_fauna != null ? config.perf_fauna : preset.perf_fauna;
-        this._perfFauna = (rawFauna === true) ? 2 : (rawFauna === false) ? 0 : (parseInt(rawFauna, 10) || 0);
-        this._perfDpr = config.perf_dpr != null ? config.perf_dpr : preset.perf_dpr;
+        this._lastSnapshot = null;
+        this._prevCardPadParsed = null;
+        this._nativeIconCache = null;
+        this._areaStyleCache = null;
+        for (const c of this._allButtons()) {
+            if (c.forecast && c.entity) {
+                const k = `${c.entity}|${c.forecast === 'hourly' ? 'hourly' : 'daily'}`;
+                if (!this._fcData.has(k) && _AWC_FC_CACHE.has(k)) {
+                    this._fcData.set(k, _AWC_FC_CACHE.get(k));
+                }
+            }
+        }
+        this._syncFc();
+        this._weatherBgState = null;
+        this._simpleBgDark = null;
+        if (this._config.simple_background !== true && this._elements && this._elements.root) {
+            this._elements.root.classList.remove('has-simple-bg');
+            this._simpleBgActive = false;
+        }
         this._applyConfigStyles();
+        const disabled = this._areShadersDisabled();
+        this._applyShaderDisabledState(disabled);
+        if (disabled) { this._stopAnimation(); } else if (this._initializationComplete && this._isVisible) {
+            if (!this._gl) this._initWebGL();
+            this._startAnimation();
+        }
     }
     set hass(hass) {
         if (!hass || !this._config) return; this._hass = hass;
@@ -918,37 +462,39 @@ class AtmosphericWeatherCard extends HTMLElement {
         const cfg = this._config;
         const wObj = (cfg.weather_entity && hass.states[cfg.weather_entity]) || null;
         const sunObj = cfg.sun_entity ? hass.states[cfg.sun_entity] : null;
-        const moonObj = cfg.moon_phase_entity ? hass.states[cfg.moon_phase_entity] : null;
-        const themeObj = cfg.theme_entity ? hass.states[cfg.theme_entity] : null;
         const statusObj = cfg.status_entity ? hass.states[cfg.status_entity] : null;
+        const themeObj = cfg.theme_entity ? hass.states[cfg.theme_entity] : null;
         if (this._lastSnapshot) {
-            let changed = wObj !== this._refW || sunObj !== this._refSun || moonObj !== this._refMoon
-                || themeObj !== this._refTheme || statusObj !== this._refStatus
-                || (hass.themes && hass.themes.darkMode) !== this._refSysDark;
+            let changed = wObj !== this._refW || sunObj !== this._refSun
+                || statusObj !== this._refStatus || themeObj !== this._refTheme;
             if (!changed) {
-                for (const s of this._chips) {
-                    if (s.entity && hass.states[s.entity] !== (this._refChipEnts ? this._refChipEnts.get(s.entity) : undefined)) { changed = true; break; }
-                    if (s.name_sensor && hass.states[s.name_sensor] !== (this._refChipEnts ? this._refChipEnts.get(s.name_sensor) : undefined)) { changed = true; break; }
-                    if (s.sub_value_entity && hass.states[s.sub_value_entity] !== (this._refChipEnts ? this._refChipEnts.get(s.sub_value_entity) : undefined)) { changed = true; break; }
+                const allButtons = this._allButtons();
+                for (const s of allButtons) {
+                    if (s.entity && hass.states[s.entity] !== (this._refButtonEntities ? this._refButtonEntities.get(s.entity) : undefined)) { changed = true; break; }
+                    if (s.name_sensor && hass.states[s.name_sensor] !== (this._refButtonEntities ? this._refButtonEntities.get(s.name_sensor) : undefined)) { changed = true; break; }
+                    if (s.sub_value_entity && hass.states[s.sub_value_entity] !== (this._refButtonEntities ? this._refButtonEntities.get(s.sub_value_entity) : undefined)) { changed = true; break; }
+                    const condEntities = this._collectConditionEntities(s.visibility);
+                    for (const ve of condEntities) { if (hass.states[ve] !== (this._refButtonEntities ? this._refButtonEntities.get(ve) : undefined)) { changed = true; break; } }
+                    if (changed) break;
                 }
             }
             if (!changed) return;
         }
-        this._refW = wObj; this._refSun = sunObj; this._refMoon = moonObj; this._refTheme = themeObj; this._refStatus = statusObj;
-        this._refSysDark = (hass.themes && hass.themes.darkMode); const refs = new Map();
-        for (const s of this._chips) {
+        this._refW = wObj; this._refSun = sunObj; this._refStatus = statusObj; this._refTheme = themeObj;
+        const refs = new Map(), allButtons = this._allButtons();
+        for (const s of allButtons) {
             if (s.entity) refs.set(s.entity, hass.states[s.entity]);
             if (s.name_sensor) refs.set(s.name_sensor, hass.states[s.name_sensor]);
             if (s.sub_value_entity) refs.set(s.sub_value_entity, hass.states[s.sub_value_entity]);
+            for (const ve of this._collectConditionEntities(s.visibility)) refs.set(ve, hass.states[ve]);
         }
-        this._refChipEnts = refs;
-        if (this._moonRotationRad === undefined && (hass.config && hass.config.latitude) !== undefined) { this._moonRotationRad = (51 - hass.config.latitude) * (Math.PI / 180); }
+        this._refButtonEntities = refs;
         const wEntity = wObj || FALLBACK_WEATHER;
-        const sunEntity = this._config.sun_entity ? hass.states[this._config.sun_entity] : null;
-        const moonEntity = this._config.moon_phase_entity ? hass.states[this._config.moon_phase_entity] : null;
-        const themeEntity = this._config.theme_entity ? hass.states[this._config.theme_entity] : null;
-        const statusEntity = this._config.status_entity ? hass.states[this._config.status_entity] : null;
-        const botSig = this._chips.map(s => {
+        const sunEntity = sunObj;
+        const statusEntity = statusObj;
+        const themeEntity = themeObj;
+        const haThemeDark = (hass.themes && hass.themes.darkMode) ? 'dark' : 'light';
+        const botSig = allButtons.map(s => {
             if (!s.entity) return '';
             if (s.forecast) {
                 const t = s.forecast === 'hourly' ? 'hourly' : 'daily';
@@ -966,9 +512,15 @@ class AtmosphericWeatherCard extends HTMLElement {
                 const sv = hass.states[s.sub_value_entity];
                 if (sv) sig += `|sv:${s.sub_value_attribute ? (sv.attributes[s.sub_value_attribute] != null ? sv.attributes[s.sub_value_attribute] : '') : sv.state}`;
             }
+            if (Array.isArray(s.visibility) && s.visibility.length) {
+                for (const ve of this._collectConditionEntities(s.visibility)) {
+                    const ves = hass.states[ve];
+                    sig += `|vi:${ve}:${ves ? ves.state : ''}`;
+                }
+            }
             return sig;
         }).join('||');
-        const sysDark = (hass.themes && hass.themes.darkMode), lang = (hass.locale && hass.locale.language) || 'en';
+        const lang = (hass.locale && hass.locale.language) || 'en';
         const snapshot = {
             weather: (wEntity && wEntity.state) || '',
             temp: (wEntity && wEntity.attributes && wEntity.attributes.temperature != null) ? wEntity.attributes.temperature : '',
@@ -976,116 +528,193 @@ class AtmosphericWeatherCard extends HTMLElement {
             windUnit: (wEntity && wEntity.attributes && wEntity.attributes.wind_speed_unit) || '',
             sun: (sunEntity && sunEntity.state) || '',
             sunElev: (sunEntity && sunEntity.attributes && sunEntity.attributes.elevation != null) ? sunEntity.attributes.elevation : '',
-            moon: (moonEntity && moonEntity.state) || '',
             theme: (themeEntity && themeEntity.state) || '',
+            haThemeDark,
             status: (statusEntity && statusEntity.state) || '',
             botSig,
-            sysDark: !!sysDark,
             lang
         };
         if (this._lastSnapshot && !this._hasSnapshotChanged(this._lastSnapshot, snapshot)) return;
         this._lastSnapshot = snapshot;
-        if (this._elements && this._elements.root) this._elements.root.classList.toggle('full-width', this._config.card_full_width === true);
         if (!wEntity) return;
-        if (moonEntity && moonEntity.state !== this._moonPhaseState) {
-            this._moonPhaseState = moonEntity.state;
-            this._moonPhaseConfig = MOON_PHASES[moonEntity.state] || MOON_PHASES['full_moon'];
+        const isNight = this._resolveAxes(sunEntity).isNight;
+        const hasNightChanged = this._isTimeNight !== isNight;
+        this._isTimeNight = isNight;
+        const colorMode = (cfg.card_color_mode || '').toLowerCase();
+        let themeDark;
+        if (colorMode === 'light') {
+            themeDark = false;
+        } else if (colorMode === 'dark') {
+            themeDark = true;
+        } else if (colorMode === 'ha_theme') {
+            themeDark = !!(hass.themes && hass.themes.darkMode);
+        } else if (cfg.theme_entity) {
+            const te = themeEntity || sunEntity;
+            themeDark = te ? te.state.toLowerCase() === 'below_horizon' : isNight;
+        } else {
+            themeDark = isNight;
         }
-        const axes = this._resolveAxes(sunEntity, themeEntity, sysDark), isTimeNight = axes.isTimeNight, isThemeDark = axes.isThemeDark;
-        const hasNightChanged = this._isTimeNight !== isTimeNight || this._isThemeDark !== isThemeDark;
-        this._isTimeNight = isTimeNight; this._isThemeDark = isThemeDark; let weatherState = (wEntity.state || 'default').toLowerCase();
-        if (isTimeNight && weatherState === 'sunny') weatherState = 'clear-night';
-        if (!isTimeNight && weatherState === 'clear-night') weatherState = 'sunny';
-        let newParams = { ...(WEATHER_MAP[weatherState] || WEATHER_MAP['default']) };
-        if (isTimeNight && (weatherState === 'sunny' || weatherState === 'clear-night')) {
-            newParams.type = 'stars'; newParams.count = 280;
+        const hasDarkChanged = this._isThemeDark !== themeDark;
+        this._isThemeDark = themeDark;
+        const adaptEnabled = cfg.theme_adapt !== false;
+        const dashDark = !!(hass.themes && hass.themes.darkMode);
+        let adaptMode = '';
+        if (adaptEnabled) {
+            if (dashDark && !themeDark) adaptMode = 'dim';
+            else if (!dashDark && themeDark) adaptMode = 'lift';
         }
-        this._updateStandaloneStyles(isTimeNight, newParams); this._updateTextElements(hass, wEntity, lang, weatherState);
+        if (this._prevAdaptMode !== adaptMode) {
+            this._prevAdaptMode = adaptMode;
+            if (this._elements) {
+                this._elements.root.classList.toggle('adapt-dim', adaptMode === 'dim');
+                this._elements.root.classList.toggle('adapt-lift', adaptMode === 'lift');
+            }
+        }
+        let weatherState = (wEntity.state || 'default').toLowerCase();
+        if (isNight && weatherState === 'sunny') weatherState = 'clear-night';
+        if (!isNight && weatherState === 'clear-night') weatherState = 'sunny';
+        if (weatherState === 'exceptional' && isNight) weatherState = 'clear-night';
+        this._weatherState = weatherState;
+        this._updateSchemeStyles(isNight, weatherState); this._updateTextElements(hass, wEntity, lang, weatherState);
         const windSpeedRaw = this._getEntityAttribute(wEntity, 'wind_speed', 0);
         const windSpeed = typeof windSpeedRaw === 'number' ? windSpeedRaw : parseFloat(windSpeedRaw) || 0;
-        this._windSpeed = Math.min(Math.max(windSpeed / 10, 0), 2);
         const wsu = ((wEntity && wEntity.attributes && wEntity.attributes.wind_speed_unit) || 'km/h').toLowerCase();
         const toKmh = wsu.includes('m/s') ? 3.6 : wsu.includes('mph') ? 1.609 : wsu.includes('kn') ? 1.852 : 1;
-        this._windKmh = windSpeed * toKmh; const imageNight = axes.isImageNight; this._updateImage(hass, imageNight, weatherState);
-        // Golden hour: warm glow + ambient wash (after base styles are set)
-        this._applyGoldenHour(sunEntity || hass.states['sun.sun'], newParams);
+        this._windKmh = windSpeed * toKmh;
+        this._updateImage(hass, isNight, weatherState);
+        this._updateStars(null, weatherState);
+        this._updateWeatherBg(weatherState, themeDark);
+        this._updateSimpleBg(themeDark);
         if (!this._hasReceivedFirstHass) {
             this._hasReceivedFirstHass = true; this._renderGate.hasFirstHass = true; this._lastState = weatherState;
-            this._params = newParams; this._stateInitialized = true; this._buildRenderState();
+            this._stateInitialized = true; this._shaderParams = this._weatherToUniforms();
             this._syncFc(); this._tryInitialize();
             return;
         }
-        this._handleWeatherChange(weatherState, newParams, hasNightChanged);
+        this._handleWeatherChange(weatherState, hasNightChanged || hasDarkChanged);
     }
     static async getConfigElement() {
-        if (!customElements.get("atmospheric-weather-card-editor")) 
-        { await import("./atmospheric-weather-card-editor.js?v=2026-05-17"); }
+        if (!customElements.get("atmospheric-weather-card-editor"))
+        { await import("./atmospheric-weather-card-editor.js?v=AWC-28062026"); }
         return document.createElement("atmospheric-weather-card-editor");
     }
     static getStubConfig(hass) {
         const weatherEntity = hass ? Object.keys(hass.states).find(e => e.startsWith('weather.')) || '' : '';
         return {
-            weather_entity: weatherEntity, sun_entity: 'sun.sun', theme_entity: 'sun.sun',
-            card_style: 'standalone', card_height: 130, card_padding: '16px',
-            celestial_size: '50px', celestial_position: 'fixed', celestial_alignment: 'right',
-            celestial_x: 45, celestial_y: 'center',
-            chip_area_position: 'bottom-left', chip_text_size: '12px', chip_padding: '6px 10px',
-            chip_gap: '8px', chip_area_background: true,
-            chips: [
-                { entity: weatherEntity, attribute: 'temperature', position: 'custom', position_anchor: 'top-left', position_x: '16px', position_y: '16px', text_size: '34px', background: false, padding: '0px 4px', hide_icon: true, hide_label: true, fancy_unit: true, value_weight: '600', behind_effects: true },
-                { entity: weatherEntity, attribute: 'humidity', name: 'HMD' },
-                { entity: weatherEntity, attribute: 'wind_speed', name: 'Wind' }
+            weather_entity: weatherEntity,
+            sun_entity: 'sun.sun',
+            theme_entity: 'sun.sun',
+            card_height: '130px',
+            button_areas: [
+                {
+                    position: 'top-left',
+                    padding: '0 4px',
+                    buttons: [
+                        { entity: weatherEntity, text_size: '30px', hide_icon: true, padding: '0px 4px', fancy_unit: true }
+                    ]
+                },
+                {
+                    position: 'right',
+                    padding: '0px 8px',
+                    gap: '8px',
+                    background: true,
+                    buttons: [
+                        {
+                            entity: weatherEntity,
+                            hide_value: true,
+                            icon: 'weather',
+                            icon_size: '34px',
+                            type: 'ring',
+                            ring_thresholds: [
+                                { value: '0', color: 'rgba(128, 191, 172, 0.8)' },
+                                { value: '1', color: 'rgba(145, 199, 163, 0.8)' },
+                                { value: '2', color: 'rgba(163, 206, 155, 0.8)' },
+                                { value: '3', color: 'rgba(195, 214, 141, 0.8)' },
+                                { value: '4', color: 'rgba(224, 219, 129, 0.8)' },
+                                { value: '5', color: 'rgba(235, 198, 113, 0.8)' },
+                                { value: '6', color: 'rgba(235, 168, 103, 0.8)' },
+                                { value: '7', color: 'rgba(230, 138, 99, 0.8)' },
+                                { value: '8', color: 'rgba(219, 106, 99, 0.8)' },
+                                { value: '9', color: 'rgba(201, 79, 100, 0.8)' },
+                                { value: '10', color: 'rgba(168, 64, 115, 0.8)' }
+                            ],
+                            padding: '14px',
+                            ring_gap: '10px',
+                            ring_width: '4px',
+                            ring_threshold_mode: 'gradient',
+                            ring_max: '11',
+                            attribute: 'uv_index'
+                        }
+                    ]
+                },
+                {
+                    position: 'bottom-left',
+                    background: true,
+                    button_text_size: '14px',
+                    align: 'center',
+                    buttons: [
+                        {
+                            text_size: '12px',
+                            sub_value_size: '12px',
+                            label_size: '12px',
+                            hide_icon: true,
+                            padding: '8px 12px',
+                            value_weight: '700',
+                            text_gap: '5px',
+                            entity: weatherEntity,
+                            name: 'Today: ',
+                            forecast: 'daily',
+                            attribute: 'temperature',
+                            forecast_precision: 0,
+                            sub_value_attribute: 'templow',
+                            text_order: 'label,sub,value',
+                            sub_value_format: ' –',
+                            sub_value_weight: '700'
+                        }
+                    ]
+                }
             ],
             grid_options: { rows: 'auto' }
         };
     }
     getCardSize() { return 4; }
     getGridOptions() {
-        return {
-            columns: 12, rows: 'auto',
-            min_columns: 2, min_rows: 2,
-        };
+        return { columns: 12, rows: 'auto', min_columns: 2, min_rows: 2 };
     }
-    // CONFIGURATION HELPERS
-    _deriveChips(config) {
-        const arr = config && config.chips;
+    _deriveAreas(config) {
+        const arr = config && config.button_areas;
         if (Array.isArray(arr) && arr.length > 0) {
-            return arr.map(s => (s && typeof s === 'object') ? s : {});
+            return arr.map(a => {
+                if (!a || typeof a !== 'object') return { buttons: [] };
+                const buttons = Array.isArray(a.buttons)
+                    ? a.buttons.map(s => {
+                        if (!s || typeof s !== 'object') return {};
+                        const c = { ...s };
+                        c._ringThresholdsSig = JSON.stringify(s.ring_thresholds || '');
+                        c._barThresholdsSig = JSON.stringify(s.bar_thresholds || '');
+                        c._colorThresholdsSig = JSON.stringify(s.color_thresholds || '');
+                        return c;
+                    })
+                    : [];
+                return { ...a, buttons };
+            });
         }
-        return [{}];
+        return [];
     }
-    _resolveChipPosition() {
-        return (this._config && this._config.chip_area_position) || 'bottom-left';
+    _allButtons() {
+        if (this._allButtonsCache) return this._allButtonsCache;
+        const out = [];
+        for (const area of this._areas) {
+            for (const button of area.buttons) out.push(button);
+        }
+        this._allButtonsCache = out;
+        return out;
     }
-    _resolveAxes(sunEntity, themeEntity, sysDark) {
-        const mode = this._config.card_color_mode ? this._config.card_color_mode.toLowerCase() : null;
-            const themeValid = themeEntity &&
-            themeEntity.state !== 'unavailable' &&
-            themeEntity.state !== 'unknown';
-        const themeIsNight = themeValid &&
-            NIGHT_MODES.includes(themeEntity.state.toLowerCase());
-        const sunState = sunEntity ? sunEntity.state.toLowerCase() : null, sunIsBelowHorizon = sunState === 'below_horizon';
-        const sunIsNight = sunIsBelowHorizon || (sunState !== null && NIGHT_MODES.includes(sunState));
-            const isTimeNight = mode === 'night' ? true
-            : mode === 'day' ? false
-            : sunEntity ? sunIsBelowHorizon
-            : themeValid ? themeIsNight : false;
-            // sysDark (hass.themes.darkMode) outranks sun so the card respects
-        // the HA system/profile dark-mode setting. Sun is the fallback
-        // for setups where hass.themes is unavailable.
-        const isThemeDark = mode === 'dark' ? true
-            : mode === 'light' ? false
-            : themeValid ? themeIsNight
-            : sysDark !== undefined ? !!sysDark
-            : sunEntity ? sunIsNight : false;
-            const isImageNight = (mode === 'dark' || mode === 'night') ? true
-            : (mode === 'light' || mode === 'day') ? false
-            : themeValid ? themeIsNight
-            : sysDark !== undefined ? !!sysDark
-            : sunEntity ? sunIsNight : false;
-        return { isTimeNight, isThemeDark, isImageNight };
+    _resolveAxes(sunEntity) {
+        const sunState = sunEntity ? sunEntity.state.toLowerCase() : null;
+        const isNight = sunState === 'below_horizon';
+        return { isNight };
     }
-    // ENTITY & STATE HELPERS
     _getEntityState(hass, entityId, defaultValue = null) {
         if (!hass || !entityId) return defaultValue; const entity = hass.states[entityId];
         if (!entity) {
@@ -1108,7 +737,7 @@ class AtmosphericWeatherCard extends HTMLElement {
         if (!existing || existing.type !== errorType) {
             this._entityErrors.set(entityId, { type: errorType, since: now });
             if (now - this._lastErrorLog > 60000) {
-                console.warn(`HOME-CARD: Entity "${entityId}" is ${errorType}`);
+                console.warn(`AWC: Entity "${entityId}" is ${errorType}`);
                 this._lastErrorLog = now;
             }
         }
@@ -1134,8 +763,7 @@ class AtmosphericWeatherCard extends HTMLElement {
         }
         let formatted = value;
         if (!haFormatted) {
-            const isNumeric = value !== null && value !== '' && !isNaN(parseFloat(value)) && isFinite(value);
-            if (isNumeric && this._numFmt) formatted = this._numFmt.format(value);
+            formatted = this._formatNumber(value);
         }
         const isoSource = attribute
             ? (sensor && sensor.attributes && sensor.attributes[attribute])
@@ -1161,20 +789,22 @@ class AtmosphericWeatherCard extends HTMLElement {
         }
         return { formatted, unit, sensor, haFormatted, rawNumeric };
     }
-    // FORECAST DATA LAYER
     _syncFc() {
         if (!(this._hass && this._hass.connection)) return; const needed = new Set();
-        for (const c of this._chips) if (c.forecast && c.entity) needed.add(`${c.entity}|${c.forecast === 'hourly' ? 'hourly' : 'daily'}`);
-        for (const [k, unsub] of this._fcSubs) if (!needed.has(k)) { unsub(); this._fcSubs.delete(k); this._fcData.delete(k); _fcCache.delete(k); }
+        for (const c of this._allButtons()) if (c.forecast && c.entity) needed.add(`${c.entity}|${c.forecast === 'hourly' ? 'hourly' : 'daily'}`);
+        for (const [k, unsub] of this._fcSubs) if (!needed.has(k)) { unsub(); this._fcSubs.delete(k); this._fcData.delete(k); }
         for (const k of needed) if (!this._fcSubs.has(k)) this._startFcSub(k);
     }
     _startFcSub(key) {
         const [entity, type] = key.split('|'), hass = this._hass; if (!(hass && hass.connection)) return;
+        if (!this._fcData.has(key) && _AWC_FC_CACHE.has(key)) {
+            this._fcData.set(key, _AWC_FC_CACHE.get(key));
+        }
         hass.connection.subscribeMessage(
             (msg) => this._onFcData(key, msg.forecast != null ? msg.forecast : [], type === 'daily'),
             { type: 'weather/subscribe_forecast', forecast_type: type, entity_id: entity }
         ).then(unsub => {
-            if (!this.isConnected || (!this._fcSubs.has(key) && !this._chips.some(c => c.forecast && c.entity === entity))) { unsub(); return; }
+            if (!this.isConnected || (!this._fcSubs.has(key) && !this._allButtons().some(c => c.forecast && c.entity === entity))) { unsub(); return; }
             this._fcSubs.set(key, unsub);
         }).catch(() => {
             const poll = async () => {
@@ -1192,16 +822,21 @@ class AtmosphericWeatherCard extends HTMLElement {
         const _existing = this._fcData.get(key);
         if (_existing && _existing.fp === fp) return;
         const entry = { processed, fp };
-        this._fcData.set(key, entry); _fcCache.set(key, entry); this._lastSnapshot = null;
+        this._fcData.set(key, entry); this._lastSnapshot = null;
+        _AWC_FC_CACHE.set(key, entry);
+        if (_AWC_FC_CACHE.size > _AWC_FC_CACHE_MAX) {
+            const oldest = _AWC_FC_CACHE.keys().next().value;
+            _AWC_FC_CACHE.delete(oldest);
+        }
     }
-    _resolveFcValue(hass, chip, lang) {
-        const type = chip.forecast === 'hourly' ? 'hourly' : 'daily', offset = Math.max(0, parseInt(chip.forecast_offset, 10) || 0);
-        const _fcEntry = this._fcData.get(`${chip.entity}|${type}`);
+    _resolveFcValue(hass, button, lang) {
+        const type = button.forecast === 'hourly' ? 'hourly' : 'daily', offset = Math.max(0, parseInt(button.forecast_offset, 10) || 0);
+        const _fcEntry = this._fcData.get(`${button.entity}|${type}`);
         const fc = _fcEntry && _fcEntry.processed;
         if (!fc || !fc.length) return { formatted: '', unit: '', condition: null, datetime: null, loading: true };
         const entry = fc[Math.min(offset, fc.length - 1)];
         if (!entry) return { formatted: '', unit: '', condition: null, datetime: null, loading: true };
-        const attr = chip.attribute;
+        const attr = button.attribute;
         if (!attr || attr === 'condition') {
             let label = entry.condition || '—';
             if (entry.condition && typeof hass.localize === 'function') label = hass.localize(`component.weather.entity_component._.state.${entry.condition}`) || label;
@@ -1209,17 +844,14 @@ class AtmosphericWeatherCard extends HTMLElement {
         }
         const raw = entry[attr];
         if (raw == null) return { formatted: 'N/A', unit: '', condition: entry.condition, datetime: entry.datetime, entry };
-        const _chipState = hass.states[chip.entity];
-        const w = _chipState && _chipState.attributes;
+        const _buttonState = hass.states[button.entity];
+        const w = _buttonState && _buttonState.attributes;
         const unit = (w && w[`${attr}_unit`]) || (_FC_UNIT_MAP[attr] && w && w[_FC_UNIT_MAP[attr]]) || _FC_UNIT_FALLBACK[attr] || '';
         let formatted = raw;
-        if (raw !== '' && !isNaN(parseFloat(raw)) && isFinite(raw)) {
-            const precision = chip.forecast_precision;
-            const fmt = (precision !== undefined && precision !== null)
-                ? this._getFcFmt(lang, precision)
-                : this._numFmt;
-            if (fmt) formatted = fmt.format(raw);
-        }
+        const precision = button.forecast_precision !== undefined ? button.forecast_precision : 0;
+        const fmt = (precision !== undefined && precision !== null)
+            ? this._getFcFmt(lang, precision) : null;
+        formatted = this._formatNumber(raw, fmt);
         return { formatted, unit, condition: entry.condition, datetime: entry.datetime, entry };
     }
     _getFcFmt(lang, precision) {
@@ -1229,23 +861,90 @@ class AtmosphericWeatherCard extends HTMLElement {
         this._fcFmtCache = [key, fmt];
         return fmt;
     }
-    _cssVar(el, prop, val, key) {
-        if (this[key] === val) return; this[key] = val; if (val) el.style.setProperty(prop, val);
+    _cssVar(el, prop, val, cacheKey) {
+        if (!this._cssVarCache) this._cssVarCache = {};
+        if (this._cssVarCache[cacheKey] === val) return;
+        this._cssVarCache[cacheKey] = val;
+        if (val) el.style.setProperty(prop, val);
         else el.style.removeProperty(prop);
     }
+    _formatNumber(raw, fmt) {
+        if (raw === null || raw === '' || isNaN(parseFloat(raw)) || !isFinite(raw)) return String(raw ?? '');
+        const f = fmt || this._numFmt;
+        return f ? f.format(raw) : String(raw);
+    }
+    _collectConditionEntities(conditions) {
+        const out = [];
+        if (!Array.isArray(conditions)) return out;
+        for (const c of conditions) {
+            if (!c) continue;
+            if (c.entity) out.push(c.entity);
+            if (c.condition === 'and' || c.condition === 'or' || c.condition === 'not') {
+                out.push(...this._collectConditionEntities(c.conditions));
+            }
+        }
+        return out;
+    }
+    _evaluateCondition(c, hass) {
+        if (!c || !c.condition) return true;
+        switch (c.condition) {
+            case 'state': {
+                if (!c.entity) return true;
+                const stateObj = hass.states[c.entity];
+                if (!stateObj) return false;
+                const val = stateObj.state;
+                if (c.state != null) {
+                    const match = Array.isArray(c.state) ? c.state : [c.state];
+                    return match.some(s => String(s) === val);
+                }
+                if (c.state_not != null) {
+                    const match = Array.isArray(c.state_not) ? c.state_not : [c.state_not];
+                    return match.every(s => String(s) !== val);
+                }
+                return true;
+            }
+            case 'numeric_state': {
+                if (!c.entity) return true;
+                const stateObj = hass.states[c.entity];
+                if (!stateObj) return false;
+                const raw = c.attribute ? stateObj.attributes[c.attribute] : stateObj.state;
+                const val = parseFloat(raw);
+                if (isNaN(val)) return false;
+                if (c.above != null && val <= parseFloat(c.above)) return false;
+                if (c.below != null && val >= parseFloat(c.below)) return false;
+                return true;
+            }
+            case 'screen': {
+                if (!c.media_query) return true;
+                return window.matchMedia(c.media_query).matches;
+            }
+            case 'user': {
+                if (!Array.isArray(c.users) || !hass.user) return true;
+                return c.users.includes(hass.user.id);
+            }
+            case 'and': {
+                if (!Array.isArray(c.conditions)) return true;
+                return c.conditions.every(sub => this._evaluateCondition(sub, hass));
+            }
+            case 'or': {
+                if (!Array.isArray(c.conditions)) return true;
+                return c.conditions.some(sub => this._evaluateCondition(sub, hass));
+            }
+            case 'not': {
+                if (!Array.isArray(c.conditions)) return true;
+                return c.conditions.every(sub => !this._evaluateCondition(sub, hass));
+            }
+            default:
+                return true;
+        }
+    }
+    _checkButtonVisibility(button, hass) {
+        return !Array.isArray(button.visibility) || !button.visibility.length || button.visibility.every(c => this._evaluateCondition(c, hass));
+    }
+    _checkAreaVisibility(area, hass) { return this._checkButtonVisibility(area, hass); }
     _hasSnapshotChanged(prev, next) {
-        return prev.weather    !== next.weather
-            || prev.temp       !== next.temp
-            || prev.windSpeed  !== next.windSpeed
-            || prev.windUnit   !== next.windUnit
-            || prev.sun        !== next.sun
-            || prev.sunElev    !== next.sunElev
-            || prev.moon       !== next.moon
-            || prev.theme      !== next.theme
-            || prev.status     !== next.status
-            || prev.botSig     !== next.botSig
-            || prev.sysDark    !== next.sysDark
-            || prev.lang       !== next.lang;
+        for (const k in next) if (prev[k] !== next[k]) return true;
+        return false;
     }
     _calculateStatusImage(hass, isNight) {
         if (!this._hasStatusFeature) return null; const entityId = this._config.status_entity; const stateObj = this._getEntityState(hass, entityId);
@@ -1257,552 +956,364 @@ class AtmosphericWeatherCard extends HTMLElement {
         }
         return null;
     }
-    // STATE COMPUTATION
-    _buildRenderState() {
-        const p = this._params, isDark  = this._isThemeDark, isNight = this._isTimeNight;
-        const isLight = !isDark; // === this._isLightBackground
-        const type    = (p && p.type) || 'none', atm     = (p && p.atmosphere) || '', state   = (this._lastState || '').toLowerCase();
-        const isBadWeatherForComets =
-            type === 'rain' || type === 'hail' || type === 'lightning' ||
-            type === 'pouring' || type === 'snowy' || type === 'snowy-rainy';
-        const isSevereWeather = !!((p && p.thunder)) || type === 'hail' || type === 'pouring';
-        const goodWeather = state === 'sunny' || state === 'partlycloudy' ||
-                            state === 'clear-night' || state === 'exceptional';
-            const isStandalone = this._config.card_style === 'standalone';
-        const isDarkDayImmersive = this._isDarkDayImmersive;
-        const glow = this._computeGlowParams(
-            state, type, atm, p, goodWeather,
-            isDark, isNight, isStandalone, isDarkDayImmersive
-        );
-        const rainRgb = isLight ? '58, 72, 100' : '210, 225, 255';
-            let starMode = 'hidden';
-        if (isNight) {
-            if (isDark) {
-                starMode = 'glow';
-            } else if (!isStandalone) {
-                starMode = 'golden';
-            }
-        }
-            const cp = this._computeCloudPalette(isDark, isNight, isLight, p, type, atm, isStandalone);
-        const cloudGlobalOp = isDark ? 0.70 : 0.84;
-            let celestialCloudPalette;
-        if (isNight) celestialCloudPalette = isDark ? 'moon' : 'moonLight';
-        else if (isDark) celestialCloudPalette = isStandalone ? 'darkDay' : 'moon';
-        else celestialCloudPalette = (p && p.sunCloudWarm) ? 'warm' : 'cool';
-        this._sunDiscGrad = this._sunDiscGradR = null; this._haloGrad = this._haloGradR = this._haloGradColor = null;
-        this._diffuseGlowCache = null; this._breathGlowCache = null; this._moonCache = this._rainGrad = null;
-        this._renderState = { isBadWeatherForComets, isSevereWeather, glow, rainRgb, cloudGlobalOp, starMode, celestialCloudPalette, cp };
-        this._buildTextures();
-    }
-    _computeGlowParams(state, type, atm, p, goodWeather, isDark, isNight, isStandalone, isDarkDayImmersive) {
-        if (isNight) return null;  // moon system handles night
-        const isBad = !!((p && p.dark)) || BAD_WEATHER_TYPES.has(type);
-        const isOvercastType = state === 'cloudy' || state === 'windy' ||
-                               state === 'windy-variant' || state === 'fog';
-        let active, showDisc, showHalo, drawPhase;
-        if (goodWeather) {
-            active = true; showDisc = true; showHalo = true; drawPhase = 'bg';
-        } else if (isStandalone) {
-            active = !isDark && isOvercastType && !isBad; showDisc = false; showHalo = false; drawPhase = 'mid-post';
-        } else {
-            active = true; showDisc = false; showHalo = false; drawPhase = isDark ? 'mid-pre' : 'mid-post';
-        }
-        if (!active) return null; const prof = p.glow || WEATHER_MAP['default'].glow; let color = [prof[0], prof[1], prof[2]];
-        let intensity = prof[3]; const breathAmp = prof[4]; const breathPeriodMul = prof[5];
-        let sizeMul = prof[6], glowBoost = 1.0;
-            if (isDarkDayImmersive) {
-                    color = [225, 200, 150];
-            intensity *= 0.7; sizeMul *= 1.7;
-        } else if (isStandalone && isDark && !isNight && goodWeather) {
-            color = [225, 200, 150];
-                    intensity *= 0.70;
-        } else if (!isStandalone && !isDark && goodWeather) {
-                    color = [255, 195, 105];
-            intensity *= 1.3; glowBoost = 1.30;
-        } else if (!isStandalone && !showDisc) {
-                    intensity *= 1.4;
-        }
-            const compOp = showDisc ? null : (isDark ? 'screen' : 'source-over');
-            const cacheKey = showDisc ? null
-            : `${color[0]}_${color[1]}_${color[2]}_${sizeMul.toFixed(2)}`;
-        return { active: true, showDisc, showHalo, drawPhase, color, intensity, breathAmp, breathPeriodMul, sizeMul, compOp, cacheKey, glowBoost };
-    }
-    _computeCloudPalette(isDark, isNight, isLight, p, type, atm, isStandalone) {
-            let mood;
-        if (isDark && isNight) {
-            mood = 'darkNight';
-        } else if (isDark) {
-                    mood = isStandalone ? 'darkDay' : 'darkNight';
-        } else if ((p && p.dark) || BAD_WEATHER_TYPES.has(type) || (p && p.foggy)) {
-            mood = ((p && p.thunder) || STORM_TYPES.has(type)) ? 'lightStorm' : 'lightRain';
-        } else if (atm === 'fair' || atm === 'clear') {
-            mood = 'lightFair';
-        } else if (atm === 'overcast' || atm === 'cloudy') {
-            mood = 'lightOvercast';
-        } else {
-            mood = 'lightDefault';
-        }
-            const pal = CLOUD_PALETTES[mood];
-        const litR = pal[0], litG = pal[1], litB = pal[2], midR = pal[3], midG = pal[4], midB = pal[5];
-        const shadowR = pal[6], shadowG = pal[7], shadowB = pal[8], ambient = pal[9], highlightOffsetBase = pal[10], hOffset = pal[11];
-            const isBadType = LIGHT_BAD_BOOST_TYPES.has(type) || (p && p.foggy);
-        const isRainyBoost = isLight && !isDark && isBadType;
-        const isStormOverride = isRainyBoost && ((p && p.thunder) || STORM_TYPES.has(type));
-            const rainyOpacityMul = (isRainyBoost && !isStormOverride && !this._isImmersive) ? 1.10 : 1.0;
-        return {
-            litR, litG, litB,
-            midR, midG, midB,
-            shadowR, shadowG, shadowB,
-            ambient,
-            highlightOffsetBase,
-            hOffset,
-            rainyOpacityMul
-        };
-    }
-    _handleWeatherChange(weatherState, newParams, hasNightChanged) {
-        const oldParams = this._params, typeChanged = !oldParams || oldParams.type !== newParams.type, stateChanged = this._lastState !== weatherState;
+    _handleWeatherChange(weatherState, hasNightChanged) {
+        const stateChanged = this._lastState !== weatherState;
         this._lastState = weatherState;
-        if (typeChanged || stateChanged || hasNightChanged) {
-            this._params = newParams; this._buildRenderState();
-            if (this.isConnected) {
-                // Defer heavy _initParticles (includes _bakeAllClouds) when the
-                // card is off-screen. The dirty flag is consumed by
-                // _handleVisibilityChange when the card scrolls into view.
-                if (this._isVisible) {
-                    setTimeout(() => {
-                        this._initParticles(); if (this._width > 0) this._lastInitWidth = this._width; this._startAnimation();
-                    }, 0);
-                } else {
-                    this._needsReinit = true;
-                }
-            }
-        } else {
-            this._params = newParams;
+        if (stateChanged || hasNightChanged) {
+            this._shaderParams = this._weatherToUniforms();
+            this._startAnimation();
         }
     }
-    _applyGoldenHour(sunEntity, params) {
-        if (!(this._elements && this._elements.root)) return; const root = this._elements.root; const atm = (params && params.atmosphere) || '';
-            const inactive = this._isTimeNight || (atm !== 'clear' && atm !== 'fair' && atm !== 'exceptional');
-        if (inactive) {
-            this._cssVar(root, '--gh-wash', '0', '_prevGhWash'); this._cssVar(root, '--ambient-dim', '0', '_prevAmbDim');
-            return;
-        }
-            let t = 0;
-        if (sunEntity && sunEntity.attributes && sunEntity.attributes.elevation !== undefined) {
-            const e = parseFloat(sunEntity.attributes.elevation);
-            if (e <= 18 && e > 2) {
-                const s = 1 - ((e - 2) / 16); t = s * s * s;
-            }
-            else if (e <= 2 && e >= -6) {
-                t = (e + 6) / 8;
-            }
-        }
-        if (t < 0.01) {
-            root.style.setProperty('--gh-wash', '0'); root.style.setProperty('--ambient-dim', '0');
-            return;
-        }
-        const i = Math.min(1, t);
-        const ghRgb = `255, ${Math.round(250 - 60 * i)}, ${Math.round(240 - 160 * i)}`;
-        this._cssVar(root, '--g-rgb', ghRgb, '_prevGRgb'); const baseOp = parseFloat(this._prevGOp || '0.45') || 0.45;
-        this._cssVar(root, '--g-op', Math.min(0.95, baseOp + 0.25 * i).toFixed(3), '_prevGOp');
-        const cw = this._cachedDimensions.width  / (this._cachedDimensions.dpr || 1);
-        const ch = this._cachedDimensions.height / (this._cachedDimensions.dpr || 1);
-        if (cw > 0 && ch > 0) {
-            const cel = this._getCelestialPosition(cw, ch), dx = Math.max(cel.x, cw - cel.x), dy = Math.max(cel.y, ch - cel.y);
-            const baseR = Math.ceil(Math.sqrt(dx * dx + dy * dy) * 0.3);
-            this._cssVar(root, '--c-r', `${Math.round(baseR * (1 + 0.8 * i))}px`, '_prevCr');
-        }
-        this._cssVar(root, '--gh-wash', (0.34 * i).toFixed(3), '_prevGhWash');
-        this._cssVar(root, '--ambient-dim', (0.14 * i).toFixed(3), '_prevAmbDim');
-    }
-    _getCelestialPosition(w, h) {
-        const mode = this._config.celestial_position;
-        if (mode === 'dynamic_sun' || mode === 'dynamic_both') {
-            const dyn = this._computeDynamicCelestial(mode);
-            if (dyn) {
-                const bodyR = this._celestialSize ? this._celestialSize / 2 : 31;
-                return { x: bodyR + (w - 2 * bodyR) * dyn.t, y: bodyR + (h * 0.85 - bodyR) * (1 - dyn.y01) };
-            }
-        }
-        const align = (this._config.celestial_alignment || 'top-left').toLowerCase();
-        const [vSide, hSide] = parseAnchor(align); const ox = parseInt(this._config.celestial_x, 10) || 0;
-        const oy = parseInt(this._config.celestial_y, 10) || 0, bodyR = this._celestialSize ? this._celestialSize / 2 : 31;
-        let x, y; if (hSide === 'center') x = w / 2 + ox;
-        else if (hSide === 'right') x = w - ox - bodyR;
-        else x = ox + bodyR;
-        if (vSide === 'center') y = h / 2 + oy;
-        else if (vSide === 'bottom') y = h - oy - bodyR;
-        else y = oy + bodyR;
-        return { x, y };
-    }
-    _computeDynamicCelestial(mode) {
-        const isNight = this._isTimeNight; if (mode === 'dynamic_sun' && isNight) return null;
-        const _hassStates = this._hass && this._hass.states;
-        const sunEntity = _hassStates && _hassStates[this._config.sun_entity || 'sun.sun'];
-        const attrs = sunEntity && sunEntity.attributes; if (!attrs) return null; const nextRise = Date.parse(attrs.next_rising);
-        const nextSet  = Date.parse(attrs.next_setting); if (!isFinite(nextRise) || !isFinite(nextSet)) return null; const now = Date.now();
-        const dayMs = 86400000; let t;
-        if (isNight) {
-            const thisSet = nextSet - dayMs; t = (now - thisSet) / (nextRise - thisSet);
-        } else {
-            const thisRise = nextRise - dayMs; t = (now - thisRise) / (nextSet - thisRise);
-        }
-        if (!isFinite(t)) return null; if (t < 0) t = 0; else if (t > 1) t = 1; let y01;
-        if (isNight) {
-            y01 = Math.sin(Math.PI * t);
-        } else {
-            const elev = parseFloat(attrs.elevation);
-            y01 = isFinite(elev) ? Math.max(0, Math.min(1, elev / 60)) : Math.sin(Math.PI * t);
-        }
-        return { t, y01 };
-    }
-    // DOM & STYLES
+
     static _buildStyles() {
         return `
             :host { display: block; width: 100%; position: relative; background: transparent !important; min-height: 200px; }
-            #card-root { position: relative; width: 100%; height: 100%; container-type: size; z-index: var(--awc-stack-order, 1); overflow: hidden; background: transparent; display: block; transform: translateZ(0); will-change: transform, opacity; opacity: 0; }
-            #card-root.clickable { cursor: pointer; }
-            #card-root.clickable:active { transform: scale(0.98); transition: scale 0.3s ease-in-out; }
-            #card-root.standalone { border-radius: var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)); }
-            #card-root.revealed { opacity: 1; }
-            #card-root.full-width { margin: 0px calc(var(--ha-view-sections-narrow-column-gap, var(--ha-card-margin, 8px)) * -1) !important; padding: 0px var(--ha-view-sections-narrow-column-gap, var(--ha-card-margin, 8px)) !important; }
-            #card-root.no-mask-v canvas { --mask-v: linear-gradient(#000, #000); }
-            #card-root.no-mask-h canvas { --mask-h: linear-gradient(#000, #000); }
-            #card-root.standalone canvas,
-            #card-root.no-mask canvas { -webkit-mask-image: none !important; mask-image: none !important; }
-            #card-root.standalone { box-shadow: var(--ha-card-box-shadow, 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12)); background-color: transparent; overflow: hidden; background-size: 100% 100%; border-width: var(--awc-card-border-width, var(--ha-card-border-width, 0px)); border-style: solid; border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0)); box-sizing: border-box; }
-            #card-root.standalone.scheme-day { --bg-hl: 255,248,228; --bg-a1: 0.38; --bg-a2: 0.05; --bg-s2: 18%; --bg-s3: 42%; --bg-c1: #164FA6; --bg-c2: #4480C8; --bg-c3: #8CB9DD; --bg-hz: 255,222,172; --bg-hz-a: 0.10; background-image:
-                            radial-gradient(ellipse 160% 42% at 50% -18%, rgba(var(--bg-hl), var(--bg-a1)) 0%, rgba(var(--bg-hl), 0) 80%),
-                            linear-gradient(0deg, rgba(var(--bg-hz, 255,200,150), var(--bg-hz-a, 0)) 0%, transparent 30%),
-                            radial-gradient(circle farthest-corner at var(--c-x, 65%) var(--c-y, 35%), var(--bg-c3) 10%, var(--bg-c2) 75%, var(--bg-c1) 100%); }
-            #card-root.standalone.scheme-day.weather-exceptional { --bg-hl:255,244,210; --bg-a1:0.48; --bg-a2:0.08; --bg-c1:#0D4194; --bg-c2:#3470BD; --bg-c3:#7CB0DC; --bg-hz:255,228,162; --bg-hz-a:0.16; }
-            #card-root.standalone.scheme-day.weather-partly { --bg-hl:250,248,236; --bg-a1:0.36; --bg-a2:0.05; --bg-s2:20%; --bg-s3:45%; --bg-c1:#1955A7; --bg-c2:#4683C8; --bg-c3:#90B8DD; --bg-hz:255,226,182; --bg-hz-a:0.08; }
-            #card-root.standalone.scheme-day.weather-overcast { --bg-hl:248,248,244; --bg-a1:0.35; --bg-a2:0.05; --bg-s2:22%; --bg-s3:48%; --bg-c1:#2560A0; --bg-c2:#5088BD; --bg-c3:#9FBEDB; --bg-hz:248,228,196; --bg-hz-a:0.07; }
-            #card-root.standalone.scheme-day.weather-rainy { --bg-hl:225,240,245; --bg-a1:0.35; --bg-a2:0.05; --bg-s2:20%; --bg-s3:45%; --bg-c1:#426A93; --bg-c2:#658FBA; --bg-c3:#B3D6E1; --bg-hz:190,210,225; --bg-hz-a:0.10; }
-            #card-root.standalone.scheme-day.weather-pouring { --bg-hl:210,225,235; --bg-a1:0.32; --bg-a2:0.05; --bg-s2:20%; --bg-s3:45%; --bg-c1:#325478; --bg-c2:#527A9E; --bg-c3:#92B8C6; --bg-hz:170,190,210; --bg-hz-a:0.08; }
-            #card-root.standalone.scheme-day.weather-storm { --bg-hl:212,224,238; --bg-a1:0.30; --bg-a2:0.05; --bg-s2:22%; --bg-s3:48%; --bg-c1:#3D5A82; --bg-c2:#587DA6; --bg-c3:#95C7CC; --bg-hz:175,190,212; --bg-hz-a:0.07; }
-            #card-root.standalone.scheme-day.weather-snow { --bg-hl:234,240,252; --bg-a1:0.36; --bg-a2:0.06; --bg-s2:20%; --bg-s3:45%; --bg-c1:#4887AB; --bg-c2:#77A4C1; --bg-c3:#ABC4D4; --bg-hz:226,234,250; --bg-hz-a:0.10; }
-            #card-root.standalone.scheme-day.weather-fog { --bg-hl:235,240,245; --bg-a1:0.38; --bg-a2:0.05; --bg-s2:20%; --bg-s3:45%; --bg-c1:#3C5E78; --bg-c2:#5F84A0; --bg-c3:#A3BDCD; --bg-hz:205,215,225; --bg-hz-a:0.15; }
-            #card-root.standalone.scheme-night { --bg-hl: 155,185,252; --bg-a1: 0.14; --bg-a2: 0.04; --bg-s2: 40%; --bg-s3: 70%; --bg-c1: #000000; --bg-c2: #050E1A; --bg-c3: #122438; background-image:
-                            radial-gradient(ellipse 160% 42% at 50% -18%, rgba(var(--bg-hl), var(--bg-a1)) 0%, rgba(var(--bg-hl), 0) 80%),
-                            linear-gradient(0deg, rgba(var(--bg-hz, 155,168,200), var(--bg-hz-a, 0)) 0%, transparent 30%),
-                            radial-gradient(circle farthest-corner at var(--c-x, 35%) var(--c-y, 25%), var(--bg-c3) 0%, var(--bg-c2) 75%, var(--bg-c1) 100%); }
-            #card-root.standalone.scheme-night.weather-exceptional { --bg-a1:0.17; --bg-a2:0.05; --bg-c1:#000000; --bg-c2:#050E1A; --bg-c3:#10223A; }
-            #card-root.standalone.scheme-night.weather-partly { --bg-a1:0.12; --bg-a2:0.03; --bg-s2:45%; --bg-s3:75%; --bg-c1:#010204; --bg-c2:#091420; --bg-c3:#182A3E; }
-            #card-root.standalone.scheme-night.weather-overcast { --bg-hl:135,155,188; --bg-a1:0.10; --bg-a2:0.02; --bg-s2:50%; --bg-s3:80%; --bg-c1:#020304; --bg-c2:#0C1016; --bg-c3:#1A2028; }
-            #card-root.standalone.scheme-night.weather-rainy { --bg-hl:130,145,168; --bg-a1:0.11; --bg-a2:0.03; --bg-s2:45%; --bg-s3:75%; --bg-c1:#020406; --bg-c2:#0C141C; --bg-c3:#1A2630; }
-            #card-root.standalone.scheme-night.weather-pouring { --bg-hl:112,132,162; --bg-a1:0.09; --bg-a2:0.02; --bg-s2:45%; --bg-s3:75%; --bg-c1:#010203; --bg-c2:#060C14; --bg-c3:#0E1822; }
-            #card-root.standalone.scheme-night.weather-storm { --bg-hl:95,108,148; --bg-a1:0.07; --bg-a2:0.02; --bg-s2:45%; --bg-s3:75%; --bg-c1:#000000; --bg-c2:#030508; --bg-c3:#0A1018; }
-            #card-root.standalone.scheme-night.weather-snow { --bg-hl:175,198,232; --bg-a1:0.14; --bg-a2:0.04; --bg-s2:45%; --bg-s3:75%; --bg-c1:#030508; --bg-c2:#0E1822; --bg-c3:#1E2C3A; }
-            #card-root.standalone.scheme-night.weather-fog { --bg-hl:145,155,178; --bg-a1:0.14; --bg-a2:0.04; --bg-s2:50%; --bg-s3:85%; --bg-c1:#040506; --bg-c2:#101216; --bg-c3:#1E2228; }
-            #card-root.standalone.scheme-night.time-day { --bg-hl: 148,184,242; --bg-a1: 0.22; --bg-a2: 0.06; --bg-s2: 20%; --bg-s3: 48%; --bg-c1: #0A1C42; --bg-c2: #1A3268; --bg-c3: #2E5090; --bg-hz: 130,160,215; --bg-hz-a: 0.05; background-image:
-                                radial-gradient(ellipse 160% 42% at 50% -18%, rgba(var(--bg-hl), var(--bg-a1)) 0%, rgba(var(--bg-hl), 0) 80%),
-                                linear-gradient(0deg, rgba(var(--bg-hz, 140,160,210), var(--bg-hz-a, 0)) 0%, transparent 30%),
-                                radial-gradient(circle farthest-corner at var(--c-x, 65%) var(--c-y, 35%), var(--bg-c3) 0%, var(--bg-c2) 75%, var(--bg-c1) 100%); }
-            #card-root.standalone.scheme-night.time-day.weather-exceptional { --bg-hl:141,175,230; --bg-a1:0.22; --bg-a2:0.06; --bg-s2:20%; --bg-s3:48%; --bg-c1:#091A3F; --bg-c2:#182F63; --bg-c3:#2B4C89; --bg-hz:124,152,205; --bg-hz-a:0.05; }
-            #card-root.standalone.scheme-night.time-day.weather-partly { --bg-hl:150,184,240; --bg-a1:0.20; --bg-a2:0.06; --bg-s2:22%; --bg-s3:50%; --bg-c1:#0C2048; --bg-c2:#1C386A; --bg-c3:#305692; --bg-hz:128,158,214; --bg-hz-a:0.04; }
-            #card-root.standalone.scheme-night.time-day.weather-overcast { --bg-hl:148,172,210; --bg-a1:0.18; --bg-a2:0.05; --bg-s2:22%; --bg-s3:50%; --bg-c1:#0B1D40; --bg-c2:#19325A; --bg-c3:#2B4B7C; --bg-hz-a:0; }
-            #card-root.standalone.scheme-night.time-day.weather-rainy { --bg-hl:130,160,185; --bg-a1:0.17; --bg-a2:0.05; --bg-s2:24%; --bg-s3:55%; --bg-c1:#081C28; --bg-c2:#16344A; --bg-c3:#285270; --bg-hz-a:0; }
-            #card-root.standalone.scheme-night.time-day.weather-pouring { --bg-hl:110,135,165; --bg-a1:0.15; --bg-a2:0.04; --bg-s2:24%; --bg-s3:55%; --bg-c1:#061822; --bg-c2:#122E40; --bg-c3:#224C66; --bg-hz-a:0; }
-            #card-root.standalone.scheme-night.time-day.weather-storm { --bg-hl:130,138,185; --bg-a1:0.17; --bg-a2:0.05; --bg-s2:22%; --bg-s3:52%; --bg-c1:#0C1028; --bg-c2:#1A1E48; --bg-c3:#42506E; --bg-hz:105,112,160; --bg-hz-a:0.04; }
-            #card-root.standalone.scheme-night.time-day.weather-snow { --bg-hl:165,195,235; --bg-a1:0.22; --bg-a2:0.06; --bg-s2:20%; --bg-s3:48%; --bg-c1:#0C1C38; --bg-c2:#1E3656; --bg-c3:#405C82; --bg-hz:140,160,208; --bg-hz-a:0.06; }
-            #card-root.standalone.scheme-night.time-day.weather-fog { --bg-hl:140,142,170; --bg-a1:0.18; --bg-a2:0.05; --bg-s2:28%; --bg-s3:60%; --bg-c1:#14162A; --bg-c2:#262A44; --bg-c3:#42466A; --bg-hz-a:0; }
-            #card-root::after { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; background-image:
-                        radial-gradient(circle var(--c-r, 10cqmax) at var(--c-x, 60%) var(--c-y, 40%), rgba(var(--g-rgb, 245,245,240), 0.88) 0%, rgba(var(--g-rgb, 245,245,240), 0.45) 18%, rgba(var(--g-rgb, 245,245,240), 0.12) 48%, rgba(var(--g-rgb, 245,245,240), 0) 100%),
-                        radial-gradient(ellipse 140% 80% at var(--c-x, 60%) 100%, rgba(255, 160, 60, var(--gh-wash, 0)) 0%, rgba(255, 130, 45, var(--gh-wash, 0)) 30%, transparent 72%),
-                        linear-gradient(rgba(25, 16, 10, var(--ambient-dim, 0)), rgba(25, 16, 10, var(--ambient-dim, 0))); opacity: var(--g-op, 0); }
-            #card-root:not(.standalone)::after { background-image:
-                        radial-gradient(circle calc(var(--c-r, 10cqmax) * 0.5) at var(--c-x, 60%) var(--c-y, 40%), rgba(var(--g-rgb, 245,245,240), 0.88) 0%, rgba(var(--g-rgb, 245,245,240), 0.45) 18%, rgba(var(--g-rgb, 245,245,240), 0.12) 48%, rgba(var(--g-rgb, 245,245,240), 0) 100%),
-                        radial-gradient(circle calc(var(--c-r, 10cqmax) * 0.5) at var(--c-x, 60%) var(--c-y, 40%), rgba(255, 160, 60, var(--gh-wash, 0)) 0%, rgba(255, 130, 45, var(--gh-wash, 0)) 50%, transparent 100%); }
-            #card-root.scheme-day { --awc-text-color: var(--awc-text-day, #2c2c2e); --awc-text-shadow-active: var(--awc-text-shadow-day, 0 1px 2px rgba(255, 255, 255, 0.9), 0 0 8px rgba(255, 255, 255, 0.7), 0 0 14px rgba(255, 255, 255, 0.5)); --_chip-no-bg-shadow: var(--awc-chip-text-shadow, var(--awc-text-shadow-day, 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 6px rgba(255, 255, 255, 0.5))); --_text-bg: rgba(255, 255, 255, 0.25); --_text-bg-border: rgba(255, 255, 255, 0.2); }
+            #card-root { position: relative; width: 100%; height: 100%; z-index: var(--awc-stack-order, 1); overflow: hidden; overflow: clip; background: transparent; display: block; transform: translateZ(0); will-change: transform; contain: layout style paint; border-radius: var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)); box-shadow: var(--ha-card-box-shadow, 0px 2px 1px -1px rgba(0,0,0,0.2), 0px 1px 1px 0px rgba(0,0,0,0.14), 0px 1px 3px 0px rgba(0,0,0,0.12)); background-color: transparent; border-width: var(--awc-card-border-width, var(--ha-card-border-width, 0px)); border-style: solid; border-color: var(--ha-card-border-color, var(--divider-color, #e0e0e0)); box-sizing: border-box; }
+            #card-root.clickable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+            #card-root.clickable:active { transform: scale(0.98); transition: transform 0.15s cubic-bezier(0.2, 0, 0.2, 1); }
+            #card-root.clickable:not(:active) { transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1); }
+
+            #card-root.scheme-day { --awc-text-color: var(--awc-text-day, #2c2c2e); --_button-shadow-avail: var(--awc-button-text-shadow, var(--awc-text-shadow-day, 0 1px 2px rgba(255, 255, 255, 0.85), 0 0 6px rgba(255, 255, 255, 0.5))); --_button-no-bg-shadow: none; --_text-bg: rgba(255, 255, 255, 0.25); --_text-bg-border: rgba(255, 255, 255, 0.2); }
             #card-root.scheme-day .contrast { --_text-bg: rgba(255,255,255,0.52); --_contrast-shadow: inset 0 1px 0 rgba(255,255,255,0.5), inset 0 -1px 0 rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.08); }
             #card-root.scheme-day .frosted { --_text-bg: rgba(255,255,255,0.18); --_text-bg-border: rgba(255,255,255,0.32); --_frosted-inset: inset 0 1px 2px rgba(0,0,0,0.12), inset 0 -1px 1px rgba(0,0,0,0.06); }
             #card-root.scheme-day .has-icon-bg.with-bg.frosted { --_stacked-icon-border: 1px solid rgba(255,255,255,0.22); }
             #card-root.scheme-day .has-icon-bg.with-bg.contrast { --_stacked-icon-shadow: 0 2px 6px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12); }
-            #card-root.scheme-night { --awc-text-color: var(--awc-text-night, #ffffff); --awc-text-shadow-active: var(--awc-text-shadow-night, 0 1px 3px rgba(0, 0, 0, 0.9), 0 2px 8px rgba(0, 0, 0, 0.7), 0 0 16px rgba(0, 0, 0, 0.5)); --_chip-no-bg-shadow: var(--awc-chip-text-shadow, var(--awc-text-shadow-night, 0 1px 3px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.6))); --_text-bg: rgba(0, 0, 0, 0.35); --_text-bg-border: rgba(255, 255, 255, 0.08); }
+            #card-root.scheme-night { --awc-text-color: var(--awc-text-night, #ffffff); --_button-shadow-avail: var(--awc-button-text-shadow, var(--awc-text-shadow-night, 0 1px 3px rgba(0, 0, 0, 0.9), 0 2px 6px rgba(0, 0, 0, 0.6))); --_button-no-bg-shadow: none; --_text-bg: rgba(0, 0, 0, 0.35); --_text-bg-border: rgba(255, 255, 255, 0.08); }
             #card-root.scheme-night .contrast { --_text-bg: rgba(0,0,0,0.58); --_contrast-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 -1px 0 rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.3); }
             #card-root.scheme-night .frosted { --_text-bg: rgba(0,0,0,0.26); --_text-bg-border: rgba(255,255,255,0.10); --_frosted-inset: inset 0 1px 2px rgba(0,0,0,0.25), inset 0 -1px 1px rgba(0,0,0,0.15); }
             #card-root.scheme-night .has-icon-bg.with-bg.frosted { --_stacked-icon-border: 1px solid rgba(255,255,255,0.08); }
             #card-root.scheme-night .has-icon-bg.with-bg.contrast { --_stacked-icon-shadow: 0 2px 6px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.18); }
             #card-root.is-offscreen .awc-marquee-host .awc-marquee-track { animation-play-state: paused; }
-            canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; filter: var(--awc-canvas-filter, var(--_canvas-filter, none)); --mask-v: linear-gradient(to bottom, transparent, black 10%, black 90%, transparent); --mask-h: linear-gradient(to right, transparent, black 10%, black 90%, transparent); -webkit-mask-image: var(--mask-v), var(--mask-h); mask-image: var(--mask-v), var(--mask-h); -webkit-mask-composite: source-in; mask-composite: intersect; }
-            #fg-canvas { -webkit-mask-image: none !important; mask-image: none !important; }
-            #image-slot { position: absolute; top: 0; height: 100%; width: auto; user-select: none; pointer-events: none; box-sizing: border-box; }
+            #gl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; filter: brightness(var(--awc-bg-brightness, 1)) saturate(var(--awc-bg-saturation, 1)); border-radius: inherit; will-change: contents; z-index: 1; }
+            #star-bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border-radius: inherit; z-index: 2; }
+            #star-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; border-radius: inherit; will-change: contents; z-index: 3; }
+
+            #awc-sunrays { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; z-index: 3; visibility: hidden; mix-blend-mode: screen; -webkit-mask-image: linear-gradient(135deg, white 20%, rgba(255,255,255,0.48) 60%, transparent 90%); mask-image: linear-gradient(135deg, white 20%, rgba(255,255,255,0.48) 60%, transparent 90%); }
+            #card-root.has-sunrays #awc-sunrays { visibility: visible; }
+            #awc-sunrays::before, #awc-sunrays::after { content: ''; }
+            #awc-sunrays::before, #awc-sunrays::after, #awc-sunrays b { position: absolute; inset: -30%; display: block; font-weight: inherit; will-change: transform, opacity; }
+            #awc-sunrays::before { background: linear-gradient(42deg, transparent 2%, rgba(255,247,205,0.48) 4%, rgba(255,250,220,0.12) 12%, transparent 16%, transparent 24%, rgba(255,250,215,0.36) 27%, rgba(255,252,230,0.10) 34%, transparent 38%, transparent 50%, rgba(255,245,200,0.54) 52%, rgba(255,250,220,0.24) 60%, rgba(255,252,230,0.06) 68%, transparent 72%, transparent 82%, rgba(255,250,220,0.26) 84%, transparent 92%); animation: awc-ray-a 3s ease-in-out infinite alternate; }
+            #awc-sunrays::after { background: linear-gradient(48deg, transparent 0%, rgba(255,248,210,0.42) 3%, rgba(255,250,225,0.12) 18%, transparent 22%, transparent 36%, rgba(255,245,200,0.48) 39%, rgba(255,250,220,0.18) 52%, transparent 58%, transparent 70%, rgba(255,248,215,0.36) 73%, rgba(255,252,230,0.10) 84%, transparent 88%); animation: awc-ray-b 6s ease-in-out infinite alternate; }
+            #awc-sunrays b { background: linear-gradient(36deg, transparent 6%, rgba(255,252,225,0.30) 9%, transparent 14%, transparent 30%, rgba(255,248,205,0.46) 33%, rgba(255,250,220,0.22) 44%, rgba(255,252,230,0.05) 52%, transparent 56%, transparent 66%, rgba(255,250,220,0.18) 69%, transparent 78%); animation: awc-ray-c 2s ease-in-out infinite alternate; }
+            @keyframes awc-ray-a { from { transform: translate(-5%, -3%); opacity: 0.36; } to { transform: translate(3%, 2%); opacity: 1; } }
+            @keyframes awc-ray-b { from { transform: translate(4%, -2%); opacity: 0.42; } to { transform: translate(-3%, 3%); opacity: 1; } }
+            @keyframes awc-ray-c { from { transform: translate(-3%, 3%); opacity: 0.30; } to { transform: translate(3%, -2%); opacity: 1; } }
+            #card-root.has-sunrays #awc-sunglow { visibility: visible; }
+
+            #card-root.weather-partlycloudy #awc-sunglow { --awc-glow-core: 255, 240, 210; --awc-glow-warm: 255, 200, 125; }
+            #awc-sunglow { position: absolute; inset: 0; pointer-events: none; overflow: hidden; border-radius: inherit; z-index: 4; visibility: hidden; --awc-glow-core: 255, 255, 240; --awc-glow-warm: 255, 225, 150; background: radial-gradient(circle at 0% 0%, rgba(var(--awc-glow-core), 0.18) 0%, rgba(var(--awc-glow-core), 0.11) 12%, rgba(var(--awc-glow-warm), 0.06) 28%, transparent 46%), radial-gradient(ellipse 130% 100% at 5% 8%, rgba(var(--awc-glow-warm), 0.10) 0%, rgba(var(--awc-glow-warm), 0.04) 32%, transparent 62%), linear-gradient(135deg, rgba(var(--awc-glow-warm), 0.06) 0%, rgba(var(--awc-glow-warm), 0.02) 32%, transparent 58%), radial-gradient(ellipse at 28% 22%, rgba(var(--awc-glow-warm), 0.04) 0%, rgba(var(--awc-glow-warm), 0.01) 38%, transparent 65%); }
+            #awc-sunglow::before, #awc-sunglow::after { content: ''; position: absolute; }
+            #awc-sunglow::before { top: -42%; left: -42%; width: 105%; height: 105%; background: radial-gradient(circle, rgba(var(--awc-glow-core), 0.14) 0%, rgba(var(--awc-glow-core), 0.07) 18%, rgba(var(--awc-glow-warm), 0.04) 38%, transparent 58%), radial-gradient(ellipse 75% 110%, rgba(var(--awc-glow-warm), 0.06) 0%, transparent 52%); animation: awc-glow-pulse 4s ease-in-out infinite alternate; }
+            #awc-sunglow::after { top: -22%; left: -22%; width: 88%; height: 88%; background: radial-gradient(ellipse 115% 80%, rgba(var(--awc-glow-core), 0.08) 0%, rgba(var(--awc-glow-warm), 0.03) 28%, transparent 52%), radial-gradient(circle, rgba(var(--awc-glow-warm), 0.04) 0%, transparent 48%); animation: awc-glow-shift 7s ease-in-out infinite alternate; }
+            @keyframes awc-glow-pulse { from { opacity: 0.09; transform: scale(1); } to { opacity: 0.20; transform: scale(1.18); } }
+            @keyframes awc-glow-shift { from { transform: translate(-5%, -5%) scale(0.92); opacity: 0.10; } to { transform: translate(5%, 5%) scale(1.10); opacity: 0.20; } }
+
+            #card-root.shaders-off { background: var(--ha-card-background, var(--card-background-color, var(--primary-background-color))); }
+            #awc-bottom-fade { position: absolute; inset: 0; pointer-events: none; z-index: 4; display: none; background: linear-gradient(to bottom, transparent 0%, transparent var(--awc-fade-start, 30%), var(--awc-fade-color, var(--ha-card-background, var(--card-background-color, var(--primary-background-color)))) 100%); }
+            #card-root.has-bottom-fade #awc-bottom-fade { display: block; }
+            #awc-theme-adapt { position: absolute; inset: 0; pointer-events: none; z-index: 4; border-radius: inherit; }
+            #card-root.adapt-dim #awc-theme-adapt { backdrop-filter: brightness(0.75) contrast(1.15) saturate(0.9); -webkit-backdrop-filter: brightness(0.75) contrast(1.15) saturate(0.9); }
+            #card-root.adapt-lift #awc-theme-adapt { backdrop-filter: brightness(1.3) contrast(0.92) saturate(0.85); -webkit-backdrop-filter: brightness(1.12) contrast(0.92) saturate(1.05); }
+            #awc-weather-bg { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 1; display: none; overflow: hidden; overflow: clip; }
+            #awc-weather-bg > img, #awc-weather-bg > video { display: block; width: 100%; height: 100%; object-fit: cover; border: none; outline: none; filter: brightness(var(--awc-bg-brightness, 1)) saturate(var(--awc-bg-saturation, 1)); }
+            #awc-weather-bg > video { muted: true; }
+            #card-root.has-weather-bg #awc-weather-bg { display: block; }
+            #card-root.has-weather-bg #gl-canvas { display: none; }
+            #awc-simple-bg { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; z-index: 1; display: none; overflow: hidden; overflow: clip; }
+            #card-root.has-bg-filter #awc-simple-bg { filter: brightness(var(--awc-bg-brightness, 1)) saturate(var(--awc-bg-saturation, 1)); }
+            .awc-sky-layer { position: absolute; inset: 0; border-radius: inherit; }
+            #awc-sky-base { transition: background 1.5s ease; background: var(--_sky-base, var(--awc-simple-bg-day, linear-gradient(135deg, #B6CBD3 0%, #CDD4CB 50%, #E5DDC9 100%))); }
+            #awc-sky-glow { will-change: background-position; background-image: var(--_sky-glow, none); background-repeat: no-repeat; background-size: 200% 200%; animation: awc-sky-glow 18s ease-in-out infinite; }
+            @keyframes awc-sky-glow { 0%, 100% { background-position: 30% 25%; } 25% { background-position: 70% 18%; } 50% { background-position: 78% 70%; } 75% { background-position: 22% 78%; } }
+            @media (prefers-reduced-motion: reduce) { #awc-sky-glow { animation: none; will-change: auto; } }
+            #card-root.scheme-day.weather-sunny #awc-simple-bg { --_sky-base: var(--awc-simple-base-sunny-day, radial-gradient(ellipse 135% 118% at 19% 16%, #dbe8f0 0%, #cfdfeb 28%, #c2d7e7 55%, #b4cde3 80%, #a9c4df 100%)); --_sky-glow: var(--awc-simple-glow-sunny-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(251,248,239,0.55) 0%, rgba(251,248,239,0.34) 31%, rgba(251,248,239,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-sunny #awc-simple-bg { --_sky-base: var(--awc-simple-base-sunny-night, radial-gradient(ellipse 135% 118% at 19% 16%, #1b2e46 0%, #152138 28%, #10182c 55%, #0e1426 80%, #0c1122 100%)); --_sky-glow: var(--awc-simple-glow-sunny-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(46,85,112,0.80) 0%, rgba(46,85,112,0.52) 31%, rgba(46,85,112,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-clear-night #awc-simple-bg { --_sky-base: var(--awc-simple-base-clear-night-day, radial-gradient(ellipse 135% 118% at 19% 16%, #dbe8f0 0%, #cfdfeb 28%, #c2d7e7 55%, #b4cde3 80%, #a9c4df 100%)); --_sky-glow: var(--awc-simple-glow-clear-night-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(251,248,239,0.55) 0%, rgba(251,248,239,0.34) 31%, rgba(251,248,239,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-clear-night #awc-simple-bg { --_sky-base: var(--awc-simple-base-clear-night-night, radial-gradient(ellipse 135% 118% at 19% 16%, #192f48 0%, #13223a 28%, #0e172d 55%, #0c1225 80%, #0a0e1f 100%)); --_sky-glow: var(--awc-simple-glow-clear-night-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(44,91,114,0.80) 0%, rgba(44,91,114,0.52) 31%, rgba(44,91,114,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-partlycloudy #awc-simple-bg { --_sky-base: var(--awc-simple-base-partlycloudy-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d4e4ed 0%, #c7dbe8 28%, #bad2e4 55%, #adc8e0 80%, #a2bfdd 100%)); --_sky-glow: var(--awc-simple-glow-partlycloudy-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(248,246,241,0.55) 0%, rgba(248,246,241,0.34) 31%, rgba(248,246,241,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-partlycloudy #awc-simple-bg { --_sky-base: var(--awc-simple-base-partlycloudy-night, radial-gradient(ellipse 135% 118% at 19% 16%, #1d2d44 0%, #172236 28%, #11192a 55%, #0f1525 80%, #0e1220 100%)); --_sky-glow: var(--awc-simple-glow-partlycloudy-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(52,79,106,0.80) 0%, rgba(52,79,106,0.52) 31%, rgba(52,79,106,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-cloudy #awc-simple-bg { --_sky-base: var(--awc-simple-base-cloudy-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d2dee5 0%, #d1e0da 28%, #d2ddd0 55%, #dde1ce 80%, #e5decd 100%)); --_sky-glow: var(--awc-simple-glow-cloudy-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(248,247,241,0.55) 0%, rgba(248,247,241,0.34) 31%, rgba(248,247,241,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-cloudy #awc-simple-bg { --_sky-base: var(--awc-simple-base-cloudy-night, radial-gradient(ellipse 135% 118% at 19% 16%, #28323f 0%, #212a35 28%, #1a212b 55%, #161c24 80%, #13171e 100%)); --_sky-glow: var(--awc-simple-glow-cloudy-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(72,86,104,0.78) 0%, rgba(72,86,104,0.50) 31%, rgba(72,86,104,0.26) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-windy #awc-simple-bg { --_sky-base: var(--awc-simple-base-windy-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d6e9eb 0%, #cae1e6 28%, #bdd7e2 55%, #b0cddd 80%, #a4c5da 100%)); --_sky-glow: var(--awc-simple-glow-windy-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(241,249,247,0.55) 0%, rgba(241,249,247,0.34) 31%, rgba(241,249,247,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-windy #awc-simple-bg { --_sky-base: var(--awc-simple-base-windy-night, radial-gradient(ellipse 135% 118% at 19% 16%, #1d333e 0%, #172734 28%, #121d2a 55%, #101824 80%, #0e1420 100%)); --_sky-glow: var(--awc-simple-glow-windy-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(50,94,103,0.80) 0%, rgba(50,94,103,0.52) 31%, rgba(50,94,103,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-windy-variant #awc-simple-bg { --_sky-base: var(--awc-simple-base-windy-variant-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d6e6e3 0%, #cce1e2 28%, #c1d8de 55%, #b3cfd9 80%, #a8c5d6 100%)); --_sky-glow: var(--awc-simple-glow-windy-variant-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(242,248,244,0.55) 0%, rgba(242,248,244,0.34) 31%, rgba(242,248,244,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-windy-variant #awc-simple-bg { --_sky-base: var(--awc-simple-base-windy-variant-night, radial-gradient(ellipse 135% 118% at 19% 16%, #21363b 0%, #1a2a31 28%, #141f27 55%, #121a22 80%, #10151e 100%)); --_sky-glow: var(--awc-simple-glow-windy-variant-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(55,98,94,0.80) 0%, rgba(55,98,94,0.52) 31%, rgba(55,98,94,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-exceptional #awc-simple-bg { --_sky-base: var(--awc-simple-base-exceptional-day, radial-gradient(ellipse 135% 118% at 19% 16%, #cbe1ec 0%, #b9d5e7 28%, #a8c8e2 55%, #98bbde 80%, #8bb0da 100%)); --_sky-glow: var(--awc-simple-glow-exceptional-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(250,248,239,0.55) 0%, rgba(250,248,239,0.34) 31%, rgba(250,248,239,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-exceptional #awc-simple-bg { --_sky-base: var(--awc-simple-base-exceptional-night, radial-gradient(ellipse 135% 118% at 19% 16%, #182d49 0%, #12213b 28%, #0e172d 55%, #0c1225 80%, #0a0e1f 100%)); --_sky-glow: var(--awc-simple-glow-exceptional-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(41,92,117,0.80) 0%, rgba(41,92,117,0.52) 31%, rgba(41,92,117,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-default #awc-simple-bg { --_sky-base: var(--awc-simple-base-default-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d9e5ec 0%, #cddce8 28%, #c1d3e3 55%, #b4c9de 80%, #a9c0da 100%)); --_sky-glow: var(--awc-simple-glow-default-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(247,246,242,0.55) 0%, rgba(247,246,242,0.34) 31%, rgba(247,246,242,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-default #awc-simple-bg { --_sky-base: var(--awc-simple-base-default-night, radial-gradient(ellipse 135% 118% at 19% 16%, #1d2e44 0%, #162237 28%, #11182b 55%, #0e1323 80%, #0c0f1d 100%)); --_sky-glow: var(--awc-simple-glow-default-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(49,85,109,0.80) 0%, rgba(49,85,109,0.52) 31%, rgba(49,85,109,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-fog #awc-simple-bg { --_sky-base: var(--awc-simple-base-fog-day, radial-gradient(ellipse 135% 118% at 19% 16%, #ece7df 0%, #dde8df 28%, #dae0e4 55%, #d2d9df 80%, #cbd3dc 100%)); --_sky-glow: var(--awc-simple-glow-fog-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(247,246,242,0.55) 0%, rgba(247,246,242,0.34) 31%, rgba(247,246,242,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-fog #awc-simple-bg { --_sky-base: var(--awc-simple-base-fog-night, radial-gradient(ellipse 135% 118% at 19% 16%, #2b333b 0%, #252c33 28%, #1f252b 55%, #1b2026 80%, #181c21 100%)); --_sky-glow: var(--awc-simple-glow-fog-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(86,97,108,0.74) 0%, rgba(86,97,108,0.48) 31%, rgba(86,97,108,0.24) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-snowy #awc-simple-bg { --_sky-base: var(--awc-simple-base-snowy-day, radial-gradient(ellipse 135% 118% at 19% 16%, #e4edf1 0%, #d7e2eb 28%, #c9d6e5 55%, #bdcadf 80%, #b3bfdb 100%)); --_sky-glow: var(--awc-simple-glow-snowy-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(241,246,248,0.55) 0%, rgba(241,246,248,0.34) 31%, rgba(241,246,248,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-snowy #awc-simple-bg { --_sky-base: var(--awc-simple-base-snowy-night, radial-gradient(ellipse 135% 118% at 19% 16%, #233443 0%, #1c2938 28%, #17202e 55%, #141a28 80%, #111522 100%)); --_sky-glow: var(--awc-simple-glow-snowy-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(54,91,109,0.80) 0%, rgba(54,91,109,0.52) 31%, rgba(54,91,109,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-snowy-rainy #awc-simple-bg { --_sky-base: var(--awc-simple-base-snowy-rainy-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d9e2e8 0%, #cad6e0 28%, #bbc9d9 55%, #adbcd2 80%, #a2b2cd 100%)); --_sky-glow: var(--awc-simple-glow-snowy-rainy-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(242,246,247,0.55) 0%, rgba(242,246,247,0.34) 31%, rgba(242,246,247,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-snowy-rainy #awc-simple-bg { --_sky-base: var(--awc-simple-base-snowy-rainy-night, radial-gradient(ellipse 135% 118% at 19% 16%, #232f39 0%, #1c252f 28%, #151c26 55%, #131821 80%, #11141d 100%)); --_sky-glow: var(--awc-simple-glow-snowy-rainy-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(57,82,96,0.80) 0%, rgba(57,82,96,0.52) 31%, rgba(57,82,96,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-hail #awc-simple-bg { --_sky-base: var(--awc-simple-base-hail-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d4dde2 0%, #c4cfd9 28%, #b3c2d1 55%, #a3b4ca 80%, #97a9c4 100%)); --_sky-glow: var(--awc-simple-glow-hail-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(243,246,247,0.55) 0%, rgba(243,246,247,0.34) 31%, rgba(243,246,247,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-hail #awc-simple-bg { --_sky-base: var(--awc-simple-base-hail-night, radial-gradient(ellipse 135% 118% at 19% 16%, #202932 0%, #1a212a 28%, #141a22 55%, #11161e 80%, #0f121a 100%)); --_sky-glow: var(--awc-simple-glow-hail-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(54,76,89,0.80) 0%, rgba(54,76,89,0.52) 31%, rgba(54,76,89,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-rainy #awc-simple-bg { --_sky-base: var(--awc-simple-base-rainy-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d7e3e5 0%, #c8d9dd 28%, #b9ced6 55%, #adc4d0 80%, #a4bccc 100%)); --_sky-glow: var(--awc-simple-glow-rainy-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(242,247,247,0.55) 0%, rgba(242,247,247,0.34) 31%, rgba(242,247,247,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-rainy #awc-simple-bg { --_sky-base: var(--awc-simple-base-rainy-night, radial-gradient(ellipse 135% 118% at 19% 16%, #22343a 0%, #1b2930 28%, #152027 55%, #121b22 80%, #10171e 100%)); --_sky-glow: var(--awc-simple-glow-rainy-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(57,94,96,0.80) 0%, rgba(57,94,96,0.52) 31%, rgba(57,94,96,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-pouring #awc-simple-bg { --_sky-base: var(--awc-simple-base-pouring-day, radial-gradient(ellipse 135% 118% at 19% 16%, #c8dbdf 0%, #b5ced6 28%, #a3c0ce 55%, #95b4c7 80%, #89aac2 100%)); --_sky-glow: var(--awc-simple-glow-pouring-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(233,242,241,0.55) 0%, rgba(233,242,241,0.34) 31%, rgba(233,242,241,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-pouring #awc-simple-bg { --_sky-base: var(--awc-simple-base-pouring-night, radial-gradient(ellipse 135% 118% at 19% 16%, #1d2f34 0%, #17262c 28%, #121d24 55%, #10191f 80%, #0d151b 100%)); --_sky-glow: var(--awc-simple-glow-pouring-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(51,89,91,0.80) 0%, rgba(51,89,91,0.52) 31%, rgba(51,89,91,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-lightning #awc-simple-bg { --_sky-base: var(--awc-simple-base-lightning-day, radial-gradient(ellipse 135% 118% at 19% 16%, #dddbca 0%, #c9cdb8 28%, #afbea7 55%, #97b5ab 80%, #8a9cad 100%)); --_sky-glow: var(--awc-simple-glow-lightning-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(244,241,231,0.55) 0%, rgba(244,241,231,0.34) 31%, rgba(244,241,231,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-lightning #awc-simple-bg { --_sky-base: var(--awc-simple-base-lightning-night, radial-gradient(ellipse 135% 118% at 19% 16%, #232838 0%, #1c2230 28%, #161b27 55%, #131722 80%, #10131c 100%)); --_sky-glow: var(--awc-simple-glow-lightning-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(78,80,116,0.80) 0%, rgba(68,74,106,0.52) 31%, rgba(60,70,98,0.28) 57%, transparent 80%)); }
+            #card-root.scheme-day.weather-lightning-rainy #awc-simple-bg { --_sky-base: var(--awc-simple-base-lightning-rainy-day, radial-gradient(ellipse 135% 118% at 19% 16%, #d3d2c0 0%, #b0c2ac 28%, #99b4a9 55%, #8baeb0 80%, #7f9aad 100%)); --_sky-glow: var(--awc-simple-glow-lightning-rainy-day, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(234,232,220,0.55) 0%, rgba(234,232,220,0.34) 31%, rgba(234,232,220,0.16) 57%, transparent 80%)); }
+            #card-root.scheme-night.weather-lightning-rainy #awc-simple-bg { --_sky-base: var(--awc-simple-base-lightning-rainy-night, radial-gradient(ellipse 135% 118% at 19% 16%, #29281f 0%, #1d231b 28%, #181f1c 55%, #131b1c 80%, #101519 100%)); --_sky-glow: var(--awc-simple-glow-lightning-rainy-night, radial-gradient(ellipse 92% 82% at 23% 21%, rgba(80,76,53,0.80) 0%, rgba(80,76,53,0.52) 31%, rgba(80,76,53,0.28) 57%, transparent 80%)); }
+            #card-root.has-simple-bg #awc-simple-bg { display: block; }
+            #card-root.has-simple-bg #gl-canvas { display: none; }
+            #image-slot { position: absolute; top: 0; height: 100%; width: auto; user-select: none; pointer-events: none; box-sizing: border-box; z-index: 3; }
             #image-slot > img { display: block; height: 100%; width: auto; max-width: 100%; object-fit: contain; border: none; outline: none; }
             #image-slot > img[src=""],
             #image-slot > img:not([src]) { display: none; visibility: hidden; }
-            #text-wrapper { position: absolute; inset: 0; pointer-events: none; box-sizing: border-box; overflow: visible; }
-            #text-wrapper > .pos-top-left { top: var(--_awc-pad-v, var(--awc-card-padding, 16px)); left: var(--_awc-pad-h, var(--awc-card-padding, 16px)); }
-            #text-wrapper > .pos-top-center { top: var(--_awc-pad-v, var(--awc-card-padding, 16px)); left: 50%; transform: translateX(-50%); }
-            #text-wrapper > .pos-top-right { top: var(--_awc-pad-v, var(--awc-card-padding, 16px)); right: var(--_awc-pad-h, var(--awc-card-padding, 16px)); }
-            #text-wrapper > .pos-left { top: 50%; left: var(--_awc-pad-h, var(--awc-card-padding, 16px)); transform: translateY(-50%); }
-            #text-wrapper > .pos-center { top: 50%; left: 50%; transform: translate(-50%, -50%); }
-            #text-wrapper > .pos-right { top: 50%; right: var(--_awc-pad-h, var(--awc-card-padding, 16px)); transform: translateY(-50%); }
-            #text-wrapper > .pos-bottom-left { bottom: var(--_awc-pad-v, var(--awc-card-padding, 16px)); left: var(--_awc-pad-h, var(--awc-card-padding, 16px)); }
-            #text-wrapper > .pos-bottom-center { bottom: var(--_awc-pad-v, var(--awc-card-padding, 16px)); left: 50%; transform: translateX(-50%); }
-            #text-wrapper > .pos-bottom-right { bottom: var(--_awc-pad-v, var(--awc-card-padding, 16px)); right: var(--_awc-pad-h, var(--awc-card-padding, 16px)); }
-            #chips-group { position: absolute; pointer-events: none; font-family: var(--ha-font-family, var(--paper-font-body1_-_font-family, sans-serif)); transition: color 0.3s ease, text-shadow 0.3s ease; min-width: 0; max-width: calc(100% - var(--_awc-pad-h, var(--awc-card-padding, 16px)) * 2); box-sizing: border-box; }
-            #chips-row,
-            .chip-free { color: var(--awc-text-color); }
-            .chip-sub { display: block; font-size: var(--awc-sub-size, 0.78em); opacity: 0.65; font-weight: var(--awc-sub-weight, 500); line-height: 1.2; white-space: var(--awc-sub-wrap, nowrap); overflow: var(--awc-sub-visible, hidden); text-overflow: var(--awc-sub-overflow, ellipsis); }
-            .chip-val .fancy-unit { font-size: 0.55em; font-weight: 500; opacity: 0.85; vertical-align: baseline; position: relative; top: -0.45em; margin-left: 3px; }
-            .chip.has-sub:not(.format-stacked):not(.format-vertical) { align-items: flex-start; }
-            .chip.has-sub:not(.format-stacked):not(.format-vertical) .chip-icon { align-self: center; }
-            .chip.has-sub:not(.format-stacked):not(.format-vertical) .chip-val { display: flex; flex-direction: column; }
-            .chip.has-sub.format-stacked .chip-val,
-            .chip.has-sub.format-vertical .chip-val { white-space: normal; overflow: visible; }
-            #chips-group { pointer-events: auto; width: var(--awc-row-width, auto); box-sizing: border-box; padding: var(--awc-container-padding, 0); max-height: calc(100% - var(--_awc-pad-v, var(--awc-card-padding, 16px)) * 2); }
-            #chips-group.has-row-wrap { --_pad-h: var(--_awc-pad-h, var(--awc-card-padding, 16px)); width: var(--awc-row-width, auto); }
-            #chips-group.has-row-wrap.pos-top-left,
-            #chips-group.has-row-wrap.pos-left,
-            #chips-group.has-row-wrap.pos-bottom-left { left: var(--_pad-h); right: var(--_pad-h); width: var(--awc-row-width, auto); }
-            #chips-group.has-row-wrap.pos-top-right,
-            #chips-group.has-row-wrap.pos-right,
-            #chips-group.has-row-wrap.pos-bottom-right { right: var(--_pad-h); left: auto; }
-            #chips-group.has-row-wrap.pos-top-center,
-            #chips-group.has-row-wrap.pos-bottom-center { left: 50%; transform: translateX(-50%); }
-            #chips-group.has-row-wrap.pos-center { left: 50%; transform: translate(-50%, -50%); }
-            #chips-group.has-row-wrap.pos-left { transform: translateY(-50%); }
-            #chips-group.has-row-wrap.pos-right { transform: translateY(-50%); }
-            #chips-group.has-row-horizontal-scroll { height: var(--awc-row-height, auto); }
-            #chips-group.has-row-vertical-scroll { height: var(--awc-row-height, calc(100% - var(--_awc-pad-v, var(--awc-card-padding, 16px)) * 2)); }
-            #chips-group.grouped { border-radius: var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)); }
-            #chips-group.grouped.with-bg { --_bg: var(--awc-container-bg-color, var(--awc-bottom-bg-color, var(--_text-bg))); }
-            #chips-group.grouped.with-bg.contrast { background: var(--_bg); box-shadow: var(--awc-bg-shadow, var(--_contrast-shadow)); }
-            #chips-group.grouped.with-bg.frosted { background: var(--_bg); border: var(--awc-bg-border, 1px solid var(--_text-bg-border)); box-shadow: var(--awc-bg-shadow, var(--_frosted-inset, none)); backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); -webkit-backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); }
-            #chips-group.grouped.with-bg.theme { background: var(--ha-card-background, var(--card-background-color, var(--primary-background-color))); border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color)); box-shadow: var(--ha-card-box-shadow, none); }
-            #chips-group.grouped.with-bg > #chips-row .chip.with-bg { background: none; border: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; border-radius: 0; padding: var(--awc-chips-padding, 0); }
-            #chips-group.grouped.with-bg > #chips-row.has-separator > .chip { position: relative; overflow: visible; }
-            #chips-group.grouped.with-bg > #chips-row.has-separator > .chip + .chip::before { content: ""; position: absolute; pointer-events: none; top: 0; bottom: 0; inset-inline-start: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); width: var(--awc-separator-width, 2px); background: var(--awc-separator-color, color-mix(in srgb, currentColor 10%, transparent)); }
-            #chips-group.grouped.with-bg > #chips-row.has-separator.row-vertical-scroll > .chip + .chip::before { top: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); bottom: auto; left: 0; right: 0; inset-inline-start: 0; width: auto; height: var(--awc-separator-width, 2px); }
-            #chips-row { font-size: var(--awc-bottom-font-size, clamp(15px, 5cqmin, 26px)); font-weight: var(--awc-bottom-font-weight, 500); display: flex; align-items: center; gap: var(--awc-bottom-gap, 8px); width: 100%; box-sizing: border-box; pointer-events: auto; border-radius: inherit; }
-            #chips-row.has-separator > .chip { position: relative; overflow: visible; }
-            #chips-row.has-separator > .chip + .chip::before { content: ""; position: absolute; pointer-events: none; top: 0; bottom: 0; inset-inline-start: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); width: var(--awc-separator-width, 2px); background: var(--awc-separator-color, color-mix(in srgb, currentColor 10%, transparent)); }
-            #chips-row.has-separator.row-vertical-scroll > .chip + .chip::before { top: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); bottom: auto; left: 0; right: 0; inset-inline-start: 0; width: auto; height: var(--awc-separator-width, 2px); }
-            #chips-row.row-wrap { flex-wrap: wrap; }
-            #chips-row.row-horizontal-scroll { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; height: 100%; scroll-snap-type: x proximity; scrollbar-width: none; -ms-overflow-style: none; pointer-events: auto; }
-            #chips-row.row-horizontal-scroll::-webkit-scrollbar { display: none; }
-            #chips-row.row-horizontal-scroll.has-visible-count { display: grid; grid-auto-flow: column; grid-auto-columns: var(--awc-chip-basis); scroll-snap-type: x mandatory; }
-            #chips-row.row-horizontal-scroll.has-visible-count > .chip { width: 100%; overflow: hidden; scroll-snap-align: start; }
-            #chips-row.row-vertical-scroll { flex-direction: column; flex-wrap: nowrap; overflow-y: auto; overflow-x: hidden; height: 100%; max-height: var(--awc-row-max-height, none); scroll-snap-type: y proximity; scrollbar-width: none; -ms-overflow-style: none; pointer-events: auto; }
-            #chips-row.row-vertical-scroll::-webkit-scrollbar { display: none; }
-            #chips-row.row-vertical-scroll.has-visible-count { display: grid; grid-auto-flow: row; grid-auto-rows: var(--awc-chip-basis-v, auto); max-height: none; scroll-snap-type: y mandatory; }
-            #chips-row.row-vertical-scroll.has-visible-count > .chip { height: 100%; overflow: hidden; scroll-snap-align: start; }
-            #chips-row.row-vertical-scroll:not(.has-visible-count)[class*="pos-bottom"] > :first-child { margin-block-start: auto; }
-            #chips-row.row-vertical-scroll:not(.has-visible-count).pos-center > :first-child { margin-block-start: auto; }
-            #chips-row.row-vertical-scroll:not(.has-visible-count).pos-center > :last-child { margin-block-end: auto; }
-            #chips-row.row-vertical-scroll[class*="right"] { align-items: flex-end; }
-            #chips-row.row-vertical-scroll.pos-top-center,
-            #chips-row.row-vertical-scroll.pos-center,
-            #chips-row.row-vertical-scroll.pos-bottom-center { align-items: center; }
-            #chips-row.row-grid { display: grid; grid-template-columns: repeat(var(--awc-row-columns, 1), minmax(0, 1fr)); align-items: stretch; row-gap: var(--awc-bottom-gap, 8px); column-gap: var(--awc-bottom-gap, 8px); }
-            #chips-row.row-wrap[class*="right"] { justify-content: flex-end; }
-            #chips-row.row-wrap.pos-top-center,
-            #chips-row.row-wrap.pos-center,
-            #chips-row.row-wrap.pos-bottom-center { justify-content: center; }
-            #chips-row.row-grid,
-            #chips-row.full-width,
-            #chips-row.has-visible-count { align-items: stretch; }
-            #chips-row.row-grid > .chip,
-            #chips-row.full-width > .chip,
-            #chips-row.has-visible-count > .chip { width: 100%; overflow: hidden; }
-            #chips-row.row-grid > .chip > .chip-val,
-            #chips-row.full-width > .chip > .chip-val,
-            #chips-row.has-visible-count > .chip > .chip-val { flex: 0 1 auto; }
-            #chips-row.align-center.row-grid > .chip,
-            #chips-row.align-center.full-width > .chip,
-            #chips-row.align-center.has-visible-count > .chip { justify-content: center; text-align: center; }
-            #chips-row.align-end.row-grid > .chip,
-            #chips-row.align-end.full-width > .chip,
-            #chips-row.align-end.has-visible-count > .chip { justify-content: flex-start; text-align: end; }
-            #chips-row.align-center .chip.format-stacked,
-            #chips-row.align-center .chip.format-vertical { justify-content: center; }
-            #chips-row.align-center .chip.format-stacked { grid-template-columns: auto minmax(0, auto); }
-            #chips-row.align-center .chip.format-stacked .chip-name,
-            #chips-row.align-center .chip.format-vertical .chip-name,
-            #chips-row.align-center .chip.format-stacked .chip-val,
-            #chips-row.align-center .chip.format-vertical .chip-val { align-self: auto; justify-self: start; text-align: start; }
-            #chips-row.align-center .chip.format-vertical .chip-name,
-            #chips-row.align-center .chip.format-vertical .chip-val { justify-self: center; text-align: center; display: flex; flex-direction: column; gap: 2px; }
-            #chips-row.align-center .chip.format-stacked.no-icon,
-            #chips-row.align-center .chip.format-vertical.no-icon { justify-items: center; }
-            #chips-row.align-center .chip.format-stacked.no-icon .chip-name,
-            #chips-row.align-center .chip.format-vertical.no-icon .chip-name,
-            #chips-row.align-center .chip.format-stacked.no-icon .chip-val,
-            #chips-row.align-center .chip.format-vertical.no-icon .chip-val { justify-self: center; text-align: center; }
-            #chips-row.align-end .chip:not(.format-stacked):not(.format-vertical) { flex-direction: row-reverse; }
-            #chips-row.align-end .chip:not(.format-stacked):not(.format-vertical) .chip-icon { margin-right: 0; margin-left: var(--awc-chip-gap, 6px); }
-            #chips-row.align-end .chip:not(.format-stacked):not(.format-vertical) .chip-name { margin-right: 0; margin-left: var(--awc-chip-text-gap, 0.35em); }
-            #chips-row.align-end .chip.format-stacked { grid-template: "name icon" auto "value icon" auto / minmax(0, auto) auto; justify-content: end; }
-            #chips-row.align-end .chip.format-vertical { justify-items: end; text-align: end; }
-            #chips-row.align-end .chip.format-stacked.with-bg,
-            #chips-row.align-end .chip.format-vertical.with-bg { padding: var(--awc-chips-padding, 6px 6px 6px 10px); }
-            #chips-row.align-end .chip.format-stacked .chip-name,
-            #chips-row.align-end .chip.format-vertical .chip-name,
-            #chips-row.align-end .chip.format-stacked .chip-val,
-            #chips-row.align-end .chip.format-vertical .chip-val { justify-self: end; text-align: end; }
-            #chips-row.align-spread .chip:not(.format-stacked):not(.format-vertical) { flex: 1 1 0; }
-            #chips-row.align-spread .chip:not(.format-stacked):not(.format-vertical) .chip-val { margin-left: auto; text-align: right; }
-            #chips-row.align-spread .chip.format-stacked { flex: 1 1 0; grid-template-columns: auto 1fr; }
-            #chips-row.align-spread .chip.format-stacked .chip-val { text-align: right; justify-self: end; }
-            #chips-row[class*="pos-bottom"]:not(.has-visible-count) > .chip.format-stacked,
-            #chips-row[class*="pos-bottom"]:not(.has-visible-count) > .chip.format-vertical { align-content: end; }
-            #chips-row[class*="pos-top"]:not(.has-visible-count) > .chip.format-stacked,
-            #chips-row[class*="pos-top"]:not(.has-visible-count) > .chip.format-vertical { align-content: start; }
-            #chips-row.pos-center:not(.has-visible-count) > .chip.format-stacked,
-            #chips-row.pos-center:not(.has-visible-count) > .chip.format-vertical,
-            #chips-row.pos-left:not(.has-visible-count) > .chip.format-stacked,
-            #chips-row.pos-left:not(.has-visible-count) > .chip.format-vertical,
-            #chips-row.pos-right:not(.has-visible-count) > .chip.format-stacked,
-            #chips-row.pos-right:not(.has-visible-count) > .chip.format-vertical { align-content: center; }
-            #chips-row.has-visible-count > .chip.format-stacked,
-            #chips-row.has-visible-count > .chip.format-vertical { align-content: center; }
-            #chips-row[class*="pos-bottom"]:not(.has-visible-count).has-enhanced-child { align-items: flex-end; }
-            #chips-row[class*="pos-top"]:not(.has-visible-count).has-enhanced-child { align-items: flex-start; }
-            .chip { display: flex; align-items: center; gap: 0; flex: 0 0 auto; min-width: 0; max-width: 100%; white-space: nowrap; box-sizing: border-box; scroll-snap-align: start; padding: var(--awc-chips-padding, 0); cursor: pointer; }
-            .chip:not(.with-bg) .chip-name { opacity: var(--awc-bottom-opacity, 0.7); }
-            .chip.has-icon-bg.frosted:not(.with-bg) .chip-name { opacity: var(--awc-bottom-opacity, 0.7); }
-            .chip .chip-icon { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; margin-right: var(--awc-chip-gap, 6px); padding: var(--awc-icon-padding, 0); }
-            .chip .chip-icon ha-icon,
-            .chip .chip-icon ha-state-icon { --mdc-icon-size: var(--awc-icon-size, 1.1em); opacity: 0.9; }
-            .chip .chip-icon img.custom-bottom-icon { display: block; height: var(--awc-icon-size, 1.1em); width: var(--awc-icon-size, 1.1em); object-fit: contain; }
-            .chip .chip-name { font-size: var(--awc-chip-name-font-size, inherit); font-weight: var(--awc-chip-name-weight, 500); opacity: var(--awc-chip-name-opacity, 0.7); color: var(--awc-chip-name-color, inherit); flex: 0 0 auto; margin-right: var(--awc-chip-text-gap, 0.35em); }
-            .chip .chip-val { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; display: inline-block; font-weight: var(--awc-chip-value-weight, 700); }
-            .chip.no-name:not(.format-stacked):not(.format-vertical) .chip-val { font-weight: var(--awc-chip-value-weight, 700); }
-            .chip .chip-val,
-            .chip .chip-name { text-shadow: var(--_chip-no-bg-shadow, 0 1px 2px rgba(0, 0, 0, 0.35)); }
-            .chip.overflow-clip .chip-val { text-overflow: clip; }
-            .chip.overflow-wrap .chip-val { white-space: normal; overflow: visible; text-overflow: clip; }
-            .chip.overflow-wrap:not(.format-stacked):not(.format-vertical) .chip-val { display: inline; }
-            .chip.with-bg { --_bg: var(--awc-bottom-bg-color, var(--_text-bg)); padding: var(--awc-chips-padding, 5px 10px); border-radius: var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)); align-items: center; }
-            .chip.with-bg .chip-val,
-            .chip.with-bg .chip-name { text-shadow: none; }
-            .chip.with-bg.contrast { background: var(--_bg); box-shadow: var(--awc-bg-shadow, var(--_contrast-shadow)); }
-            .chip.with-bg.frosted { background: var(--_bg); border: var(--awc-bg-border, 1px solid var(--_text-bg-border)); box-shadow: var(--awc-bg-shadow, var(--_frosted-inset, none)); backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); -webkit-backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); }
-            .chip.with-bg.theme { background: var(--ha-card-background, var(--card-background-color, var(--primary-background-color))); border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color)); box-shadow: var(--ha-card-box-shadow, none); }
-            .chip.format-stacked,
-            .chip.format-vertical { display: grid; align-items: center; }
-            .chip.format-stacked .chip-icon,
-            .chip.format-vertical .chip-icon { grid-area: icon; margin: 0; aspect-ratio: 1; overflow: visible; border-radius: var(--awc-stacked-icon-radius, calc(var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)) - var(--awc-stacked-icon-inset, 3px))); padding: var(--awc-icon-padding, 4px); }
-            .chip.format-stacked .chip-icon ha-icon,
-            .chip.format-stacked .chip-icon ha-state-icon,
-            .chip.format-vertical .chip-icon ha-icon,
-            .chip.format-vertical .chip-icon ha-state-icon { --mdc-icon-size: var(--awc-icon-size, 1.3em); opacity: 1; }
-            .chip.format-stacked .chip-icon img.custom-bottom-icon,
-            .chip.format-vertical .chip-icon img.custom-bottom-icon { height: var(--awc-icon-size, 1.3em); width: var(--awc-icon-size, 1.3em); }
-            .chip.format-stacked .chip-name,
-            .chip.format-vertical .chip-name { grid-area: name; max-width: 100%; font-size: var(--awc-chip-name-font-size, var(--awc-stacked-name-size, 0.85em)); font-weight: var(--awc-chip-name-weight, 500); opacity: var(--awc-stacked-name-opacity, 0.6); color: var(--awc-stacked-name-color, inherit); line-height: 1.2; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin: 0; }
-            .chip.format-stacked .chip-name:empty,
-            .chip.format-vertical .chip-name:empty { display: none; }
-            .chip.format-stacked:not(.chip-bar-type) .chip-name:empty + .chip-val,
-            .chip.format-vertical:not(.chip-bar-type) .chip-name:empty + .chip-val { grid-row: 1 / -1; align-self: center; }
-            .chip.format-stacked.empty-name .chip-icon,
-            .chip.format-vertical.empty-name .chip-icon { background: none; border: none; box-shadow: none; aspect-ratio: unset; align-self: center; }
-            .chip.format-stacked .chip-val,
-            .chip.format-vertical .chip-val { grid-area: value; font-weight: var(--awc-stacked-value-weight, 700); min-width: 0; max-width: 100%; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .chip.format-stacked { grid-template: "icon name" auto "icon value" auto / auto 1fr; column-gap: var(--awc-stacked-column-gap, var(--awc-chip-gap, 10px)); row-gap: var(--awc-stacked-row-gap, var(--awc-chip-text-gap, 4px)); }
-            .chip.format-stacked .chip-icon { align-self: stretch; }
-            .chip.format-stacked .chip-name { align-self: end; }
-            .chip.format-stacked .chip-val { align-self: start; }
-            .chip.format-stacked.no-icon { grid-template: "name" auto "value" auto / 1fr; column-gap: 0; }
-            .chip.format-stacked.with-bg { padding: var(--awc-chips-padding, 6px 10px 6px 6px); }
-            .chip.format-vertical { grid-template: "icon" auto "name" auto "value" auto / 1fr; row-gap: 0; justify-items: center; text-align: center; }
-            .chip.format-vertical .chip-name:empty + .chip-val { grid-row: value; align-self: center; }
-            .chip.format-vertical .chip-icon { align-self: center; justify-self: center; margin: 0 0 var(--awc-vertical-icon-gap, var(--awc-chip-gap, 6px)) 0; }
-            .chip.format-vertical .chip-icon ha-icon,
-            .chip.format-vertical .chip-icon ha-state-icon { --mdc-icon-size: var(--awc-icon-size, 1.6em); }
-            .chip.format-vertical .chip-icon img.custom-bottom-icon { height: var(--awc-icon-size, 1.6em); width: var(--awc-icon-size, 1.6em); }
-            .chip.format-vertical .chip-name { align-self: auto; margin: 0 0 var(--awc-chip-text-gap, 4px) 0; }
-            .chip.format-vertical .chip-val { align-self: auto; }
-            .chip.format-vertical.with-bg { padding: var(--awc-chips-padding, 6px 10px); }
-            .chip.format-vertical:not(.has-icon-bg) .chip-icon { background: none; border: none; box-shadow: none; aspect-ratio: unset; border-radius: 0; overflow: visible; padding: var(--awc-icon-padding, 0); }
-            .chip.no-icon-bg .chip-icon { background: none !important; border: none !important; box-shadow: none !important; aspect-ratio: unset !important; border-radius: 0 !important; overflow: visible !important; padding: var(--awc-icon-padding, 0) !important; }
-            .chip.icon-only .chip-icon { margin: 0 !important; }
-            .chip.align-center:not(.format-stacked):not(.format-vertical) { justify-content: center; }
-            .chip.align-center:not(.format-stacked):not(.format-vertical) .chip-val { flex: 0 0 auto; text-align: center; }
-            .chip.align-end:not(.format-stacked):not(.format-vertical) { flex-direction: row-reverse; }
-            .chip.align-end:not(.format-stacked):not(.format-vertical) .chip-icon { margin-right: 0; margin-left: var(--awc-chip-gap, 6px); }
-            .chip.align-end:not(.format-stacked):not(.format-vertical) .chip-name { margin-right: 0; margin-left: var(--awc-chip-text-gap, 0.35em); }
-            .chip.align-end:not(.format-stacked):not(.format-vertical) .chip-val { flex: 0 0 auto; }
-            .chip.overflow-marquee:not(.marquee-label).align-center .chip-val,
-            .chip.overflow-marquee:not(.marquee-label).align-end .chip-val { flex: 1 1 auto; min-width: 0; }
-            .chip.align-spread:not(.format-stacked):not(.format-vertical) .chip-val { margin-left: auto; }
-            .chip.align-start.format-stacked .chip-name,
-            .chip.align-start.format-stacked .chip-val { justify-self: start; text-align: start; }
-            .chip.align-center.format-stacked { grid-template-columns: auto minmax(0, auto); justify-content: center; }
-            .chip.align-center.format-stacked .chip-name,
-            .chip.align-center.format-stacked .chip-val { align-self: auto; justify-self: start; text-align: start; }
-            .chip.align-end.format-stacked { grid-template: "name icon" auto "value icon" auto / minmax(0, auto) auto; justify-content: end; }
-            .chip.align-end.format-stacked .chip-name,
-            .chip.align-end.format-stacked .chip-val { justify-self: end; text-align: end; }
-            .chip.align-end.format-stacked.with-bg { padding: var(--awc-chips-padding, 6px 6px 6px 10px); }
-            .chip.align-start.format-vertical { justify-items: start; text-align: start; }
-            .chip.align-center.format-vertical { justify-items: center; text-align: center; }
-            .chip.align-end.format-vertical { justify-items: end; text-align: end; }
-            .chip.has-icon-bg .chip-icon { aspect-ratio: 1; overflow: visible; border-radius: var(--awc-stacked-icon-radius, calc(var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)) - var(--awc-stacked-icon-inset, 3px))); padding: var(--awc-icon-padding, 4px); }
-            .chip.has-icon-bg:not(.format-stacked):not(.format-vertical) .chip-icon { align-self: stretch; }
-            .chip.has-icon-bg.format-stacked .chip-icon { align-self: stretch; }
-            .chip.has-icon-bg:not(.with-bg) .chip-icon { background: var(--_bg, var(--awc-bottom-bg-color, var(--_text-bg))); border: var(--awc-bg-border, 1px solid var(--_text-bg-border, transparent)); box-shadow: var(--awc-icon-bg-shadow, var(--_frosted-inset, none)); }
-            .chip.has-icon-bg:not(.with-bg).frosted .chip-icon { backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); -webkit-backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); }
-            .chip.has-icon-bg:not(.with-bg).contrast .chip-icon { box-shadow: var(--awc-icon-bg-shadow, var(--_contrast-shadow, none)); border: none; }
-            .chip.has-icon-bg:not(.with-bg).theme .chip-icon { background: var(--ha-card-background, var(--card-background-color, var(--primary-background-color))); border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color)); box-shadow: var(--ha-card-box-shadow, none); }
-            .chip.has-icon-bg.with-bg .chip-icon { background: var(--awc-stacked-icon-bg, color-mix(in srgb, var(--ha-card-background, var(--card-background-color, var(--primary-background-color))) 20%, transparent)); border: none; box-shadow: var(--awc-icon-bg-shadow, 0 2px 6px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12)); }
-            .chip.has-icon-bg.with-bg.frosted .chip-icon { border: var(--_stacked-icon-border, none); }
-            .chip.has-icon-bg.with-bg.contrast .chip-icon { box-shadow: var(--awc-icon-bg-shadow, var(--_stacked-icon-shadow, 0 2px 6px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12))); }
-            .chip.has-icon-bg.with-bg.theme .chip-icon { border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color)); }
-            .chip-free { position: absolute; pointer-events: auto; z-index: 99; font-family: var(--ha-font-family, var(--paper-font-body1_-_font-family, sans-serif)); font-size: var(--awc-bottom-font-size, clamp(15px, 5cqmin, 26px)); font-weight: var(--awc-bottom-font-weight, 500); max-width: calc(100% - var(--_awc-pad-h, var(--awc-card-padding, 16px)) * 2); box-sizing: border-box; text-shadow: var(--awc-text-shadow-active); }
-            .chip-free.behind { z-index: -1; }
-            .chip.behind { position: relative; z-index: -1; }
-            .chip.chip-round.with-bg { border-radius: 999px; }
-            .chip.chip-round .chip-icon { border-radius: 999px; }
-            .chip.chip-ring { position: relative; border-radius: 50%; aspect-ratio: 1; justify-content: center; align-content: center; z-index: 1; padding: var(--awc-chips-padding, 10px); }
-            .chip.chip-ring.with-bg { border-radius: 50%; padding: var(--awc-chips-padding, 10px); }
-            .chip.chip-ring.format-vertical .chip-icon { margin-bottom: var(--awc-vertical-icon-gap, var(--awc-chip-gap, 4px)); }
-            .chip.chip-ring.format-vertical .chip-name { margin-bottom: var(--awc-chip-text-gap, 2px); }
-            .chip-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; scroll-snap-align: start; }
-            .chip-ring-wrap::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--awc-ring-gradient, conic-gradient(var(--awc-ring-color, var(--primary-color, #03a9f4)) var(--awc-ring-pct, 0%), transparent 0)); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); transition: --awc-ring-pct 0.6s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; z-index: 0; }
-            .chip-ring-wrap.has-segments::before { -webkit-mask: conic-gradient(#000 var(--awc-ring-pct, 0%), transparent 0), radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); mask: conic-gradient(#000 var(--awc-ring-pct, 0%), transparent 0), radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); -webkit-mask-composite: source-in; mask-composite: intersect; }
-            .chip-ring-track { position: absolute; inset: 0; border-radius: 50%; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); background: currentColor; opacity: 0.10; pointer-events: none; }
-            .chip-ring-wrap > .chip { margin: var(--awc-ring-gap, 3px); z-index: 1; }
-            #chips-row.row-grid > .chip-ring-wrap > .chip,
-            #chips-row.full-width > .chip-ring-wrap > .chip,
-            #chips-row.has-visible-count > .chip-ring-wrap > .chip { width: calc(100% - var(--awc-ring-gap, 3px) * 2); }
-            #chips-row.row-grid > .chip-ring-wrap { aspect-ratio: 1; }
-            .chip-bar { --_bar-radius: calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) * 0.35); position: relative; width: 100%; height: var(--awc-bar-h, 4px); border-radius: var(--_bar-radius); overflow: hidden; margin-top: var(--awc-bar-gap, 4px); flex-shrink: 0; }
-            .chip-bar-track { position: absolute; inset: 0; border-radius: inherit; background: currentColor; opacity: 0.10; }
-            .chip-bar-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--awc-bar-gradient, var(--awc-bar-color, var(--primary-color, #03a9f4))); transform-origin: left center; transform: scaleX(var(--awc-bar-scale, 0)); transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-            .chip.chip-bar-type { flex-wrap: wrap; }
-            .chip.chip-bar-type.format-stacked { grid-template: "icon name" auto "icon value" auto "bar bar" auto / auto 1fr; }
-            .chip.chip-bar-type.format-stacked .chip-bar { grid-area: bar; }
-            .chip.chip-bar-type.format-stacked.no-icon { grid-template: "name" auto "value" auto "bar" auto / 1fr; }
-            .chip.chip-bar-type.format-vertical { grid-template: "icon" auto "name" auto "value" auto "bar" auto / 1fr; }
-            .chip.chip-bar-type.format-vertical .chip-bar { grid-area: bar; justify-self: stretch; }
-            .chip.chip-loading { position: relative; }
-            .chip.chip-loading .chip-icon,
-            .chip.chip-loading .chip-name,
-            .chip.chip-loading .chip-val,
-            .chip.chip-loading .chip-bar { visibility: hidden; }
-            .chip-ring-wrap.chip-loading .chip-ring-track,
-            .chip-ring-wrap.chip-loading::before { visibility: hidden; }
-            .chip-loader { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; }
-            .chip-loader span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.2; animation: awc-dot-pulse 1.2s ease-in-out infinite; }
-            .chip-loader span:nth-child(2) { animation-delay: 0.2s; }
-            .chip-loader span:nth-child(3) { animation-delay: 0.4s; }
+            #text-wrapper { position: absolute; inset: 0; pointer-events: none; box-sizing: border-box; overflow: visible; z-index: 5; }
+            .awc-pos-slot { position: absolute; left: var(--_awc-pad-h, var(--awc-card-padding, 16px)); display: flex; gap: var(--awc-slot-gap, 8px); pointer-events: none; width: calc(100% - var(--_awc-pad-h, var(--awc-card-padding, 16px)) * 2); max-height: calc(100% - var(--_awc-pad-v, var(--awc-card-padding, 16px)) * 2); box-sizing: border-box; flex-direction: column; align-items: var(--_sa-h, flex-start); justify-content: var(--_sa-v, flex-start); }
+            .awc-pos-slot:empty { display: none; }
+            .awc-pos-slot.pos-top-left { top: var(--_awc-pad-v, var(--awc-card-padding, 16px)); --_sa-h: flex-start; --_sa-v: flex-start; }
+            .awc-pos-slot.pos-top-center { top: var(--_awc-pad-v, var(--awc-card-padding, 16px)); --_sa-h: center; --_sa-v: flex-start; }
+            .awc-pos-slot.pos-top-right { top: var(--_awc-pad-v, var(--awc-card-padding, 16px)); --_sa-h: flex-end; --_sa-v: flex-start; }
+            .awc-pos-slot.pos-left { top: 50%; transform: translateY(-50%); --_sa-h: flex-start; --_sa-v: center; }
+            .awc-pos-slot.pos-center { top: 50%; transform: translateY(-50%); --_sa-h: center; --_sa-v: center; }
+            .awc-pos-slot.pos-right { top: 50%; transform: translateY(-50%); --_sa-h: flex-end; --_sa-v: center; }
+            .awc-pos-slot.pos-bottom-left { bottom: var(--_awc-pad-v, var(--awc-card-padding, 16px)); --_sa-h: flex-start; --_sa-v: flex-end; }
+            .awc-pos-slot.pos-bottom-center { bottom: var(--_awc-pad-v, var(--awc-card-padding, 16px)); --_sa-h: center; --_sa-v: flex-end; }
+            .awc-pos-slot.pos-bottom-right { bottom: var(--_awc-pad-v, var(--awc-card-padding, 16px)); --_sa-h: flex-end; --_sa-v: flex-end; }
+            .awc-pos-slot.stack-v { flex-direction: column; align-items: var(--_sa-h, flex-start); justify-content: var(--_sa-v, flex-start); }
+            .awc-pos-slot.stack-h { flex-direction: row; align-items: var(--_sa-v, flex-start); justify-content: var(--_sa-h, flex-start); }
+            .buttons-group { pointer-events: none; font-family: var(--ha-font-family, var(--paper-font-body1_-_font-family, sans-serif)); transition: color 0.3s ease, text-shadow 0.3s ease; min-width: 0; box-sizing: border-box; }
+            .buttons-row,
+            .button-free { color: var(--awc-text-color); }
+            .button-sub { display: block; font-size: var(--awc-sub-size, 0.78em); opacity: var(--awc-sub-opacity, 0.7); font-weight: var(--awc-sub-weight, 500); line-height: 1.2; white-space: var(--awc-sub-wrap, nowrap); overflow: var(--awc-sub-visible, hidden); text-overflow: var(--awc-sub-overflow, ellipsis); flex: 0 0 auto; min-width: 0; }
+            .button-val .fancy-unit { font-size: 0.55em; font-weight: 500; opacity: 0.7; vertical-align: baseline; position: relative; top: -0.45em; margin-left: 3px; }
+            .buttons-group { pointer-events: auto; width: var(--awc-row-width, auto); box-sizing: border-box; padding: var(--awc-container-padding, 0); }
+            .buttons-group.has-row-wrap { width: var(--awc-row-width, auto); }
+            .buttons-group.has-row-horizontal-scroll { height: var(--awc-row-height, auto); }
+            .buttons-group.has-row-vertical-scroll { height: var(--awc-row-height, calc(100% - var(--_awc-pad-v, var(--awc-card-padding, 16px)) * 2)); }
+            .buttons-group.grouped { border-radius: var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)); }
+            .buttons-group.grouped.with-bg { --_bg: var(--awc-container-bg-color, var(--awc-bottom-bg-color, var(--_text-bg))); }
+            :where(.buttons-group.grouped, .button).with-bg.contrast { background: var(--_bg); box-shadow: var(--awc-bg-shadow, var(--_contrast-shadow)); }
+            :where(.buttons-group.grouped, .button).with-bg.frosted { background: var(--_bg); border: var(--awc-bg-border, 1px solid var(--_text-bg-border)); box-shadow: var(--awc-bg-shadow, var(--_frosted-inset, none)); backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); -webkit-backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); }
+            :where(.buttons-group.grouped, .button).with-bg.theme { background: var(--ha-card-background, var(--card-background-color, var(--primary-background-color))); border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color)); box-shadow: var(--ha-card-box-shadow, none); }
+            .buttons-group.grouped.with-bg > .buttons-row .button.with-bg { background: none; border: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; border-radius: 0; padding: var(--awc-buttons-padding, 0); }
+            :where(.buttons-group.grouped.with-bg >) .buttons-row.has-separator:not(.row-grid) > .button { position: relative; overflow: visible; }
+            :where(.buttons-group.grouped.with-bg >) .buttons-row.has-separator:not(.row-grid) > .button + .button::before { content: ""; position: absolute; pointer-events: none; top: 0; bottom: 0; inset-inline-start: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); width: var(--awc-separator-width, 2px); background: var(--awc-separator-color, color-mix(in srgb, currentColor 10%, transparent)); }
+            :where(.buttons-group.grouped.with-bg >) .buttons-row.has-separator:not(.row-grid).row-vertical-scroll > .button + .button::before { top: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); bottom: auto; left: 0; right: 0; inset-inline-start: 0; width: auto; height: var(--awc-separator-width, 2px); }
+            .buttons-row.has-separator:not(.row-grid) > .button { position: relative; overflow: visible; }
+            .buttons-row.has-separator:not(.row-grid) > .button + .button::before { content: ""; position: absolute; pointer-events: none; top: 0; bottom: 0; inset-inline-start: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); width: var(--awc-separator-width, 2px); background: var(--awc-separator-color, color-mix(in srgb, currentColor 10%, transparent)); }
+            .buttons-row.has-separator:not(.row-grid).row-vertical-scroll > .button + .button::before { top: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); bottom: auto; left: 0; right: 0; inset-inline-start: 0; width: auto; height: var(--awc-separator-width, 2px); }
+            .buttons-row { font-size: var(--awc-bottom-font-size, 16px); font-weight: var(--awc-bottom-font-weight, 500); display: flex; align-items: center; gap: var(--awc-bottom-gap, 8px); width: 100%; box-sizing: border-box; pointer-events: auto; border-radius: inherit; }
+            .buttons-row.row-wrap { flex-wrap: wrap; }
+            .buttons-row.row-wrap[class*="pos-top"] { align-items: flex-start; }
+            .buttons-row.row-wrap[class*="pos-bottom"] { align-items: flex-end; }
+            .buttons-row.row-wrap.pos-left,
+            .buttons-row.row-wrap.pos-right { align-items: center; }
+            .buttons-row.row-horizontal-scroll { flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; height: 100%; scroll-snap-type: x proximity; scrollbar-width: none; -ms-overflow-style: none; pointer-events: auto; }
+            .buttons-row.row-horizontal-scroll::-webkit-scrollbar { display: none; }
+            .buttons-row.row-horizontal-scroll.has-visible-count { display: grid; grid-auto-flow: column; grid-auto-columns: var(--awc-button-basis); scroll-snap-type: x mandatory; }
+            .buttons-row.row-horizontal-scroll.has-visible-count > .button { width: 100%; scroll-snap-align: start; }
+            .buttons-row.row-vertical-scroll { flex-direction: column; flex-wrap: nowrap; overflow-y: auto; overflow-x: hidden; height: 100%; max-height: var(--awc-row-max-height, none); scroll-snap-type: y proximity; scrollbar-width: none; -ms-overflow-style: none; pointer-events: auto; }
+            .buttons-row.row-vertical-scroll::-webkit-scrollbar { display: none; }
+            .buttons-row.row-vertical-scroll.has-visible-count { display: grid; grid-auto-flow: row; grid-auto-rows: var(--awc-button-basis-v, auto); max-height: none; scroll-snap-type: y mandatory; }
+            .buttons-row.row-vertical-scroll.has-visible-count > .button { height: 100%; scroll-snap-align: start; }
+            .buttons-row.row-vertical-scroll:not(.has-visible-count)[class*="pos-bottom"] > :first-child { margin-block-start: auto; }
+            .buttons-row.row-vertical-scroll:not(.has-visible-count).pos-center > :first-child { margin-block-start: auto; }
+            .buttons-row.row-vertical-scroll:not(.has-visible-count).pos-center > :last-child { margin-block-end: auto; }
+            .buttons-row.row-vertical-scroll[class*="right"] { align-items: flex-end; }
+            .buttons-row.row-vertical-scroll.pos-top-center,
+            .buttons-row.row-vertical-scroll.pos-center,
+            .buttons-row.row-vertical-scroll.pos-bottom-center { align-items: center; }
+            .buttons-row.row-grid { display: grid; grid-template-columns: repeat(var(--awc-row-columns, 1), minmax(0, 1fr)); align-items: stretch; row-gap: var(--awc-bottom-gap, 8px); column-gap: var(--awc-bottom-gap, 8px); }
+            .buttons-row.row-wrap[class*="right"] { justify-content: flex-end; }
+            .buttons-row.row-wrap.pos-top-center,
+            .buttons-row.row-wrap.pos-center,
+            .buttons-row.row-wrap.pos-bottom-center { justify-content: center; }
+            .buttons-row.row-grid,
+            .buttons-row.has-visible-count { align-items: stretch; }
+            .buttons-row.row-grid > .button,
+            .buttons-row.has-visible-count > .button { overflow: hidden; }
+            .buttons-row.row-grid > .button > .button-content > .button-val,
+            .buttons-row.has-visible-count > .button > .button-content > .button-val { flex: 0 1 auto; }
+            /* Area-level alignment → button (buttons without own .align-* inherit area alignment) */
+            .buttons-row.align-start:where(.row-grid, .has-visible-count) > .button:not(.align-start, .align-center, .align-end, .align-spread) { justify-content: flex-start; text-align: start; }
+            .buttons-row.align-center:where(.row-grid, .has-visible-count) > .button:not(.align-start, .align-center, .align-end, .align-spread) { justify-content: center; text-align: center; }
+            .buttons-row.align-end:where(.row-grid, .has-visible-count) > .button:not(.align-start, .align-center, .align-end, .align-spread) { justify-content: flex-end; text-align: end; }
+            /* Area-level → inline buttons (not stacked/vertical) */
+            .buttons-row.align-end > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) .button-content { flex: unset; }
+            .buttons-row.align-end > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) .button-val { flex: 0 0 auto; }
+            .buttons-row.align-center > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) { justify-content: center; }
+            .buttons-row.align-center > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) .button-content { flex: unset; }
+            .buttons-row.align-center > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) .button-val { flex: 0 0 auto; }
+            .buttons-row.align-spread > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) { flex: 1 1 0; }
+            .buttons-row.align-spread > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) .button-content { justify-content: flex-start; }
+            .buttons-row.align-spread > .button:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) .button-content > .button-val { margin-left: auto; }
+            .buttons-row.align-spread > .button.no-name:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) { justify-content: space-between; }
+            .buttons-row.align-spread > .button.no-name:not(.format-stacked, .format-vertical, .align-start, .align-center, .align-end, .align-spread) .button-content { flex: 0 1 auto; }
+            /* Area-level → stacked buttons */
+            .buttons-row.align-end > .button.format-stacked:not(.align-start, .align-center, .align-end, .align-spread) { flex-direction: row-reverse; }
+            .buttons-row.align-end > .button.format-stacked:not(.align-start, .align-center, .align-end, .align-spread) .button-content { align-items: flex-end; text-align: end; }
+            .buttons-row.align-end > .button.format-stacked:not(.align-start, .align-center, .align-end, .align-spread).with-bg { padding: var(--awc-buttons-padding, 6px 6px 6px 10px); }
+            .buttons-row.align-spread > .button.format-stacked:not(.align-start, .align-center, .align-end, .align-spread) { flex: 1 1 0; }
+            .buttons-row.align-spread > .button.format-stacked:not(.align-start, .align-center, .align-end, .align-spread) .button-content { flex: 1 1 auto; }
+            /* Area-level → vertical buttons */
+            .buttons-row.align-start > .button.format-vertical:not(.align-start, .align-center, .align-end, .align-spread) { align-items: flex-start; text-align: start; }
+            .buttons-row.align-start > .button.format-vertical:not(.align-start, .align-center, .align-end, .align-spread) .button-content { align-items: flex-start; text-align: start; }
+            .buttons-row.align-end > .button.format-vertical:not(.align-start, .align-center, .align-end, .align-spread) { align-items: flex-end; text-align: end; }
+            .buttons-row.align-end > .button.format-vertical:not(.align-start, .align-center, .align-end, .align-spread) .button-content { align-items: flex-end; text-align: end; }
+            /* Position-based vertical alignment for stacked/vertical in non-scroll rows */
+            .buttons-row[class*="pos-bottom"]:not(.has-visible-count) > .button.format-stacked,
+            .buttons-row[class*="pos-bottom"]:not(.has-visible-count) > .button.format-vertical { align-content: end; }
+            .buttons-row[class*="pos-top"]:not(.has-visible-count) > .button.format-stacked,
+            .buttons-row[class*="pos-top"]:not(.has-visible-count) > .button.format-vertical { align-content: start; }
+            .buttons-row:where(.pos-center, .pos-left, .pos-right):not(.has-visible-count) > :where(.button.format-stacked, .button.format-vertical),
+            .buttons-row.has-visible-count > :where(.button.format-stacked, .button.format-vertical) { align-content: center; }
+            .buttons-row[class*="pos-bottom"]:not(.has-visible-count).has-enhanced-child { align-items: flex-end; }
+            .buttons-row[class*="pos-top"]:not(.has-visible-count).has-enhanced-child { align-items: flex-start; }
+            /* Button layout: button > [icon][content > name,val]; format sets flex direction, gap sets spacing */
+            /* Base button (flex row) */
+            .button { display: flex; align-items: center; gap: var(--awc-button-gap, 6px); flex: 0 0 auto; min-width: 0; max-width: 100%; white-space: nowrap; box-sizing: border-box; scroll-snap-align: start; padding: var(--awc-buttons-padding, 0); cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform 0.4s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.4s cubic-bezier(0.2, 0, 0.2, 1); }
+            .button:active { transform: scale(0.94); opacity: 0.75; transition: transform 0.12s cubic-bezier(0.2, 0, 0.2, 1), opacity 0.12s cubic-bezier(0.2, 0, 0.2, 1); }
+            /* Button icon */
+            .button .button-icon { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; padding: var(--awc-icon-padding, 0); }
+            .button .button-icon ha-icon,
+            .button .button-icon ha-state-icon { --mdc-icon-size: var(--awc-icon-size, 1.1em); opacity: 0.9; }
+            .button .button-icon svg.awc-icon { display: block; width: var(--awc-icon-size, 1.1em); height: var(--awc-icon-size, 1.1em); opacity: 0.9; }
+            .button .button-icon svg.awc-icon.awc-colored { opacity: 1; filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15)); }
+            .button .button-icon img.custom-bottom-icon { display: block; height: var(--awc-icon-size, 1.1em); width: var(--awc-icon-size, 1.1em); object-fit: contain; }
+            /* Button content wrapper (holds name + val) */
+            .button .button-content { display: flex; flex-direction: row; align-items: center; gap: var(--awc-button-text-gap, 0.35em); min-width: 0; flex: 1 1 auto; }
+            /* Button name */
+            .button .button-name { font-size: var(--awc-button-name-font-size, inherit); font-weight: var(--awc-button-name-weight, 500); opacity: var(--awc-button-name-opacity, 0.7); color: var(--awc-button-name-color, inherit); flex: 0 0 auto; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .button:not(.with-bg) .button-name { opacity: var(--awc-button-name-opacity, var(--awc-bottom-opacity, 0.7)); }
+            .button.has-icon-bg.frosted:not(.with-bg) .button-name { opacity: var(--awc-button-name-opacity, var(--awc-bottom-opacity, 0.7)); }
+            /* Button value */
+            .button .button-val { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; display: inline-block; font-weight: var(--awc-button-value-weight, 700); opacity: var(--awc-button-value-opacity, 1); max-width: 100%; }
+            .button .button-val,
+            .button .button-name { text-shadow: var(--_button-no-bg-shadow, none); }
+            .button .button-val .fancy-unit { font-size: 0.55em; font-weight: 500; opacity: 0.7; vertical-align: baseline; position: relative; top: -0.45em; margin-left: 3px; }
+            /* Element-disabled states */
+            .button.icon-only { gap: 0; }
+            .button.no-icon .button-content { flex: 1 1 auto; }
+            .button.no-name .button-content { flex: 1 1 auto; }
+            /* When name is empty in stacked/vertical, value fills the space */
+            .button.format-stacked .button-name:empty + .button-val,
+            .button.format-vertical .button-name:empty + .button-val { flex: 1 1 auto; }
+            /* Overflow modes */
+            .button.overflow-clip .button-val { text-overflow: clip; }
+            .button.overflow-wrap .button-val { white-space: normal; overflow: visible; text-overflow: clip; }
+            .button.overflow-wrap:not(.format-stacked):not(.format-vertical) .button-val { display: inline; }
+            /* Background styles */
+            .button.with-bg { --_bg: var(--awc-bottom-bg-color, var(--_text-bg)); padding: var(--awc-buttons-padding, 5px 10px); text-shadow: none; border-radius: var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)); align-items: center; }
+            .button.with-bg .button-val,
+            .button.with-bg .button-name { text-shadow: none; }
+            /* Color tint */
+            .button.has-tint { position: relative; }
+            .button.has-tint::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--awc-button-tint); opacity: 0.18; pointer-events: none; transition: background 0.4s ease; z-index: 0; }
+            .button.has-tint > * { position: relative; z-index: 1; }
+            /* Format: stacked — icon left, name and value in a column */
+            .button.format-stacked .button-content { flex-direction: column; gap: var(--awc-button-text-gap, 4px); align-items: flex-start; }
+            .button.format-stacked .button-icon { align-self: stretch; aspect-ratio: 1; overflow: visible; border-radius: var(--awc-stacked-icon-radius, calc(var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)) - var(--awc-stacked-icon-inset, 3px))); padding: var(--awc-icon-padding, 4px); flex: 0 0 auto; }
+            .button.format-stacked .button-icon ha-icon,
+            .button.format-stacked .button-icon ha-state-icon { --mdc-icon-size: var(--awc-icon-size, 1.3em); opacity: 1; }
+            .button.format-stacked .button-icon img.custom-bottom-icon { height: var(--awc-icon-size, 1.3em); width: var(--awc-icon-size, 1.3em); }
+            .button.format-stacked .button-icon svg.awc-icon { width: var(--awc-icon-size, 1.3em); height: var(--awc-icon-size, 1.3em); opacity: 1; }
+            .button.format-stacked .button-name { font-size: var(--awc-button-name-font-size, var(--awc-stacked-name-size, 0.85em)); opacity: var(--awc-stacked-name-opacity, 0.7); line-height: 1.2; margin: 0; }
+            .button.format-stacked .button-name:empty { display: none; }
+            .button.format-stacked .button-val { font-weight: var(--awc-stacked-value-weight, 700); line-height: 1.2; flex: 0 0 auto; }
+            .button.format-stacked.with-bg { padding: var(--awc-buttons-padding, 6px 10px 6px 6px); }
+            .button.format-stacked.empty-name .button-icon { background: none; border: none; box-shadow: none; aspect-ratio: unset; align-self: center; }
+            .button.format-stacked.has-icon-bg.with-bg { display: grid; grid-template-columns: auto 1fr; }
+            .button.format-stacked.has-icon-bg.with-bg > .button-bar { grid-column: 1 / -1; }
+            /* Format: vertical — icon on top, name and value below */
+            .button.format-vertical { flex-direction: column; align-items: center; text-align: center; gap: var(--awc-button-gap, 6px); }
+            .button.format-vertical .button-content { flex-direction: column; gap: var(--awc-button-text-gap, 4px); align-items: center; text-align: center; flex: 0 0 auto; max-width: 100%; }
+            .button.format-vertical .button-icon { aspect-ratio: 1; overflow: visible; border-radius: var(--awc-stacked-icon-radius, calc(var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)) - var(--awc-stacked-icon-inset, 3px))); padding: var(--awc-icon-padding, 4px); }
+            .button.format-vertical .button-icon ha-icon,
+            .button.format-vertical .button-icon ha-state-icon { --mdc-icon-size: var(--awc-icon-size, 1.6em); }
+            .button.format-vertical .button-icon img.custom-bottom-icon { height: var(--awc-icon-size, 1.6em); width: var(--awc-icon-size, 1.6em); }
+            .button.format-vertical .button-icon svg.awc-icon { width: var(--awc-icon-size, 1.6em); height: var(--awc-icon-size, 1.6em); }
+            .button.format-vertical .button-name { font-size: var(--awc-button-name-font-size, var(--awc-stacked-name-size, 0.85em)); opacity: var(--awc-stacked-name-opacity, 0.7); line-height: 1.2; margin: 0; }
+            .button.format-vertical .button-name:empty { display: none; }
+            .button.format-vertical .button-val { font-weight: var(--awc-stacked-value-weight, 700); line-height: 1.2; flex: 0 0 auto; max-width: 100%; }
+            .button.format-vertical.with-bg { padding: var(--awc-buttons-padding, 6px 10px); }
+            .button.format-vertical:not(.has-icon-bg) .button-icon { background: none; border: none; box-shadow: none; aspect-ratio: unset; border-radius: 0; overflow: visible; padding: var(--awc-icon-padding, 0); }
+            .button.format-vertical.empty-name .button-icon { background: none; border: none; box-shadow: none; aspect-ratio: unset; }
+            /* Per-button alignment (class on the button itself) */
+            /* Inline: per-button */
+            .button.align-center:not(.format-stacked):not(.format-vertical) { justify-content: center; }
+            .button.align-center:not(.format-stacked):not(.format-vertical), .button.align-center:not(.format-stacked):not(.format-vertical) .button-content { flex: 0 0 auto; text-align: center; }
+            .button.align-end:not(.format-stacked):not(.format-vertical) { flex-direction: row-reverse; }
+            .button.align-end:not(.format-stacked):not(.format-vertical) .button-val { flex: 0 0 auto; }
+            .button.overflow-marquee:not(.marquee-label).align-center .button-val,
+            .button.overflow-marquee:not(.marquee-label).align-end .button-val { flex: 1 1 auto; min-width: 0; }
+            .button.align-spread:not(.format-stacked):not(.format-vertical) { flex: 1 1 0; }
+            .button.align-spread:not(.format-stacked):not(.format-vertical) .button-content { justify-content: space-between; }
+            .button.align-spread.no-name:not(.format-stacked):not(.format-vertical) { justify-content: space-between; }
+            .button.align-spread.no-name:not(.format-stacked):not(.format-vertical) .button-content { flex: 0 1 auto; }
+            /* Stacked: per-button */
+            .button.align-end.format-stacked { flex-direction: row-reverse; }
+            .button.align-end.format-stacked .button-content { align-items: flex-end; text-align: end; }
+            .button.align-end.format-stacked.with-bg { padding: var(--awc-buttons-padding, 6px 6px 6px 10px); }
+            .button.align-spread.format-stacked { flex: 1 1 0; }
+            .button.align-spread.format-stacked .button-content { flex: 1 1 auto; }
+            .button.align-spread.format-stacked .button-val { text-align: right; align-self: flex-end; }
+            /* Vertical: per-button */
+            .button.align-start.format-vertical { align-items: flex-start; text-align: start; }
+            .button.align-start.format-vertical .button-content { align-items: flex-start; text-align: start; }
+            .button.align-center.format-vertical { align-items: center; text-align: center; }
+            .button.align-center.format-vertical .button-content { align-items: center; text-align: center; }
+            .button.align-end.format-vertical { align-items: flex-end; text-align: end; }
+            .button.align-end .button-content { text-align: end; justify-content: flex-end; }
+            /* Icon background (same rules for all formats) */
+            .button.no-icon-bg .button-icon { background: none !important; border: none !important; box-shadow: none !important; aspect-ratio: unset !important; border-radius: 0 !important; overflow: visible !important; padding: var(--awc-icon-padding, 0) !important; }
+            .button.has-icon-bg .button-icon { aspect-ratio: 1; overflow: visible; border-radius: var(--awc-stacked-icon-radius, calc(var(--awc-bottom-bg-radius, calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) - 5px)) - var(--awc-stacked-icon-inset, 3px))); padding: var(--awc-icon-padding, 4px); align-self: stretch; }
+            .button.has-icon-bg:not(.with-bg) .button-icon { background: var(--_bg, var(--awc-bottom-bg-color, var(--_text-bg))); border: var(--awc-bg-border, 1px solid var(--_text-bg-border, transparent)); box-shadow: var(--awc-icon-bg-shadow, var(--_frosted-inset, none)); }
+            .button.has-icon-bg:not(.with-bg).frosted .button-icon { backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); -webkit-backdrop-filter: var(--awc-bottom-bg-filter, blur(10px)); }
+            .button.has-icon-bg:not(.with-bg).contrast .button-icon { box-shadow: var(--awc-icon-bg-shadow, var(--_contrast-shadow, none)); border: none; }
+            .button.has-icon-bg:not(.with-bg).theme .button-icon { background: var(--ha-card-background, var(--card-background-color, var(--primary-background-color))); border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color)); box-shadow: var(--ha-card-box-shadow, none); }
+            .button.has-icon-bg.with-bg .button-icon { background: var(--awc-stacked-icon-bg, color-mix(in srgb, var(--ha-card-background, var(--card-background-color, var(--primary-background-color))) 20%, transparent)); border: none; box-shadow: var(--awc-icon-bg-shadow, 0 2px 6px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12)); }
+            .button.has-icon-bg.with-bg.frosted .button-icon { border: var(--_stacked-icon-border, none); }
+            .button.has-icon-bg.with-bg.contrast .button-icon { box-shadow: var(--awc-icon-bg-shadow, var(--_stacked-icon-shadow, 0 2px 6px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12))); }
+            .button.has-icon-bg.with-bg.theme .button-icon { border: var(--ha-card-border-width, 1px) solid var(--ha-card-border-color, var(--divider-color)); }
+            .button-free { position: absolute; pointer-events: auto; z-index: 99; font-family: var(--ha-font-family, var(--paper-font-body1_-_font-family, sans-serif)); font-size: var(--awc-bottom-font-size, 16px); font-weight: var(--awc-bottom-font-weight, 500); max-width: calc(100% - var(--_awc-pad-h, var(--awc-card-padding, 16px)) * 2); box-sizing: border-box; text-shadow: var(--_button-no-bg-shadow, none); }
+            .button.button-round.with-bg { border-radius: 999px; }
+            .button.button-round .button-icon { border-radius: 999px; }
+            .button.button-ring { position: relative; border-radius: 50%; aspect-ratio: 1; justify-content: center; align-content: center; z-index: 1; padding: var(--awc-buttons-padding, 10px); }
+            .buttons-group.has-row-wrap .button.button-ring { height: 100%; }
+            .button.button-ring.with-bg { border-radius: 50%; padding: var(--awc-buttons-padding, 10px); }
+            .button-ring-wrap { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; scroll-snap-align: start; }
+            .button-ring-wrap::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--awc-ring-gradient, conic-gradient(var(--awc-ring-color, var(--primary-color, #03a9f4)) var(--awc-ring-pct, 0%), transparent 0)); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); transition: --awc-ring-pct 0.6s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; z-index: 0; }
+            .button-ring-wrap.has-segments::before { -webkit-mask: conic-gradient(#000 var(--awc-ring-pct, 0%), transparent 0), radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); mask: conic-gradient(#000 var(--awc-ring-pct, 0%), transparent 0), radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); -webkit-mask-composite: source-in; mask-composite: intersect; }
+            .button-ring-track { position: absolute; inset: 0; border-radius: 50%; -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); mask: radial-gradient(farthest-side, transparent calc(100% - var(--awc-ring-w, 4px) - 0.5px), #000 calc(100% - var(--awc-ring-w, 4px))); background: currentColor; opacity: 0.10; pointer-events: none; }
+            .button-ring-wrap > .button { margin: var(--awc-ring-gap, 3px); z-index: 1; }
+            .buttons-row.row-grid > .button-ring-wrap > .button,
+            .buttons-row.has-visible-count > .button-ring-wrap > .button { width: calc(100% - var(--awc-ring-gap, 3px) * 2); }
+            .buttons-row.row-grid > .button-ring-wrap { aspect-ratio: 1; }
+            .button-bar { --_bar-radius: calc(var(--awc-card-border-radius, var(--ha-card-border-radius, 12px)) * 0.35); position: relative; width: 100%; height: var(--awc-bar-h, 4px); min-height: var(--awc-bar-h, 4px); border-radius: var(--_bar-radius); overflow: hidden; flex-shrink: 0; }
+            .button-bar-track { position: absolute; inset: 0; border-radius: inherit; background: currentColor; opacity: 0.10; }
+            .button-bar-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--awc-bar-gradient, var(--awc-bar-color, var(--primary-color, #03a9f4))); transform-origin: left center; transform: scaleX(var(--awc-bar-scale, 0)); transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+            .button.button-bar-type { flex-wrap: wrap; }
+            .button.button-bar-type.format-vertical { flex-wrap: nowrap; }
+            .button.button-bar-type.format-vertical .button-bar { align-self: stretch; }
+            .button.button-loading { position: relative; }
+            .button.button-loading .button-icon,
+            .button.button-loading .button-name,
+            .button.button-loading .button-val,
+            .button.button-loading .button-bar { visibility: hidden; }
+            .button-ring-wrap.button-loading .button-ring-track,
+            .button-ring-wrap.button-loading::before { visibility: hidden; }
+            .button-loader { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 5px; pointer-events: none; }
+            .button-loader span { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: 0.2; animation: awc-dot-pulse 1.2s ease-in-out infinite; }
+            .button-loader span:nth-child(2) { animation-delay: 0.2s; }
+            .button-loader span:nth-child(3) { animation-delay: 0.4s; }
 @keyframes awc-dot-pulse {
                 0%, 60%, 100% { opacity: 0.2; transform: scale(0.85); }
                 30%           { opacity: 0.7; transform: scale(1); }
             }
-            .chip .chip-val.awc-marquee-host { overflow: hidden; text-overflow: clip; contain: layout style; }
-            .chip .chip-name.awc-marquee-host { overflow: hidden; text-overflow: clip; contain: layout style; margin-right: var(--awc-chip-text-gap, 0.35em); }
-            .chip.marquee-value .chip-name { flex: 0 0 auto; }
-            .chip.marquee-label .chip-name { flex: 1 1 auto; min-width: 0; }
-            .chip.marquee-label .chip-val { flex: 0 0 auto; }
-            .chip.marquee-both .chip-name { flex: 1 1 auto; min-width: 0; }
-            .chip.marquee-both .chip-val { flex: 1 1 auto; min-width: 0; }
-            .chip .chip-val.awc-marquee-host.is-animating { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); }
-            .chip .chip-name.awc-marquee-host.is-animating { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); }
-            .chip-sub.awc-marquee-host { overflow: hidden; text-overflow: clip; contain: layout style; }
-            .chip-sub.awc-marquee-host.is-animating { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); }
+            :where(.button .button-val, .button .button-name, .button-sub).awc-marquee-host { overflow: hidden; text-overflow: clip; contain: layout style; }
+            .button.marquee-value .button-name { flex: 0 0 auto; }
+            .button.marquee-label .button-name { flex: 1 1 auto; min-width: 0; }
+            .button.marquee-label .button-val { flex: 0 0 auto; }
+            .button.marquee-both .button-name { flex: 1 1 auto; min-width: 0; }
+            .button.marquee-both .button-val { flex: 1 1 auto; min-width: 0; }
+            :where(.button .button-val, .button .button-name, .button-sub).awc-marquee-host.is-animating { -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); mask-image: linear-gradient(to right, transparent 0, #000 var(--awc-marquee-fade, 12px), #000 calc(100% - var(--awc-marquee-fade, 12px)), transparent 100%); }
             .awc-marquee-track { display: inline-block; white-space: nowrap; }
             .awc-marquee-text { display: inline; }
             .awc-marquee-sep { display: inline-block; padding: 0 var(--awc-marquee-sep-gap, 0.4em); opacity: 0.5; }
@@ -1828,101 +1339,118 @@ class AtmosphericWeatherCard extends HTMLElement {
         if (this._config.card_offset) this.style.margin = this._config.card_offset;
         const style = document.createElement('style'); style.textContent = AtmosphericWeatherCard._buildStyles();
         const root = document.createElement('div'); root.id = 'card-root';
-        root.innerHTML = `<canvas id="bg-canvas"></canvas><canvas id="mid-canvas"></canvas><div id="image-slot"><img /></div><canvas id="fg-canvas"></canvas><div id="text-wrapper"><div id="chips-group"><div id="chips-row"></div></div></div><div id="custom-cards-wrapper"></div>`;
+        root.innerHTML = `<canvas id="star-bg-canvas"></canvas><canvas id="star-canvas"></canvas><canvas id="gl-canvas"></canvas><div id="awc-sunrays"><b></b></div><div id="awc-sunglow"></div><div id="awc-bottom-fade"></div><div id="awc-theme-adapt"></div><div id="awc-simple-bg"><div id="awc-sky-base" class="awc-sky-layer"></div><div id="awc-sky-glow" class="awc-sky-layer"></div></div><div id="awc-weather-bg"></div><div id="image-slot"><img /></div><div id="text-wrapper"></div><div id="custom-cards-wrapper"></div>`;
         this.shadowRoot.append(style, root); const q = (sel) => root.querySelector(sel);
-        const bg = q('#bg-canvas'), mid = q('#mid-canvas'), fg = q('#fg-canvas');
+        const glCanvas = q('#gl-canvas');
+        glCanvas.addEventListener('webglcontextlost', (e) => {
+            e.preventDefault(); this._stopAnimation(); this._destroyGL();
+        }, false);
+        glCanvas.addEventListener('webglcontextrestored', () => { this._initWebGL(); this._shaderParams = this._weatherToUniforms(); this._startAnimation(); }, false);
         const img = q('#image-slot > img');
         img.onerror = () => { img.style.opacity = '0'; };
         img.onload  = () => { img.style.opacity = '1'; };
-        const chipsRow = q('#chips-row'); chipsRow.addEventListener('click', (e) => this._handleChipClick(e));
+        const textWrapper = q('#text-wrapper');
+        textWrapper.addEventListener('click', (e) => this._handleButtonClick(e));
+        const posSlots = {};
+        for (const pos of ['top-left','top-center','top-right','left','center','right','bottom-left','bottom-center','bottom-right']) {
+            const slot = document.createElement('div');
+            slot.className = `awc-pos-slot pos-${pos}`;
+            slot.dataset.pos = pos;
+            textWrapper.appendChild(slot);
+            posSlots[pos] = slot;
+        }
         this._elements = {
-            root, bg, mid, fg, img, imageSlot: q('#image-slot'),
-            chipsGroup: q('#chips-group'), chipsRow,
-            textWrapper: q('#text-wrapper'),
+            root, glCanvas, img, imageSlot: q('#image-slot'),
+            starCanvas: q('#star-canvas'), starBgCanvas: q('#star-bg-canvas'),
+            textWrapper,
+            weatherBg: q('#awc-weather-bg'),
+            simpleBg: q('#awc-simple-bg'),
             customCardsWrapper: q('#custom-cards-wrapper'),
+            buttonAreaEls: [],
+            posSlots,
         };
-        const ctxOpts = { alpha: true, willReadFrequently: false };
-        const bgCtx = bg.getContext('2d', ctxOpts), midCtx = mid.getContext('2d', ctxOpts), fgCtx = fg.getContext('2d', ctxOpts);
-        if (!bgCtx || !midCtx || !fgCtx) {
-            console.error('ATMOSPHERIC-WEATHER-CARD: Failed to get canvas context');
-            return;
-        }
-        bgCtx.imageSmoothingQuality = midCtx.imageSmoothingQuality = fgCtx.imageSmoothingQuality = 'high';
-        this._ctxs = { bg: bgCtx, mid: midCtx, fg: fgCtx };
+        this._syncButtonAreaDOM();
     }
-    _clearAllParticles() {
-        if (this._cloudAtlases) {
-            for (let i = 0; i < this._cloudAtlases.length; i++) {
-                const a = this._cloudAtlases[i]; a.canvas.width = 0; a.canvas.height = 0;
-            }
-            this._cloudAtlases = null;
+    _syncButtonAreaDOM() {
+        if (!this._elements || !this._elements.textWrapper) return;
+        const wanted = this._areas.length, current = this._elements.buttonAreaEls;
+        while (current.length > wanted) {
+            const removed = current.pop();
+            removed.group.remove();
         }
-        for (const key of PARTICLE_ARRAYS) this[key] = []; this._flashHold = 0; this._aurora = null;
-        if (this._milkyWay) { this._milkyWay.width = 0; this._milkyWay = null; }
+        while (current.length < wanted) {
+            const idx = current.length;
+            const group = document.createElement('div');
+            group.className = 'buttons-group';
+            group.dataset.area = String(idx);
+            const row = document.createElement('div');
+            row.className = 'buttons-row';
+            group.appendChild(row);
+            current.push({ group, row });
+        }
+        for (let i = 0; i < current.length; i++) {
+            current[i].group.dataset.area = String(i);
+        }
     }
-    // DOM UPDATES
-    _updateStandaloneStyles(isNight, newParams) {
-        const root = this._elements.root, atm = newParams.atmosphere || '';
-        const w = this._cachedDimensions.width / (this._cachedDimensions.dpr || 1);
-        // === GLOW VARIABLES — all modes (standalone + immersive) ===
-        // Default --g-op: 0 in CSS; nothing shows until JS sets values.
-        if (w > 0) {
-            const h = this._cachedDimensions.height / (this._cachedDimensions.dpr || 1);
-            const celestial = this._getCelestialPosition(w, h);
-            this._cssVar(root, '--c-x', `${celestial.x}px`, '_prevCx');
-            this._cssVar(root, '--c-y', `${celestial.y}px`, '_prevCy');
-            if (h > 0) {
-                const dx = Math.max(celestial.x, w - celestial.x), dy = Math.max(celestial.y, h - celestial.y);
-                this._cssVar(root, '--c-r', `${Math.ceil(Math.sqrt(dx * dx + dy * dy) * 0.3)}px`, '_prevCr');
+    _applySlotDirections() {
+        const slots = this._elements && this._elements.posSlots;
+        if (!slots) return;
+        const areas = this._areas || [];
+        const slotPrefs = {};
+        const slotCounts = {};
+        for (const area of areas) {
+            const pos = (area.position || 'bottom-left').toString().toLowerCase();
+            slotCounts[pos] = (slotCounts[pos] || 0) + 1;
+            if (!slotPrefs[pos] && area.stack_direction) {
+                slotPrefs[pos] = area.stack_direction;
             }
         }
-        if (this._isTimeNight) {
-            const _mpcIllum = this._moonPhaseConfig && this._moonPhaseConfig.illumination;
-            const illum = _mpcIllum != null ? _mpcIllum : 1.0;
-            const nightWeatherOp = { storm: 0.08, pouring: 0.10, rain: 0.14, snow: 0.22, overcast: 0.28, windy: 0.28, mist: 0.20, fog: 0.20, fair: 0.80 };
-            const weatherFactor = nightWeatherOp[atm] != null ? nightWeatherOp[atm] : 1.0, nightOp = (0.20 + illum * 0.30) * weatherFactor, forcedLight = !this._isThemeDark;
-            // Colored moon_style drives the glow tint in both modes. Unset or
-            // unknown values fall back to the original per-theme defaults.
-            const rawStyle = (this._config.celestial_moon_style || '').toLowerCase();
-            const coloredRgbMap = { yellow: '255,200,50', blue: '100,125,175', purple: '140,115,175', grey: '105,110,120' };
-            let moonRgb;
-            if (coloredRgbMap[rawStyle]) {
-                moonRgb = coloredRgbMap[rawStyle];
-            } else if (forcedLight) {
-                moonRgb = '100,125,175';
+        for (const pos in slotCounts) {
+            if (slotCounts[pos] > 1 && !slotPrefs[pos]) slotPrefs[pos] = 'vertical';
+        }
+        for (const [pos, slot] of Object.entries(slots)) {
+            const pref = slotPrefs[pos];
+            if (pref) {
+                slot.classList.toggle('stack-h', pref === 'horizontal');
+                slot.classList.toggle('stack-v', pref === 'vertical');
             } else {
-                moonRgb = this._isLightBackground ? '218,228,255' : '190,210,255';
+                slot.classList.remove('stack-h', 'stack-v');
             }
-            this._cssVar(root, '--g-rgb', moonRgb, '_prevGRgb'); this._cssVar(root, '--g-op', nightOp.toFixed(3), '_prevGOp');
-        } else {
-            const dayWeatherOp = { storm: 0.06, pouring: 0.08, rain: 0.10, snow: 0.16, mist: 0.16, fog: 0.16, overcast: 0.26, windy: 0.24, fair: 0.38, clear: 0.55, exceptional: 0.55 };
-            const dayOp = dayWeatherOp[atm] != null ? dayWeatherOp[atm] : 0.45;
-            const coolGlow = atm === 'overcast' || atm === 'mist' || atm === 'windy' || atm === 'fog';
-            const badGlow = atm === 'storm' || atm === 'pouring' || atm === 'rain' || atm === 'snow';
-            const dayRgb = badGlow ? '232, 240, 252' : coolGlow ? '240, 245, 255' : '255, 248, 232';
-            this._cssVar(root, '--g-rgb', dayRgb, '_prevGRgb'); this._cssVar(root, '--g-op', dayOp.toFixed(3), '_prevGOp');
         }
-            const isDarkScheme = this._isThemeDark;
-        root.classList.toggle('scheme-night', isDarkScheme); root.classList.toggle('scheme-day', !isDarkScheme);
-        root.classList.toggle('time-day', !this._isTimeNight);
-            if (this._isImmersive) {
-            if (this._prevStyleSig !== null) {
-                root.classList.remove('standalone', ...WEATHER_CLASSES); this._prevStyleSig = null;
-            }
-            return;
-        }
-        const styleSig = `${isDarkScheme}_${this._isTimeNight}_${atm}_${this._moonPhaseState}`;
-        if (this._prevStyleSig === styleSig) return; this._prevStyleSig = styleSig; root.classList.add('standalone');
-        root.classList.remove(...WEATHER_CLASSES); const weatherClass = ATMOSPHERE_CSS[atm]; if (weatherClass) root.classList.add(weatherClass);
+    }
+    _updateSchemeStyles(isNight, weatherState) {
+        const root = this._elements.root;
+        const cfg = this._config || {};
+        root.classList.toggle('scheme-night', this._isThemeDark);
+        root.classList.toggle('scheme-day', !this._isThemeDark);
+        const sunEnabled = cfg.sun_effects !== false;
+        const styleSig = `${this._isThemeDark}_${weatherState}_${sunEnabled}`;
+        if (this._prevStyleSig === styleSig) return; this._prevStyleSig = styleSig;
+        if (this._prevWeatherClass) root.classList.remove(this._prevWeatherClass);
+        const cls = `weather-${weatherState}`;
+        root.classList.add(cls);
+        this._prevWeatherClass = cls;
+        const vis = WEATHER_VISUALS[weatherState] || WEATHER_VISUALS['default'];
+        root.classList.toggle('has-sunrays', !!vis.sunrays && !isNight && sunEnabled);
     }
     _applyConfigStyles() {
-        if (!this._elements || !this._elements.chipsRow) return; const cfg = this._config; const showText = cfg.card_hide_text !== true;
-        const showBottom = cfg.chip_area_hide !== true, showBottomBg = cfg.chip_area_background === true;
-        const bgStyle = ['contrast', 'frosted', 'theme'].includes((cfg.card_background_style || '').toLowerCase()) ? cfg.card_background_style.toLowerCase() : 'frosted';
+        if (!this._elements || !this._elements.buttonAreaEls.length) return; const cfg = this._config;
         const root = this._elements.root;
-        this._cssVar(root, '--awc-bottom-font-size', cfg.chip_text_size || '', '_prevBottomFS');
-        this._cssVar(root, '--awc-chip-name-font-size', cfg.chip_label_size || '', '_prevChipNameFS');
         this._cssVar(root, '--awc-card-padding', cfg.card_padding || '', '_prevCardPadding');
+        const bgB = cfg.bg_brightness != null ? String(cfg.bg_brightness) : '';
+        const bgS = cfg.bg_saturation != null ? String(cfg.bg_saturation) : '';
+        this._cssVar(root, '--awc-bg-brightness', bgB, '_prevBgBrightness');
+        this._cssVar(root, '--awc-bg-saturation', bgS, '_prevBgSaturation');
+        root.classList.toggle('has-bg-filter', !!bgB || !!bgS);
+        const hasFade = cfg.bottom_fade === true;
+        if (this._prevBottomFade !== hasFade) {
+            this._prevBottomFade = hasFade;
+            root.classList.toggle('has-bottom-fade', hasFade);
+        }
+        if (cfg.theme_adapt === false && this._prevAdaptMode) {
+            root.classList.remove('adapt-dim', 'adapt-lift');
+            this._prevAdaptMode = '';
+        }
         const padRaw = (cfg.card_padding || '').toString().trim();
         if (padRaw && this._prevCardPadParsed !== padRaw) {
             this._prevCardPadParsed = padRaw; const parts = padRaw.split(/\s+/); root.style.setProperty('--_awc-pad-v', parts[0] || '');
@@ -1930,57 +1458,77 @@ class AtmosphericWeatherCard extends HTMLElement {
         } else if (!padRaw && this._prevCardPadParsed) {
             this._prevCardPadParsed = ''; root.style.removeProperty('--_awc-pad-v'); root.style.removeProperty('--_awc-pad-h');
         }
-        const configSig = `${showText}|${showBottom}|${bgStyle}`;
-        if (this._prevConfigSig !== configSig) {
-            this._prevConfigSig = configSig; this._elements.textWrapper.style.display = showText ? '' : 'none';
-            this._elements.chipsRow.style.display = showBottom ? '' : 'none'; this._elements.chipsGroup.style.display = showBottom ? '' : 'none';
+        if (!this._areaStyleCache) this._areaStyleCache = [];
+        for (let ai = 0; ai < this._areas.length; ai++) {
+            this._applyAreaStyles(ai, this._areas[ai]);
         }
-        for (const [prop, key, cache] of [
-            ['--awc-row-width', 'chip_area_width', '_prevRowWidth'],
-            ['--awc-row-height', 'chip_area_height', '_prevRowHeight'],
-            ['--awc-chips-padding', 'chip_padding', '_prevChipPad'],
-            ['--awc-container-padding', 'chip_area_padding', '_prevContainerPad'],
-            ['--awc-container-bg-color', 'chip_area_background_color', '_prevContainerBgColor'],
-            ['--awc-bottom-gap', 'chip_area_gap', '_prevChipsGap'],
-            ['--awc-chip-gap', 'chip_gap', '_prevChipGap'],
-            ['--awc-chip-text-gap', 'chip_text_gap', '_prevChipTextGap'],
-            ['--awc-icon-size', 'chip_icon_size', '_prevChipIconWidth'],
-            ['--awc-icon-padding', 'chip_icon_padding', '_prevChipIconPad'],
-        ]) this._cssVar(root, prop, (cfg[key] || '').toString().trim(), cache);
-        const cols = parseInt(cfg.chip_area_columns, 10);
-        this._cssVar(root, '--awc-row-columns', Number.isFinite(cols) && cols > 0 ? String(cols) : '', '_prevRowCols');
-        let rowLayout = (cfg.chip_area_layout || 'wrap').toString().toLowerCase();
-        const isGrouped = cfg.chip_area_grouped === true, bt = this._elements.chipsRow, cg = this._elements.chipsGroup;
-        if (this._prevRowOverflow !== rowLayout) {
-            this._prevRowOverflow = rowLayout;
+    }
+    _applyAreaStyles(ai, area) {
+        const els = this._elements.buttonAreaEls[ai]; if (!els) return;
+        const bt = els.row, cg = els.group;
+        if (!this._areaStyleCache[ai]) this._areaStyleCache[ai] = {};
+        const cache = this._areaStyleCache[ai];
+        const showBottom = area.hide !== true;
+        const showBottomBg = area.background === true;
+        const bgStyle = ['contrast', 'frosted', 'theme'].includes((area.background_style || '').toLowerCase()) ? area.background_style.toLowerCase() : 'frosted';
+        const configSig = `${showBottom}|${bgStyle}`;
+        if (cache.configSig !== configSig) {
+            cache.configSig = configSig;
+            bt.style.display = showBottom ? '' : 'none'; cg.style.display = showBottom ? '' : 'none';
+        }
+        const cssVarArea = (el, prop, val, cacheKey) => {
+            if (cache[cacheKey] !== val) { cache[cacheKey] = val; if (val) el.style.setProperty(prop, val); else el.style.removeProperty(prop); }
+        };
+        for (const [prop, key, ck] of [
+            ['--awc-row-width', 'width', 'rowWidth'],
+            ['--awc-row-height', 'height', 'rowHeight'],
+            ['--awc-buttons-padding', 'button_padding', 'buttonPad'],
+            ['--awc-container-padding', 'padding', 'containerPad'],
+            ['--awc-container-bg-color', 'background_color', 'containerBgColor'],
+            ['--awc-bottom-gap', 'gap', 'buttonsGap'],
+            ['--awc-button-gap', 'button_gap', 'buttonGap'],
+            ['--awc-button-text-gap', 'button_text_gap', 'buttonTextGap'],
+            ['--awc-icon-size', 'button_icon_size', 'buttonIconWidth'],
+            ['--awc-icon-padding', 'button_icon_padding', 'buttonIconPad'],
+            ['--awc-bottom-font-size', 'button_text_size', 'bottomFS'],
+            ['--awc-button-name-font-size', 'button_label_size', 'buttonNameFS'],
+            ['--awc-sub-size', 'sub_value_size', 'subValueSize'],
+            ['--awc-sub-weight', 'sub_value_weight', 'subValueWeight'],
+        ]) cssVarArea(cg, prop, (area[key] || '').toString().trim(), ck);
+        const cols = parseInt(area.columns, 10);
+        cssVarArea(cg, '--awc-row-columns', Number.isFinite(cols) && cols > 0 ? String(cols) : '', 'rowCols');
+        let rowLayout = (area.layout || 'wrap').toString().toLowerCase();
+        const isGrouped = area.grouped === true;
+        if (cache.rowOverflow !== rowLayout) {
+            cache.rowOverflow = rowLayout;
             for (const m of ['horizontal-scroll', 'wrap', 'grid', 'vertical-scroll']) bt.classList.toggle('row-' + m, rowLayout === m);
             for (const m of ['horizontal-scroll', 'wrap', 'vertical-scroll']) cg.classList.toggle('has-row-' + m, rowLayout === m);
         }
-        const visCount = parseInt(cfg.chip_area_scroll_count, 10), hasVis = Number.isFinite(visCount) && visCount > 0;
+        const visCount = parseInt(area.scroll_count, 10), hasVis = Number.isFinite(visCount) && visCount > 0;
         const visKey = `${hasVis}|${visCount}|${rowLayout}`;
-        if (this._prevVisKey !== visKey) {
-            this._prevVisKey = visKey; bt.classList.toggle('has-visible-count', hasVis);
+        if (cache.visKey !== visKey) {
+            cache.visKey = visKey; bt.classList.toggle('has-visible-count', hasVis);
             if (hasVis) {
-                const gapVal = (cfg.chip_area_gap || '8px').toString().trim() || '8px';
-                bt.style.setProperty('--awc-chip-basis', `calc((100% - ${visCount - 1} * ${gapVal}) / ${visCount})`);
+                const gapVal = (area.gap || '8px').toString().trim() || '8px';
+                bt.style.setProperty('--awc-button-basis', `calc((100% - ${visCount - 1} * ${gapVal}) / ${visCount})`);
                 if (rowLayout === 'vertical-scroll') {
-                    bt.style.setProperty('--awc-chip-basis-v', `calc((100% - ${visCount - 1} * ${gapVal}) / ${visCount})`);
+                    bt.style.setProperty('--awc-button-basis-v', `calc((100% - ${visCount - 1} * ${gapVal}) / ${visCount})`);
                 } else {
-                    bt.style.removeProperty('--awc-chip-basis-v');
+                    bt.style.removeProperty('--awc-button-basis-v');
                 }
             } else {
-                bt.style.removeProperty('--awc-chip-basis'); bt.style.removeProperty('--awc-chip-basis-v');
+                bt.style.removeProperty('--awc-button-basis'); bt.style.removeProperty('--awc-button-basis-v');
             }
             if (!hasVis && rowLayout === 'vertical-scroll') {
-                requestAnimationFrame(() => this._computeVerticalVisHeight());
+                requestAnimationFrame(() => this._computeVerticalVisHeight(ai));
             } else if (rowLayout !== 'vertical-scroll' || hasVis) {
                 bt.style.removeProperty('--awc-row-max-height');
             }
         }
-        const hasSeparator = cfg.chip_area_separator === true;
+        const hasSeparator = area.separator === true;
         const groupedKey = `${isGrouped}|${showBottomBg}|${bgStyle}|${hasSeparator}`;
-        if (this._prevGrouped !== groupedKey) {
-            this._prevGrouped = groupedKey; cg.classList.toggle('grouped', isGrouped); bt.classList.toggle('has-separator', hasSeparator);
+        if (cache.grouped !== groupedKey) {
+            cache.grouped = groupedKey; cg.classList.toggle('grouped', isGrouped); bt.classList.toggle('has-separator', hasSeparator);
             if (isGrouped && showBottomBg) {
                 cg.classList.add('with-bg');
                 for (const s of ['contrast', 'frosted', 'theme']) cg.classList.toggle(s, bgStyle === s);
@@ -1988,99 +1536,150 @@ class AtmosphericWeatherCard extends HTMLElement {
                 cg.classList.remove('with-bg', 'contrast', 'frosted', 'theme');
             }
         }
-        const fullWidth = cfg.chip_area_full_width === true;
-        if (this._prevFullWidth !== fullWidth) {
-            this._prevFullWidth = fullWidth; bt.classList.toggle('full-width', fullWidth);
+        const gridSepKey = `${hasSeparator}|${rowLayout}|${cols}`;
+        if (cache.gridSepKey !== gridSepKey) {
+            cache.gridSepKey = gridSepKey;
+            let existingSepStyle = cg.querySelector('.awc-grid-sep-style');
+            if (hasSeparator && rowLayout === 'grid' && Number.isFinite(cols) && cols > 0) {
+                const sel = `.buttons-row.row-grid.has-separator`;
+                const sepCss = `
+${sel} > .button { position: relative; overflow: visible; }
+${sel} > .button::before { content: ""; position: absolute; pointer-events: none; top: 0; bottom: 0; inset-inline-start: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); width: var(--awc-separator-width, 2px); background: var(--awc-separator-color, color-mix(in srgb, currentColor 10%, transparent)); }
+${sel} > .button::after { content: ""; position: absolute; pointer-events: none; left: 0; right: 0; top: calc((var(--awc-bottom-gap, 8px) / -2) - (var(--awc-separator-width, 2px) / 2)); height: var(--awc-separator-width, 2px); background: var(--awc-separator-color, color-mix(in srgb, currentColor 10%, transparent)); }
+${sel} > .button:nth-child(${cols}n+1)::before { content: none; }
+${sel} > .button:nth-child(-n+${cols})::after { content: none; }`;
+                if (existingSepStyle) {
+                    existingSepStyle.textContent = sepCss;
+                } else {
+                    const styleEl = document.createElement('style');
+                    styleEl.className = 'awc-grid-sep-style';
+                    styleEl.textContent = sepCss;
+                    cg.prepend(styleEl);
+                }
+            } else {
+                if (existingSepStyle) existingSepStyle.remove();
+            }
         }
-        const align = (cfg.chip_area_align || 'start').toString().toLowerCase();
-        if (this._prevChipAlign !== align) {
-            this._prevChipAlign = align;
+        const align = (area.align || 'start').toString().toLowerCase();
+        if (cache.buttonAlign !== align) {
+            cache.buttonAlign = align;
             for (const a of ['start', 'center', 'end', 'spread']) bt.classList.toggle(`align-${a}`, align === a);
         }
     }
     _updateTextElements(hass, wEntity, lang, weatherState = 'default') {
-        if (!wEntity) return; if (!this._elements || !this._elements.chipsRow) return; this._applyConfigStyles();
-        const cfg = this._config, showBottomBg = cfg.chip_area_background === true;
-        const bgStyle = ['contrast', 'frosted', 'theme'].includes((cfg.card_background_style || '').toLowerCase()) ? cfg.card_background_style.toLowerCase() : 'frosted';
-        const chipFormatRaw = (cfg.chip_style || 'inline').toLowerCase();
-        const chipFormat = chipFormatRaw === 'stacked' ? 'stacked' : chipFormatRaw === 'vertical' ? 'vertical' : 'inline';
-        let rowLayout = (cfg.chip_area_layout || 'wrap').toString().toLowerCase();
-        const visCount = parseInt(cfg.chip_area_scroll_count, 10), hasVis = Number.isFinite(visCount) && visCount > 0, bt = this._elements.chipsRow;
+        if (!wEntity) return; if (!this._elements || !this._elements.buttonAreaEls.length) return;
+        this._syncButtonAreaDOM();
+        this._applyConfigStyles();
         if (this._numFmtLang !== lang) {
             this._numFmtLang = lang;
             this._numFmt = new Intl.NumberFormat(lang, { maximumFractionDigits: 1, minimumFractionDigits: 0 });
         }
-        const rendered = this._chips.map((chip, idx) =>
-            this._renderChip(chip, idx, hass, weatherState, lang, showBottomBg, bgStyle, chipFormat)
-        );
-        const rowChips = rendered.filter(r => !r.isFree), freeChips = rendered.filter(r => r.isFree), rowSig = rowChips.map(r => r.sig).join('§');
-        const rowRebuilt = this._lastLocStr !== rowSig;
-        if (rowRebuilt) {
-            this._lastLocStr = rowSig; bt.innerHTML = rowChips.map(r => r.html).join('');
-            this._animateRings(bt);
-            const hasEnhanced = rowChips.some(r => r.html.includes('format-stacked') || r.html.includes('format-vertical'));
-            bt.classList.toggle('has-enhanced-child', hasEnhanced);
-            if (!hasVis && rowLayout === 'vertical-scroll') { requestAnimationFrame(() => this._computeVerticalVisHeight()); }
-            this._nativeIconCache = null;
-        }
-        if (rowLayout !== 'vertical-scroll' || hasVis) {
-            if (this._prevHadVertVis) { bt.style.removeProperty('--awc-row-max-height'); this._prevHadVertVis = false; }
-        } else {
-            this._prevHadVertVis = true;
-        }
-        const freeSig = freeChips.map(r => r.sig).join('§'), freeRebuilt = this._lastFreeSig !== freeSig;
-        if (freeRebuilt) {
-            this._lastFreeSig = freeSig; const tw = this._elements.textWrapper; tw.querySelectorAll('.chip-free').forEach(el => el.remove());
-            for (const r of freeChips) {
-                const wrapper = document.createElement('div'); wrapper.className = r.isBehind ? 'chip-free behind' : 'chip-free';
-                const [anchorV, anchorH] = parseAnchor(r.posAnchor || 'top-left'); const padH = 'var(--_awc-pad-h, var(--awc-card-padding, 16px))';
-                const padV = 'var(--_awc-pad-v, var(--awc-card-padding, 16px))', ox = r.posX === 'pad' ? padH : parseCSSVal(r.posX);
-                const oy = r.posY === 'pad' ? padV : parseCSSVal(r.posY), tx = [];
-                if (anchorH === 'left') wrapper.style.left = ox;
-                else if (anchorH === 'right') wrapper.style.right = ox;
-                else { wrapper.style.left = '50%'; tx.push('translateX(-50%)'); }
-                if (anchorV === 'top') wrapper.style.top = oy;
-                else if (anchorV === 'bottom') wrapper.style.bottom = oy;
-                else { wrapper.style.top = '50%'; tx.push('translateY(-50%)'); }
-                if (tx.length) wrapper.style.transform = tx.join(' ');
-                if (r.width) { wrapper.style.width = `calc(${r.width})`; wrapper.style.maxWidth = `calc(100% - var(--_awc-pad-h, var(--awc-card-padding, 16px)) * 2)`; }
-                wrapper.innerHTML = r.html;
-                this._animateRings(wrapper, 'f');
-                wrapper.addEventListener('click', (e) => this._handleChipClick(e)); tw.appendChild(wrapper);
+        if (!this._areaRenderCache) this._areaRenderCache = [];
+        let anyRowRebuilt = false, anyFreeRebuilt = false;
+        const allRendered = [];
+        for (let ai = 0; ai < this._areas.length; ai++) {
+            const area = this._areas[ai];
+            const els = this._elements.buttonAreaEls[ai]; if (!els) continue;
+            const bt = els.row;
+            const areaVisible = this._checkAreaVisibility(area, hass);
+            els.group.style.display = areaVisible ? '' : 'none';
+            if (!areaVisible) continue;
+            const showBottomBg = area.background === true;
+            const bgStyle = ['contrast', 'frosted', 'theme'].includes((area.background_style || '').toLowerCase()) ? area.background_style.toLowerCase() : 'frosted';
+            const buttonFormatRaw = (area.button_style || 'inline').toLowerCase();
+            const buttonFormat = buttonFormatRaw === 'stacked' ? 'stacked' : buttonFormatRaw === 'vertical' ? 'vertical' : 'inline';
+            const rowLayout = (area.layout || 'wrap').toString().toLowerCase();
+            const visCount = parseInt(area.scroll_count, 10), hasVis = Number.isFinite(visCount) && visCount > 0;
+            const areaCtx = { button_icon_background: area.button_icon_background, button_background_color: area.button_background_color || '', button_icon_background_color: area.button_icon_background_color || '' };
+            const rendered = area.buttons.map((button, idx) =>
+                this._renderButton(button, idx, hass, weatherState, lang, showBottomBg, bgStyle, buttonFormat, ai, areaCtx)
+            );
+            allRendered.push(...rendered.filter(r => !r.hidden));
+            if (!this._areaRenderCache[ai]) this._areaRenderCache[ai] = {};
+            const ac = this._areaRenderCache[ai];
+            const rowButtons = rendered.filter(r => !r.isFree), freeButtons = rendered.filter(r => r.isFree), rowSig = rowButtons.map(r => r.sig).join('§');
+            const rowRebuilt = ac.lastLocStr !== rowSig;
+            if (rowRebuilt) {
+                ac.lastLocStr = rowSig; bt.innerHTML = rowButtons.map(r => r.html).join('');
+                this._animateRings(bt, `a${ai}`);
+                const hasEnhanced = rowButtons.some(r => r.html.includes('format-stacked') || r.html.includes('format-vertical'));
+                bt.classList.toggle('has-enhanced-child', hasEnhanced);
+                if (!hasVis && rowLayout === 'vertical-scroll') { requestAnimationFrame(() => this._computeVerticalVisHeight(ai)); }
+                anyRowRebuilt = true;
             }
-            this._nativeIconCache = null;
+            if (rowLayout !== 'vertical-scroll' || hasVis) {
+                if (ac.hadVertVis) { bt.style.removeProperty('--awc-row-max-height'); ac.hadVertVis = false; }
+            } else {
+                ac.hadVertVis = true;
+            }
+            const freeSig = freeButtons.map(r => r.sig).join('§'), freeRebuilt = ac.lastFreeSig !== freeSig;
+            if (freeRebuilt) {
+                ac.lastFreeSig = freeSig; const tw = this._elements.textWrapper;
+                tw.querySelectorAll(`.button-free[data-area="${ai}"]`).forEach(el => el.remove());
+                for (const r of freeButtons) {
+                    const wrapper = document.createElement('div'); wrapper.className = 'button-free';
+                    wrapper.dataset.area = String(ai);
+                    const [anchorV, anchorH] = parseAnchor(r.posAnchor || 'top-left'); const padH = 'var(--_awc-pad-h, var(--awc-card-padding, 16px))';
+                    const padV = 'var(--_awc-pad-v, var(--awc-card-padding, 16px))', ox = r.posX === 'pad' ? padH : parseCSSVal(r.posX);
+                    const oy = r.posY === 'pad' ? padV : parseCSSVal(r.posY), tx = [];
+                    if (anchorH === 'left') wrapper.style.left = ox;
+                    else if (anchorH === 'right') wrapper.style.right = ox;
+                    else { wrapper.style.left = '50%'; tx.push('translateX(-50%)'); }
+                    if (anchorV === 'top') wrapper.style.top = oy;
+                    else if (anchorV === 'bottom') wrapper.style.bottom = oy;
+                    else { wrapper.style.top = '50%'; tx.push('translateY(-50%)'); }
+                    if (tx.length) wrapper.style.transform = tx.join(' ');
+                    if (r.width) { wrapper.style.width = `calc(${r.width})`; wrapper.style.maxWidth = `calc(100% - var(--_awc-pad-h, var(--awc-card-padding, 16px)) * 2)`; }
+                    wrapper.innerHTML = r.html;
+                    this._animateRings(wrapper, `f${ai}`);
+                    tw.appendChild(wrapper);
+                }
+                anyFreeRebuilt = true;
+            }
+            const buttonsPos = (area.position || 'bottom-left').toString().toLowerCase();
+            if (ac.prevPosSig !== buttonsPos) {
+                ac.prevPosSig = buttonsPos;
+                bt.classList.remove(...POS_CLASSES); els.group.classList.remove(...POS_CLASSES);
+                bt.classList.add(`pos-${buttonsPos}`);
+                els.group.classList.add(`pos-${buttonsPos}`);
+                const slot = this._elements.posSlots && this._elements.posSlots[buttonsPos];
+                if (slot && els.group.parentNode !== slot) {
+                    slot.appendChild(els.group);
+                }
+            } else if (!els.group.parentNode) {
+                const slot = this._elements.posSlots && this._elements.posSlots[buttonsPos];
+                if (slot) slot.appendChild(els.group);
+            }
         }
-        if (rowRebuilt || freeRebuilt) this._refreshMarqueeObservation();
-        const hasNativeIcons = rendered.some(r => r.showIcon && r.iconStrategy === 'native');
+        this._applySlotDirections();
+        if (anyRowRebuilt || anyFreeRebuilt) {
+            this._nativeIconCache = null;
+            this._refreshMarqueeObservation();
+        }
+        const hasNativeIcons = allRendered.some(r => r.showIcon && r.iconStrategy === 'native');
         if (hasNativeIcons) {
-            if (!this._nativeIconCache || rowRebuilt || freeRebuilt) {
-                const allContainers = [bt, ...this._elements.textWrapper.querySelectorAll('.chip-free')];
+            if (!this._nativeIconCache || anyRowRebuilt || anyFreeRebuilt) {
+                const allContainers = [...this._elements.buttonAreaEls.map(e => e.row), ...this._elements.textWrapper.querySelectorAll('.button-free')];
                 this._nativeIconCache = [];
-                for (let i = 0; i < rendered.length; i++) {
-                    const r = rendered[i]; if (!r.showIcon || r.iconStrategy !== 'native') continue;
+                for (let i = 0; i < allRendered.length; i++) {
+                    const r = allRendered[i]; if (!r.showIcon || r.iconStrategy !== 'native') continue;
                     for (const container of allContainers) {
-                        const iconEl = container.querySelector(`.chip[data-idx="${i}"] ha-state-icon`);
-                        if (iconEl) this._nativeIconCache.push({ idx: i, el: iconEl });
+                        const iconEl = container.querySelector(`.button[data-idx="${r.buttonIdx}"][data-area="${r.areaIdx}"] ha-state-icon`);
+                        if (iconEl) this._nativeIconCache.push({ rendered: r, el: iconEl });
                     }
                 }
             }
             for (let j = 0; j < this._nativeIconCache.length; j++) {
-                const entry = this._nativeIconCache[j], r = rendered[entry.idx];
+                const entry = this._nativeIconCache[j], r = entry.rendered;
                 if (entry.el.hass !== hass || entry.el.stateObj !== r.sensorObj) {
                     entry.el.hass = hass; entry.el.stateObj = r.sensorObj;
                 }
             }
         }
-        const chipsPos = this._resolveChipPosition();
-        if (this._prevPosSig !== chipsPos) {
-            this._prevPosSig = chipsPos; const bt2 = this._elements.chipsRow; const cg2 = this._elements.chipsGroup;
-            bt2.classList.remove(...POS_CLASSES); cg2.classList.remove(...POS_CLASSES);
-            bt2.classList.add(`pos-${chipsPos}`);
-            cg2.classList.add(`pos-${chipsPos}`);
-        }
         if (this._elements && this._elements.customCardsWrapper) {
+            const firstAreaPos = this._areas.length > 0 ? (this._areas[0].position || 'bottom-left').toLowerCase() : 'bottom-left';
             const ccPos = (this._config.custom_cards_position || '').toLowerCase().trim();
-            const ccSig = `${ccPos}|${chipsPos}`;
+            const ccSig = `${ccPos}|${firstAreaPos}`;
             if (this._prevCcSig !== ccSig) {
                 this._prevCcSig = ccSig; const ccw = this._elements.customCardsWrapper;
                 const allCcClasses = ['cc-text-left', 'cc-text-right', 'cc-text-hcenter', 'cc-align-top', 'cc-align-center', 'cc-align-bottom'];
@@ -2096,8 +1695,8 @@ class AtmosphericWeatherCard extends HTMLElement {
                                  : 'cc-align-bottom';
                     if (hClass) ccw.classList.add(hClass); ccw.classList.add(vClass);
                 } else {
-                    ccw.classList.add('cc-align-bottom'); const chipsIsLeft = chipsPos.includes('left'); const chipsIsRight = chipsPos.includes('right');
-                    ccw.classList.add(chipsIsLeft ? 'cc-text-right' : chipsIsRight ? 'cc-text-left' : 'cc-text-hcenter');
+                    ccw.classList.add('cc-align-bottom'); const buttonsIsLeft = firstAreaPos.includes('left'); const buttonsIsRight = firstAreaPos.includes('right');
+                    ccw.classList.add(buttonsIsLeft ? 'cc-text-right' : buttonsIsRight ? 'cc-text-left' : 'cc-text-hcenter');
                 }
             }
         }
@@ -2105,7 +1704,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     _animateRings(container, prefix) {
         if (!this._ringPrevPct) this._ringPrevPct = new Map();
         const pfx = prefix || '';
-        for (const wrap of container.querySelectorAll('.chip-ring-wrap')) {
+        for (const wrap of container.querySelectorAll('.button-ring-wrap')) {
             const key = pfx + wrap.dataset.idx;
             const target = (wrap.style.getPropertyValue('--awc-ring-pct') || '0%').trim();
             const prev = this._ringPrevPct.get(key);
@@ -2113,7 +1712,7 @@ class AtmosphericWeatherCard extends HTMLElement {
             requestAnimationFrame(() => { wrap.style.setProperty('--awc-ring-pct', target); });
             this._ringPrevPct.set(key, target);
         }
-        for (const fill of container.querySelectorAll('.chip-bar-fill')) {
+        for (const fill of container.querySelectorAll('.button-bar-fill')) {
             const key = 'b' + pfx + fill.dataset.barIdx;
             const target = (fill.style.getPropertyValue('--awc-bar-scale') || '0').trim();
             const prev = this._ringPrevPct.get(key);
@@ -2122,32 +1721,34 @@ class AtmosphericWeatherCard extends HTMLElement {
             this._ringPrevPct.set(key, target);
         }
     }
-    _renderChip(chip, idx, hass, weatherState, lang, rowBg, bgStyle, chipFormat) {
-        if (!chip.entity) return { html: '', sig: `skip-${idx}`, sensorObj: null, iconStrategy: 'static', showIcon: false, isFree: false, posAnchor: '', posX: '0', posY: '0' };
-        const showIcon = chip.hide_icon !== true, showLabel = chip.hide_label !== true, showValue = chip.hide_value !== true;
-        const effectiveFormat = chip.style ? chip.style : chipFormat;
+    _renderButton(button, idx, hass, weatherState, lang, rowBg, bgStyle, buttonFormat, areaIdx, areaCtx) {
+        if (!button.entity) return { html: '', sig: `skip-${idx}`, sensorObj: null, iconStrategy: 'static', showIcon: false, isFree: false, posAnchor: '', posX: '0', posY: '0', areaIdx, buttonIdx: idx, hidden: false };
+        if (!this._checkButtonVisibility(button, hass)) {
+            const visSig = JSON.stringify(button.visibility);
+            return { html: '', sig: `hidden-${idx}-${visSig}`, sensorObj: null, iconStrategy: 'static', showIcon: false, isFree: false, posAnchor: '', posX: '0', posY: '0', areaIdx, buttonIdx: idx, hidden: true };
+        }
+        const showIcon = button.hide_icon !== true, showLabel = button.hide_label !== true, showValue = button.hide_value !== true;
+        const effectiveFormat = button.style ? button.style : buttonFormat;
         const isEnhanced = effectiveFormat === 'stacked' || effectiveFormat === 'vertical';
-        const isRingType = chip.type === 'ring';
+        const isRingType = button.type === 'ring';
         let sensorObj = null, iconStrategy = 'static', iconValue = 'mdi:information-outline', formatted, unit;
-        const isForecast = !!chip.forecast; let fcCondition = null, fcDatetime = null, fcLoading = false, fcEntry = null;
+        const isForecast = !!button.forecast; let fcCondition = null, fcDatetime = null, fcLoading = false, fcEntry = null;
         if (isForecast) {
-            const fc = this._resolveFcValue(hass, chip, lang);
+            const fc = this._resolveFcValue(hass, button, lang);
             formatted = fc.formatted; unit = fc.unit; fcCondition = fc.condition; fcDatetime = fc.datetime;
             fcLoading = !!fc.loading; fcEntry = fc.entry || null;
             iconValue = fcCondition ? (WEATHER_ICONS[fcCondition] || WEATHER_ICONS['default']) : iconValue;
-            if (chip.attribute && chip.attribute !== 'condition') iconValue = FORECAST_ATTR_ICONS[chip.attribute] || iconValue;
+            if (button.attribute && button.attribute !== 'condition') iconValue = FORECAST_ATTR_ICONS[button.attribute] || iconValue;
         } else {
-            const resolved = this._resolveSensorValue(hass, chip.entity, chip.attribute);
+            const resolved = this._resolveSensorValue(hass, button.entity, button.attribute);
             formatted = resolved.formatted; unit = resolved.unit;
-            if (resolved.haFormatted && chip.unit_format !== undefined && resolved.rawNumeric != null) {
-                const rawVal = resolved.rawNumeric;
-                const isNum = rawVal !== '' && !isNaN(parseFloat(rawVal)) && isFinite(rawVal);
-                if (isNum) formatted = this._numFmt ? this._numFmt.format(rawVal) : String(rawVal);
+            if (resolved.haFormatted && button.unit_format !== undefined && resolved.rawNumeric != null) {
+                formatted = this._formatNumber(resolved.rawNumeric);
             }
-            const sensor = hass.states[chip.entity];
-            if (sensor) { if (chip.attribute) iconValue = WEATHER_ATTR_ICONS[chip.attribute] || 'mdi:information-outline'; else { sensorObj = sensor; iconStrategy = 'native'; } }
+            const sensor = hass.states[button.entity];
+            if (sensor) { if (button.attribute) iconValue = WEATHER_ATTR_ICONS[button.attribute] || 'mdi:information-outline'; else { sensorObj = sensor; iconStrategy = 'native'; } }
         }
-        const configIcon = chip.icon, configPath = chip.icon_path;
+        const configIcon = button.icon, configPath = button.icon_path || (configIcon === 'weather' && this._config && this._config.icon_path ? this._config.icon_path : '');
         if (configIcon) {
             const resolvedBase = (configIcon === 'weather') ? (isForecast && fcCondition ? fcCondition : weatherState) : configIcon;
             if (configPath) {
@@ -2156,73 +1757,93 @@ class AtmosphericWeatherCard extends HTMLElement {
                 const ext = resolvedBase.includes('.') ? '' : '.svg';
                 iconValue = `${basePath}${resolvedBase}${ext}`;
             } else {
-                iconStrategy = 'static';
-                iconValue = (configIcon === 'weather') ? (WEATHER_ICONS[resolvedBase] || WEATHER_ICONS['default']) : configIcon;
-            }
-        }
-        const hasUnitFormat = chip.unit_format !== undefined; if (hasUnitFormat) unit = chip.unit_format;
-        const overflowMode = (chip.overflow || 'ellipsis').toString().toLowerCase().trim();
-        const labelOverflow = (chip.label_overflow || 'ellipsis').toString().toLowerCase().trim();
-        const isValueMarquee = overflowMode === 'marquee', isLabelMarquee = labelOverflow === 'marquee';
-        const subOverflow = (chip.sub_value_overflow || 'ellipsis').toString().toLowerCase().trim();
-        const isSubMarquee = subOverflow === 'marquee';
-        const hasAnyMarquee = isValueMarquee || isLabelMarquee || isSubMarquee;
-        const marqueeSpeed = Math.max(5, parseFloat(chip.marquee_speed) || 30);
-        const marqueeRtl = chip.marquee_rtl === true, width = (chip.width || '').toString().trim(), height = (chip.height || '').toString().trim();
-        let name = (chip.name || '').toString().trim(), nameSig = name;
-        if (!name && !chip.name_sensor && isForecast && fcDatetime) {
-            name = fcLabel(fcDatetime, chip.forecast !== 'hourly', lang);
-            nameSig = `fc:${fcDatetime}`;
-        }
-        if (chip.name_sensor) {
-            const nameResolved = this._resolveSensorValue(hass, chip.name_sensor, chip.name_attribute);
-            const nameUnit = nameResolved.unit;
-            name = nameUnit ? `${nameResolved.formatted} ${nameUnit}` : `${nameResolved.formatted}`;
-            nameSig = `ns:${chip.name_sensor}|${chip.name_attribute || ''}|${name}`;
-        } else if (isForecast && chip.name_attribute && fcEntry) {
-            const nRaw = fcEntry[chip.name_attribute];
-            if (nRaw != null) {
-                if (nRaw !== '' && !isNaN(parseFloat(nRaw)) && isFinite(nRaw)) {
-                    const _cs = hass.states[chip.entity], _w = _cs && _cs.attributes;
-                    const nUnit = (_w && _w[`${chip.name_attribute}_unit`]) || (_FC_UNIT_MAP[chip.name_attribute] && _w && _w[_FC_UNIT_MAP[chip.name_attribute]]) || _FC_UNIT_FALLBACK[chip.name_attribute] || '';
-                    const nFmt = this._numFmt ? this._numFmt.format(nRaw) : String(nRaw);
-                    name = nUnit ? `${nFmt} ${nUnit}` : `${nFmt}`;
-                } else { name = String(nRaw); }
-                nameSig = `ns-fc:${chip.name_attribute}|${name}`;
-            }
-        }
-        const showSubValue = chip.hide_sub_value !== true && (chip.sub_value_entity || chip.sub_value_attribute);
-        let subValue = '', subValueSig = '';
-        if (showSubValue) {
-            const hasSubFormat = chip.sub_value_format !== undefined;
-            if (chip.sub_value_entity) {
-                const svResolved = this._resolveSensorValue(hass, chip.sub_value_entity, chip.sub_value_attribute);
-                const svUnit = hasSubFormat ? chip.sub_value_format : svResolved.unit;
-                subValue = hasSubFormat ? `${svResolved.formatted}${svUnit}` : (svUnit ? `${svResolved.formatted} ${svUnit}` : `${svResolved.formatted}`);
-                subValueSig = `sv:${chip.sub_value_entity}|${chip.sub_value_attribute || ''}|${subValue}`;
-            } else if (isForecast && chip.sub_value_attribute && fcEntry) {
-                const svRaw = fcEntry[chip.sub_value_attribute];
-                if (svRaw != null) {
-                    let svFmt = svRaw;
-                    if (svRaw !== '' && !isNaN(parseFloat(svRaw)) && isFinite(svRaw)) {
-                        const precision = chip.forecast_precision;
-                        const fmt = (precision !== undefined && precision !== null)
-                            ? this._getFcFmt(lang, precision) : this._numFmt;
-                        if (fmt) svFmt = fmt.format(svRaw);
-                    }
-                    if (hasSubFormat) {
-                        subValue = `${svFmt}${chip.sub_value_format}`;
-                    } else {
-                        const _chipState = hass.states[chip.entity];
-                        const w = _chipState && _chipState.attributes;
-                        const svUnit = (w && w[`${chip.sub_value_attribute}_unit`]) || (_FC_UNIT_MAP[chip.sub_value_attribute] && w && w[_FC_UNIT_MAP[chip.sub_value_attribute]]) || _FC_UNIT_FALLBACK[chip.sub_value_attribute] || '';
-                        subValue = svUnit ? `${svFmt} ${svUnit}` : `${svFmt}`;
-                    }
-                    subValueSig = `sv-fc:${chip.sub_value_attribute}|${subValue}`;
+                if (configIcon === 'weather' && AWC_BUILTIN_ICONS[resolvedBase]) {
+                    iconStrategy = 'builtin';
+                    iconValue = (!isForecast && this._isTimeNight && AWC_BUILTIN_ICONS[`${resolvedBase}-night`]) ? `${resolvedBase}-night` : resolvedBase;
+                } else {
+                    iconStrategy = 'static';
+                    iconValue = (configIcon === 'weather') ? (WEATHER_ICONS[resolvedBase] || WEATHER_ICONS['default']) : configIcon;
                 }
             }
         }
-        const subValueBeside = chip.sub_value_position === 'beside';
+        const hasUnitFormat = button.unit_format !== undefined; if (hasUnitFormat) unit = button.unit_format;
+        const overflowMode = (button.overflow || 'ellipsis').toString().toLowerCase().trim();
+        const labelOverflow = (button.label_overflow || 'ellipsis').toString().toLowerCase().trim();
+        const isValueMarquee = overflowMode === 'marquee', isLabelMarquee = labelOverflow === 'marquee';
+        const subOverflow = (button.sub_value_overflow || 'ellipsis').toString().toLowerCase().trim();
+        const isSubMarquee = subOverflow === 'marquee';
+        const hasAnyMarquee = isValueMarquee || isLabelMarquee || isSubMarquee;
+        const marqueeSpeed = Math.max(5, parseFloat(button.marquee_speed) || 30);
+        const marqueeRtl = button.marquee_rtl === true, width = (button.width || '').toString().trim(), height = (button.height || '').toString().trim();
+        let name = (button.name || '').toString().trim(), nameSig = name;
+        if (!name && !button.name_sensor && isForecast && fcDatetime) {
+            name = fcLabel(fcDatetime, button.forecast !== 'hourly', lang);
+            nameSig = `fc:${fcDatetime}`;
+        }
+        if (name && !button.name_sensor && button.name_format !== undefined) {
+            name = `${name}${button.name_format}`;
+            nameSig = `${nameSig}|nf:${button.name_format}`;
+        }
+        if (button.name_sensor) {
+            const nameResolved = this._resolveSensorValue(hass, button.name_sensor, button.name_attribute);
+            const hasNameFormat = button.name_format !== undefined;
+            const nameUnit = hasNameFormat ? button.name_format : nameResolved.unit;
+            name = hasNameFormat ? `${nameResolved.formatted}${nameUnit}` : (nameUnit ? `${nameResolved.formatted} ${nameUnit}` : `${nameResolved.formatted}`);
+            nameSig = `ns:${button.name_sensor}|${button.name_attribute || ''}|${button.name_format != null ? button.name_format : ''}|${name}`;
+        } else if (isForecast && button.name_attribute && fcEntry) {
+            const nRaw = fcEntry[button.name_attribute];
+            if (nRaw != null) {
+                if (button.name_attribute === 'condition' && typeof nRaw === 'string') {
+                    name = (typeof hass.localize === 'function' && hass.localize(`component.weather.entity_component._.state.${nRaw}`)) || nRaw;
+                    if (button.name_format !== undefined) name = `${name}${button.name_format}`;
+                } else if (nRaw !== '' && !isNaN(parseFloat(nRaw)) && isFinite(nRaw)) {
+                    const _cs = hass.states[button.entity], _w = _cs && _cs.attributes;
+                    const hasNameFormat = button.name_format !== undefined;
+                    const nUnit = hasNameFormat ? button.name_format : ((_w && _w[`${button.name_attribute}_unit`]) || (_FC_UNIT_MAP[button.name_attribute] && _w && _w[_FC_UNIT_MAP[button.name_attribute]]) || _FC_UNIT_FALLBACK[button.name_attribute] || '');
+                    const _nPrec = button.forecast_precision !== undefined ? button.forecast_precision : 0;
+                    const _nFmtFn = (_nPrec !== undefined && _nPrec !== null) ? this._getFcFmt(lang, _nPrec) : null;
+                    const nFmt = this._formatNumber(nRaw, _nFmtFn);
+                    name = hasNameFormat ? `${nFmt}${nUnit}` : (nUnit ? `${nFmt} ${nUnit}` : `${nFmt}`);
+                } else {
+                    name = String(nRaw);
+                    if (button.name_format !== undefined) name = `${name}${button.name_format}`;
+                }
+                nameSig = `ns-fc:${button.name_attribute}|${button.name_format != null ? button.name_format : ''}|${name}`;
+            }
+        }
+        const showSubValue = button.hide_sub_value !== true && (button.sub_value_entity || button.sub_value_attribute);
+        let subValue = '', subValueSig = '';
+        if (showSubValue) {
+            const hasSubFormat = button.sub_value_format !== undefined;
+            if (button.sub_value_entity) {
+                const svResolved = this._resolveSensorValue(hass, button.sub_value_entity, button.sub_value_attribute);
+                const svUnit = hasSubFormat ? button.sub_value_format : svResolved.unit;
+                subValue = hasSubFormat ? `${svResolved.formatted}${svUnit}` : (svUnit ? `${svResolved.formatted} ${svUnit}` : `${svResolved.formatted}`);
+                subValueSig = `sv:${button.sub_value_entity}|${button.sub_value_attribute || ''}|${subValue}`;
+            } else if (isForecast && button.sub_value_attribute && fcEntry) {
+                const svRaw = fcEntry[button.sub_value_attribute];
+                if (svRaw != null) {
+                    let svFmt = svRaw;
+                    if (button.sub_value_attribute === 'condition' && typeof svRaw === 'string') {
+                        svFmt = (typeof hass.localize === 'function' && hass.localize(`component.weather.entity_component._.state.${svRaw}`)) || svRaw;
+                    } else if (svRaw !== '' && !isNaN(parseFloat(svRaw)) && isFinite(svRaw)) {
+                        const precision = button.forecast_precision !== undefined ? button.forecast_precision : 0;
+                        const fmt = (precision !== undefined && precision !== null)
+                            ? this._getFcFmt(lang, precision) : null;
+                        svFmt = this._formatNumber(svRaw, fmt);
+                    }
+                    if (hasSubFormat) {
+                        subValue = `${svFmt}${button.sub_value_format}`;
+                    } else {
+                        const _buttonState = hass.states[button.entity];
+                        const w = _buttonState && _buttonState.attributes;
+                        const svUnit = (w && w[`${button.sub_value_attribute}_unit`]) || (_FC_UNIT_MAP[button.sub_value_attribute] && w && w[_FC_UNIT_MAP[button.sub_value_attribute]]) || _FC_UNIT_FALLBACK[button.sub_value_attribute] || '';
+                        subValue = svUnit ? `${svFmt} ${svUnit}` : `${svFmt}`;
+                    }
+                    subValueSig = `sv-fc:${button.sub_value_attribute}|${subValue}`;
+                }
+            }
+        }
         let iconHtml = '';
         if (showIcon) {
             let inner;
@@ -2230,140 +1851,212 @@ class AtmosphericWeatherCard extends HTMLElement {
                 inner = '<ha-state-icon></ha-state-icon>';
             } else if (iconStrategy === 'image') {
                 inner = `<img src="${iconValue}" class="custom-bottom-icon" />`;
+            } else if (iconStrategy === 'builtin') {
+                const useColored = (this._config && this._config.icon_set === 'colored');
+                const iconLib = useColored ? AWC_COLORED_ICONS : AWC_BUILTIN_ICONS;
+                const svgAttrs = useColored
+                    ? 'fill="none" stroke="none"'
+                    : 'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"';
+                inner = `<svg class="awc-icon${useColored ? ' awc-colored' : ''}" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ${svgAttrs}>${iconLib[iconValue] || iconLib['default']}</svg>`;
             } else {
                 inner = `<ha-icon icon="${iconValue}"></ha-icon>`;
             }
-            iconHtml = `<span class="chip-icon">${inner}</span>`;
+            iconHtml = `<span class="button-icon">${inner}</span>`;
         }
         const nameHtml = showLabel && (name || isEnhanced)
             ? (isLabelMarquee
-                ? `<span class="chip-name awc-marquee-host" data-speed="${marqueeSpeed}" data-rtl="${marqueeRtl ? 1 : 0}"><span class="awc-marquee-track"><span class="awc-marquee-text">${name}</span></span></span>`
-                : `<span class="chip-name">${name}</span>`)
+                ? `<span class="button-name awc-marquee-host" data-speed="${marqueeSpeed}" data-rtl="${marqueeRtl ? 1 : 0}"><span class="awc-marquee-track"><span class="awc-marquee-text">${name}</span></span></span>`
+                : `<span class="button-name">${name}</span>`)
             : '';
-        const useFancyUnit = !isForecast && chip.fancy_unit === true && (!chip.attribute || chip.attribute === 'temperature'); let inner;
+        const useFancyUnit = button.fancy_unit === true; let inner;
         if (useFancyUnit) {
-            const sensor = hass.states[chip.entity];
-            const isWeather = sensor && sensor.attributes && sensor.attributes.temperature !== undefined;
-            const rawTemp = isWeather ? sensor.attributes.temperature : (sensor && sensor.state);
-            const rawUnit = isWeather ? (sensor.attributes.temperature_unit || '') : (sensor && sensor.attributes && sensor.attributes.unit_of_measurement || '');
-            const fancyVal = (rawTemp != null && this._numFmt) ? this._numFmt.format(rawTemp) : (rawTemp != null ? rawTemp : formatted);
-            const fancyUnitStr = hasUnitFormat ? unit : rawUnit;
+            let fancyVal = formatted;
+            let fancyUnitStr = unit;
+            if (!isForecast) {
+                const sensor = hass.states[button.entity];
+                const isWeather = sensor && sensor.attributes && sensor.attributes.temperature !== undefined;
+                if (!button.attribute || button.attribute === 'temperature') {
+                    const rawTemp = isWeather ? sensor.attributes.temperature : (sensor && sensor.state);
+                    const rawUnit = isWeather ? (sensor.attributes.temperature_unit || '') : (sensor && sensor.attributes && sensor.attributes.unit_of_measurement || '');
+                    fancyVal = (rawTemp != null && this._numFmt) ? this._numFmt.format(rawTemp) : (rawTemp != null ? rawTemp : formatted);
+                    if (!hasUnitFormat) fancyUnitStr = rawUnit;
+                }
+            }
             inner = `${fancyVal}<span class="fancy-unit">${fancyUnitStr}</span>`;
         } else {
             inner = hasUnitFormat ? `${formatted}${unit}` : (unit ? `${formatted} ${unit}` : `${formatted}`);
         }
-        if (subValue && subValueBeside) {
-            inner = `${subValue} – ${inner}`;
-        }
         let subBelowHtml = '';
-        if (showValue && subValue && !subValueBeside) {
+        if (subValue) {
             if (isSubMarquee) {
-                subBelowHtml = `<span class="chip-sub awc-marquee-host" data-speed="${marqueeSpeed}" data-rtl="${marqueeRtl ? 1 : 0}"><span class="awc-marquee-track"><span class="awc-marquee-text">${subValue}</span></span></span>`;
+                subBelowHtml = `<span class="button-sub awc-marquee-host" data-speed="${marqueeSpeed}" data-rtl="${marqueeRtl ? 1 : 0}"><span class="awc-marquee-track"><span class="awc-marquee-text">${subValue}</span></span></span>`;
             } else {
-                subBelowHtml = `<span class="chip-sub">${subValue}</span>`;
+                subBelowHtml = `<span class="button-sub">${subValue}</span>`;
             }
         }
         const valHtml = !showValue ? ''
             : isValueMarquee
-            ? `<span class="chip-val awc-marquee-host" data-speed="${marqueeSpeed}" data-rtl="${marqueeRtl ? 1 : 0}"><span class="awc-marquee-track"><span class="awc-marquee-text">${inner}</span></span></span>`
-            : `<span class="chip-val">${inner}${subBelowHtml}</span>`;
-        const isFree = (chip.position || '').toString().toLowerCase() === 'custom';
-        const posAnchor = isFree ? (chip.position_anchor || 'top-left') : '', posX = isFree ? String(chip.position_x || 0).trim() : '0';
-        const posY = isFree ? String(chip.position_y || 0).trim() : '0';
-        const effectiveBg = chip.background !== undefined ? chip.background : rowBg;
-        const classes = ['chip', `overflow-${overflowMode}`];
+            ? `<span class="button-val awc-marquee-host" data-speed="${marqueeSpeed}" data-rtl="${marqueeRtl ? 1 : 0}"><span class="awc-marquee-track"><span class="awc-marquee-text">${inner}</span></span></span>`
+            : `<span class="button-val">${inner}</span>`;
+        const isFree = (button.position || '').toString().toLowerCase() === 'custom';
+        const posAnchor = isFree ? (button.position_anchor || 'top-left') : '', posX = isFree ? String(button.position_x || 0).trim() : '0';
+        const posY = isFree ? String(button.position_y || 0).trim() : '0';
+        const effectiveBg = button.background !== undefined ? button.background : rowBg;
+        const classes = ['button', `overflow-${overflowMode}`];
         if (hasAnyMarquee) {
             classes.push('overflow-marquee'); if (isLabelMarquee && isValueMarquee) classes.push('marquee-both');
             else if (isLabelMarquee) classes.push('marquee-label');
             else if (isValueMarquee) classes.push('marquee-value');
         }
-        if (fcLoading) classes.push('chip-loading');
-        if (subValue && !subValueBeside && showValue) classes.push('has-sub');
+        if (fcLoading) classes.push('button-loading');
+        if (subValue) classes.push('has-sub');
         if (!showIcon) classes.push('no-icon');
         if (!nameHtml) classes.push('no-name');
         else if (isEnhanced && !name) classes.push('empty-name');
         if (!showLabel && !showValue) classes.push('icon-only'); if (effectiveFormat === 'stacked') classes.push('format-stacked');
         else if (effectiveFormat === 'vertical') classes.push('format-vertical');
-        if (isRingType) classes.push('chip-ring');
-        const iconBg = chip.icon_background !== undefined ? chip.icon_background : this._config.chip_icon_background;
+        if (isRingType) classes.push('button-ring');
+        const iconBg = button.icon_background !== undefined ? button.icon_background : areaCtx.button_icon_background;
         if (iconBg === true) classes.push('has-icon-bg');
         else if (iconBg === false) classes.push('no-icon-bg');
         if (effectiveBg) {
             classes.push('with-bg');
             if (bgStyle === 'contrast' || bgStyle === 'frosted' || bgStyle === 'theme') classes.push(bgStyle);
-        } else if (iconBg === true || (iconBg !== false && this._config.chip_icon_background === true)) {
+        } else if (iconBg === true || (iconBg !== false && areaCtx.button_icon_background === true)) {
             if (bgStyle === 'contrast' || bgStyle === 'frosted' || bgStyle === 'theme') classes.push(bgStyle);
         }
-        const effectiveBgColor = chip.background_color || this._config.chip_background_color || '';
-        const effectiveIconBgColor = chip.icon_background_color || this._config.chip_icon_background_color || '';
+        const effectiveBgColor = button.background_color || areaCtx.button_background_color || '';
+        const effectiveIconBgColor = button.icon_background_color || areaCtx.button_icon_background_color || '';
+        let buttonTintColor = '';
+        if (Array.isArray(button.color_thresholds) && button.color_thresholds.length) {
+            const ctEntity = button.color_threshold_entity || button.entity;
+            const ctAttr = button.color_threshold_attribute || button.attribute;
+            let ctVal;
+            if (isForecast && fcEntry) {
+                const fca = button.color_threshold_entity ? button.color_threshold_attribute : (ctAttr || button.attribute);
+                if (button.color_threshold_entity) {
+                    const ctr = this._resolveSensorValue(hass, button.color_threshold_entity, button.color_threshold_attribute);
+                    ctVal = parseFloat(ctr.rawNumeric != null ? ctr.rawNumeric : ctr.formatted);
+                } else {
+                    ctVal = parseFloat(fcEntry[fca]);
+                }
+            } else if (ctEntity) {
+                const ctr = this._resolveSensorValue(hass, ctEntity, ctAttr);
+                ctVal = parseFloat(ctr.rawNumeric != null ? ctr.rawNumeric : ctr.formatted);
+            }
+            if (!isNaN(ctVal)) {
+                const sorted = [...button.color_thresholds].filter(t => t.value !== '' && t.value !== undefined && t.color).sort((a, b) => parseFloat(a.value) - parseFloat(b.value));
+                for (const t of sorted) { if (ctVal >= parseFloat(t.value)) buttonTintColor = t.color; }
+            }
+        }
         const inlineStyles = [];
-        if (width && !isFree) { inlineStyles.push(`width:${width};max-width:${width}`); }
-        if (width && isFree) { inlineStyles.push(`width:100%;max-width:100%`); }
-        if (height) { inlineStyles.push(`height:${height}`); }
+        if (width) inlineStyles.push(isFree ? 'width:100%;max-width:100%' : `width:${width};max-width:${width}`);
+        if (height) inlineStyles.push(`height:${height}`);
         if (effectiveBgColor) inlineStyles.push(`--awc-bottom-bg-color:${effectiveBgColor}`);
         if (effectiveIconBgColor) inlineStyles.push(`--awc-stacked-icon-bg:${effectiveIconBgColor}`);
-        if (chip.padding !== undefined && chip.padding !== '') inlineStyles.push(`padding:${chip.padding}`);
-        if (chip.text_size) inlineStyles.push(`font-size:${chip.text_size};--awc-bottom-font-size:${chip.text_size}`);
-        if (chip.label_size) inlineStyles.push(`--awc-chip-name-font-size:${chip.label_size}`);
-        if (chip.inner_gap) inlineStyles.push(`--awc-chip-gap:${chip.inner_gap}`);
-        if (chip.text_gap) inlineStyles.push(`--awc-chip-text-gap:${chip.text_gap}`);
-        if (chip.icon_size) inlineStyles.push(`--awc-icon-size:${chip.icon_size}`);
-        if (chip.icon_padding) inlineStyles.push(`--awc-icon-padding:${chip.icon_padding}`);
-        if (chip.value_weight) inlineStyles.push(`--awc-chip-value-weight:${chip.value_weight};--awc-stacked-value-weight:${chip.value_weight}`);
-        if (chip.label_weight) inlineStyles.push(`--awc-chip-name-weight:${chip.label_weight}`);
-        if (chip.sub_value_size) inlineStyles.push(`--awc-sub-size:${chip.sub_value_size}`);
-        if (chip.sub_value_weight) inlineStyles.push(`--awc-sub-weight:${chip.sub_value_weight}`);
+        if (buttonTintColor) { inlineStyles.push(`--awc-button-tint:${buttonTintColor}`); classes.push('has-tint'); }
+        if (button.padding !== undefined && button.padding !== '') inlineStyles.push(`padding:${button.padding}`);
+        const _wOp = (w) => { const n = parseFloat(w); if (isNaN(n)) return ''; return Math.min(1, Math.max(0.4, 0.4 + (n - 100) * 0.6 / 800)).toFixed(2); };
+        for (const [k, v, v2] of [
+            ['text_size','--awc-bottom-font-size'], ['label_size','--awc-button-name-font-size'], ['inner_gap','--awc-button-gap'],
+            ['text_gap','--awc-button-text-gap'], ['icon_size','--awc-icon-size'], ['icon_padding','--awc-icon-padding'],
+            ['value_weight','--awc-button-value-weight','--awc-stacked-value-weight'], ['label_weight','--awc-button-name-weight'],
+            ['sub_value_size','--awc-sub-size'], ['sub_value_weight','--awc-sub-weight'],
+        ]) { if (button[k]) { inlineStyles.push(`${v}:${button[k]}`); if (v2) inlineStyles.push(`${v2}:${button[k]}`); } }
+        if (button.label_weight) { const o = _wOp(button.label_weight); if (o) { inlineStyles.push(`--awc-button-name-opacity:${o}`); inlineStyles.push(`--awc-stacked-name-opacity:${o}`); } }
+        if (button.value_weight) { const o = _wOp(button.value_weight); if (o) inlineStyles.push(`--awc-button-value-opacity:${o}`); }
+        if (button.sub_value_weight) { const o = _wOp(button.sub_value_weight); if (o) inlineStyles.push(`--awc-sub-opacity:${o}`); }
+        if (button.text_size) inlineStyles.push(`font-size:${button.text_size}`);
+        if (button.text_shadow === true) inlineStyles.push('--_button-no-bg-shadow:var(--_button-shadow-avail)');
         if (subOverflow === 'clip') inlineStyles.push('--awc-sub-overflow:clip');
         else if (subOverflow === 'wrap') inlineStyles.push('--awc-sub-overflow:clip;--awc-sub-wrap:normal;--awc-sub-visible:visible');
-        const isBarType = chip.type === 'bar';
+        const isBarType = button.type === 'bar';
         let gaugeVal = parseFloat(formatted), gaugeSig = '';
-        if ((isRingType || isBarType) && chip.gauge_entity) {
-            const gr = this._resolveSensorValue(hass, chip.gauge_entity, chip.gauge_attribute);
+        if ((isRingType || isBarType) && button.gauge_entity) {
+            const gr = this._resolveSensorValue(hass, button.gauge_entity, button.gauge_attribute);
             gaugeVal = parseFloat(gr.rawNumeric != null ? gr.rawNumeric : gr.formatted);
-            gaugeSig = `${chip.gauge_entity}|${chip.gauge_attribute || ''}|${gaugeVal}`;
-        } else if ((isRingType || isBarType) && !chip.gauge_entity && isForecast && chip.gauge_attribute && fcEntry) {
-            const gRaw = fcEntry[chip.gauge_attribute];
+            gaugeSig = `${button.gauge_entity}|${button.gauge_attribute || ''}|${gaugeVal}`;
+        } else if ((isRingType || isBarType) && !button.gauge_entity && isForecast && button.gauge_attribute && fcEntry) {
+            const gRaw = fcEntry[button.gauge_attribute];
             if (gRaw != null) gaugeVal = parseFloat(gRaw);
-            gaugeSig = `fc-g:${chip.gauge_attribute}|${gaugeVal}`;
+            gaugeSig = `fc-g:${button.gauge_attribute}|${gaugeVal}`;
         }
         let ringHtml = '', ringWrapStyle = '', hasSegments = false, barHtml = '';
         if (isRingType) {
-            const ringMin = parseFloat(chip.ring_min) || 0, ringMax = parseFloat(chip.ring_max) || 100;
-            const ringW = parseFloat(chip.ring_width) || 4, ringGap = parseFloat(chip.ring_gap) || 3;
-            const g = computeGauge(gaugeVal, ringMin, ringMax, (chip.ring_color || '').trim(), Array.isArray(chip.ring_thresholds) ? chip.ring_thresholds : [], chip.ring_threshold_mode || 'solid');
+            const ringMin = parseFloat(button.ring_min) || 0, ringMax = parseFloat(button.ring_max) || 100;
+            const ringW = parseFloat(button.ring_width) || 4, ringGap = parseFloat(button.ring_gap) || 3;
+            const g = computeGauge(gaugeVal, ringMin, ringMax, (button.ring_color || '').trim(), Array.isArray(button.ring_thresholds) ? button.ring_thresholds : [], button.ring_threshold_mode || 'solid');
             hasSegments = g.hasSegments;
-            ringHtml = '<div class="chip-ring-track"></div>';
+            ringHtml = '<div class="button-ring-track"></div>';
             const styleParts = [`--awc-ring-pct:${g.pct}%`, `--awc-ring-w:${ringW}px`, `--awc-ring-gap:${ringGap}px`];
             if (g.gradient) styleParts.push(`--awc-ring-gradient:conic-gradient(${g.gradient})`);
             else if (g.effectiveColor) styleParts.push(`--awc-ring-color:${g.effectiveColor}`);
             ringWrapStyle = styleParts.join(';');
         }
         if (isBarType) {
-            const barMin = parseFloat(chip.bar_min) || 0, barMax = parseFloat(chip.bar_max) || 100;
-            const barH = parseFloat(chip.bar_height) || 4, barGap = parseFloat(chip.bar_gap) || 4;
-            const g = computeGauge(gaugeVal, barMin, barMax, (chip.bar_color || '').trim(), Array.isArray(chip.bar_thresholds) ? chip.bar_thresholds : [], chip.bar_threshold_mode || 'solid');
-            classes.push('chip-bar-type');
+            const barMin = parseFloat(button.bar_min) || 0, barMax = parseFloat(button.bar_max) || 100;
+            const barH = parseFloat(button.bar_height) || 4;
+            const g = computeGauge(gaugeVal, barMin, barMax, (button.bar_color || '').trim(), Array.isArray(button.bar_thresholds) ? button.bar_thresholds : [], button.bar_threshold_mode || 'solid');
+            classes.push('button-bar-type');
             const scale = (parseFloat(g.pct) / 100).toFixed(4);
             const fillStyles = [`--awc-bar-scale:${scale}`];
             if (g.barGradient) fillStyles.push(`--awc-bar-gradient:linear-gradient(to right, ${g.barGradient})`);
             else if (g.effectiveColor) fillStyles.push(`--awc-bar-color:${g.effectiveColor}`);
-            barHtml = `<div class="chip-bar" style="--awc-bar-h:${barH}px;--awc-bar-gap:${barGap}px"><div class="chip-bar-track"></div><div class="chip-bar-fill" data-bar-idx="${idx}" style="${fillStyles.join(';')}"></div></div>`;
+            barHtml = `<div class="button-bar" style="--awc-bar-h:${barH}px"><div class="button-bar-track"></div><div class="button-bar-fill" data-bar-idx="${idx}" style="${fillStyles.join(';')}"></div></div>`;
         }
-        const chipAlignClass = chip.align || '';
-        if (chipAlignClass) classes.push(`align-${chipAlignClass}`);
-        const isBehind = chip.behind_effects === true; if (isBehind) classes.push('behind');
-        if (chip.chip_round === true) classes.push('chip-round');
+        const buttonAlignClass = button.align || '';
+        if (buttonAlignClass) classes.push(`align-${buttonAlignClass}`);
+        if (button.button_round === true) classes.push('button-round');
+        const loaderHtml = fcLoading ? '<div class="button-loader"><span></span><span></span><span></span></div>' : '';
+        const elOrder = button.element_order ? button.element_order.toString().split(',').map(s => s.trim().toLowerCase()) : null;
+        let iconOrder = '', contentOrder = '', barOrder = '';
+        if (elOrder && elOrder.length >= 2) {
+            const textIdx = elOrder.indexOf('text');
+            const iconIdx = elOrder.indexOf('icon');
+            const barIdx = elOrder.indexOf('bar');
+            if (iconIdx >= 0) iconOrder = ` style="order:${iconIdx}"`;
+            if (textIdx >= 0) contentOrder = ` style="order:${textIdx}"`;
+            else {
+                const textEls = [elOrder.indexOf('label'), elOrder.indexOf('value'), elOrder.indexOf('sub')].filter(i => i >= 0);
+                if (textEls.length) contentOrder = ` style="order:${Math.min(...textEls)}"`;
+            }
+            if (barIdx >= 0) barOrder = ` style="order:${barIdx}"`;
+        }
+        let txtOrder = button.text_order ? button.text_order.toString().split(',').map(s => s.trim().toLowerCase()) : null;
+        // Derive text order from element_order when text_order is absent
+        if (!txtOrder && elOrder) {
+            const legacyTxts = ['label','value','sub'].filter(t => elOrder.indexOf(t) >= 0);
+            if (legacyTxts.length >= 2) {
+                legacyTxts.sort((a, b) => elOrder.indexOf(a) - elOrder.indexOf(b));
+                txtOrder = legacyTxts;
+            }
+        }
+        let nameOrder = '', valOrder = '', subOrder = '';
+        if (txtOrder && txtOrder.length >= 2) {
+            const li = txtOrder.indexOf('label');
+            const vi = txtOrder.indexOf('value');
+            const si = txtOrder.indexOf('sub');
+            if (li >= 0) nameOrder = ` style="order:${li}"`;
+            if (vi >= 0) valOrder = ` style="order:${vi}"`;
+            if (si >= 0) subOrder = ` style="order:${si}"`;
+        }
+        const nameHtmlOrdered = nameHtml ? nameHtml.replace('<span class="button-name', `<span${nameOrder} class="button-name`) : '';
+        const valHtmlOrdered = valHtml ? valHtml.replace('<span class="button-val', `<span${valOrder} class="button-val`) : '';
+        const subHtmlOrdered = subBelowHtml ? (subOrder ? subBelowHtml.replace('<span class="button-sub', `<span${subOrder} class="button-sub`) : subBelowHtml) : '';
+        const contentHtml = (nameHtmlOrdered || valHtmlOrdered || subHtmlOrdered) ? `<span class="button-content"${contentOrder}>${nameHtmlOrdered}${valHtmlOrdered}${subHtmlOrdered}</span>` : '';
+        const iconHtmlOrdered = iconHtml && iconOrder ? iconHtml.replace('<span class="button-icon', `<span${iconOrder} class="button-icon`) : (iconHtml || '');
+        const barHtmlOrdered = barHtml && barOrder ? barHtml.replace('class="button-bar" style="', `class="button-bar" style="order:${elOrder.indexOf('bar')};`) : (barHtml || '');
         const style = inlineStyles.length ? ` style="${inlineStyles.join(';')}"` : '';
-        const loaderHtml = fcLoading ? '<div class="chip-loader"><span></span><span></span><span></span></div>' : '';
-        let chipHtml = `<div class="${classes.join(' ')}" data-idx="${idx}"${style}>${loaderHtml}${iconHtml}${nameHtml}${valHtml}${barHtml}</div>`;
+        let buttonHtml = `<div class="${classes.join(' ')}" data-idx="${idx}" data-area="${areaIdx}"${style}>${loaderHtml}${iconHtmlOrdered}${contentHtml}${barHtmlOrdered}</div>`;
         if (isRingType) {
-            chipHtml = `<div class="chip-ring-wrap${hasSegments ? ' has-segments' : ''}${fcLoading ? ' chip-loading' : ''}" data-idx="${idx}" style="${ringWrapStyle}">${ringHtml}${chipHtml}</div>`;
+            buttonHtml = `<div class="button-ring-wrap${hasSegments ? ' has-segments' : ''}${fcLoading ? ' button-loading' : ''}" data-idx="${idx}" data-area="${areaIdx}" style="${ringWrapStyle}">${ringHtml}${buttonHtml}</div>`;
         }
-        const sig = `${idx}|${formatted}|${unit}|${iconValue}|${iconStrategy}|${showIcon}|${showLabel}|${showValue}|${overflowMode}|${labelOverflow}|${marqueeSpeed}|${marqueeRtl}|${width}|${height}|${nameSig}|${effectiveBg}|${bgStyle}|${effectiveFormat}|${iconBg != null ? iconBg : ''}|${isFree}|${posAnchor}|${posX}|${posY}|${effectiveBgColor}|${effectiveIconBgColor}|${chip.padding != null ? chip.padding : ''}|${chip.text_size || ''}|${chip.label_size || ''}|${chip.inner_gap || ''}|${chip.text_gap || ''}|${chip.icon_size || ''}|${chip.icon_padding || ''}|${chipAlignClass}|${subValueSig}|${chip.sub_value_position || ''}|${chip.sub_value_format != null ? chip.sub_value_format : ''}|${chip.sub_value_size || ''}|${chip.sub_value_weight || ''}|${chip.sub_value_overflow || ''}|${chip.hide_sub_value || ''}|${isBehind}|${useFancyUnit}|${chip.value_weight || ''}|${chip.label_weight || ''}|${chip.chip_round || ''}|${chip.type || ''}|${chip.ring_min != null ? chip.ring_min : ''}|${chip.ring_max != null ? chip.ring_max : ''}|${chip.ring_color || ''}|${chip.ring_width || ''}|${chip.ring_gap || ''}|${chip.ring_threshold_mode || ''}|${JSON.stringify(chip.ring_thresholds || '')}|${chip.bar_min != null ? chip.bar_min : ''}|${chip.bar_max != null ? chip.bar_max : ''}|${chip.bar_color || ''}|${chip.bar_height || ''}|${chip.bar_gap || ''}|${chip.bar_threshold_mode || ''}|${JSON.stringify(chip.bar_thresholds || '')}|${gaugeSig}`;
-        return { html: chipHtml, sig, sensorObj, iconStrategy, showIcon, isFree, isBehind, posAnchor, posX, posY, width };
+        const _n = (v) => v != null ? v : '';
+        const sig = [idx, formatted, unit, iconValue, iconStrategy, showIcon, showLabel, showValue, overflowMode, labelOverflow, marqueeSpeed, marqueeRtl, width, height, nameSig, effectiveBg, bgStyle, effectiveFormat, _n(iconBg), isFree, posAnchor, posX, posY, effectiveBgColor, effectiveIconBgColor, _n(button.padding), button.text_size||'', button.label_size||'', button.inner_gap||'', button.text_gap||'', button.icon_size||'', button.icon_padding||'', buttonAlignClass, subValueSig, _n(button.sub_value_format), button.sub_value_size||'', button.sub_value_weight||'', button.sub_value_overflow||'', button.hide_sub_value||'', useFancyUnit, button.value_weight||'', button.label_weight||'', button.button_round||'', button.type||'', _n(button.ring_min), _n(button.ring_max), button.ring_color||'', button.ring_width||'', button.ring_gap||'', button.ring_threshold_mode||'', button._ringThresholdsSig||'', _n(button.bar_min), _n(button.bar_max), button.bar_color||'', button.bar_height||'', button.bar_threshold_mode||'', button._barThresholdsSig||'', gaugeSig, buttonTintColor, button.element_order||'', button.text_order||''].join('|');
+        return { html: buttonHtml, sig, sensorObj, iconStrategy, showIcon, isFree, posAnchor, posX, posY, width, areaIdx, buttonIdx: idx, hidden: false };
     }
     _updateImage(hass, isNight, weatherState = 'default') {
-        if (!this._elements && this._elements.img || !this._elements && this._elements.imageSlot) return; const img = this._elements.img; const slot = this._elements.imageSlot;
+        if (!this._elements || !this._elements.imageSlot) return; const img = this._elements.img; const slot = this._elements.imageSlot;
         const statusSrc = this._calculateStatusImage(hass, isNight);
         const baseSrc = isNight ? this._config.image_night : this._config.image_day;
         const src = statusSrc || baseSrc || this._config.image_day || '';
@@ -2374,6 +2067,126 @@ class AtmosphericWeatherCard extends HTMLElement {
         }
         slot.hidden = !img.getAttribute('src');
     }
+    _updateWeatherBg(weatherState, themeDark) {
+        const container = this._elements && this._elements.weatherBg;
+        const root = this._elements && this._elements.root;
+        if (!container || !root) return;
+        const cfg = this._config || {};
+        const dayPath = (cfg.weather_image_path || '').trim();
+        const nightPath = (cfg.weather_image_path_night || '').trim();
+        // Off when no day folder is set.
+        if (!dayPath) {
+            if (this._weatherBgActive) {
+                container.innerHTML = '';
+                root.classList.remove('has-weather-bg');
+                this._weatherBgActive = false;
+                this._weatherBgState = null;
+                this._weatherBgDark = null;
+                this._weatherBgResolved = null;
+                this._restoreShaderAfterBg();
+            }
+            return;
+        }
+        // Day folder only → use for both; both set → follow color mode.
+        const useNight = !!(themeDark && nightPath);
+        const basePath = useNight ? nightPath : dayPath;
+        if (this._weatherBgState === weatherState && this._weatherBgDark === useNight) return;
+        this._weatherBgState = weatherState;
+        this._weatherBgDark = useNight;
+        const folder = basePath.endsWith('/') ? basePath : basePath + '/';
+        const exts = ['', '.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg', '.mp4'];
+        container.innerHTML = '';
+        this._weatherBgResolved = null;
+        this._probeWeatherMedia(container, root, folder, weatherState, exts, 0);
+    }
+    _probeWeatherMedia(container, root, folder, state, exts, idx) {
+        if (idx >= exts.length) {
+            root.classList.remove('has-weather-bg');
+            const wasActive = this._weatherBgActive;
+            this._weatherBgActive = false;
+            this._weatherBgResolved = null;
+            if (wasActive) {
+                this._restoreShaderAfterBg();
+            }
+            return;
+        }
+        const url = `${folder}${state}${exts[idx]}`;
+        if (exts[idx] === '.mp4') {
+            const video = document.createElement('video');
+            video.autoplay = true; video.loop = true; video.muted = true; video.playsInline = true;
+            video.setAttribute('muted', '');
+            video.src = url;
+            video.onloadeddata = () => {
+                container.innerHTML = '';
+                container.appendChild(video);
+                root.classList.add('has-weather-bg');
+                this._weatherBgActive = true;
+                this._weatherBgResolved = url;
+                this._applyWeatherBgActive();
+            };
+            video.onerror = () => {
+                this._probeWeatherMedia(container, root, folder, state, exts, idx + 1);
+            };
+        } else {
+            const img = new Image();
+            img.onload = () => {
+                container.innerHTML = '';
+                container.appendChild(img);
+                root.classList.add('has-weather-bg');
+                this._weatherBgActive = true;
+                this._weatherBgResolved = url;
+                this._applyWeatherBgActive();
+            };
+            img.onerror = () => {
+                this._probeWeatherMedia(container, root, folder, state, exts, idx + 1);
+            };
+            img.src = url;
+        }
+    }
+    _applyWeatherBgActive() {
+        this._teardownShaderForBg();
+        if (!this._isEffectivelyDisabled()) this._startAnimation();
+    }
+    _teardownShaderForBg() {
+        const canvas = this._elements && this._elements.glCanvas;
+        if (canvas) canvas.style.display = 'none';
+        if (this._gl) this._destroyGL();
+    }
+    _restoreShaderAfterBg() {
+        const disabled = this._areShadersDisabled();
+        this._applyShaderDisabledState(disabled);
+        if (!disabled) {
+            if (this._initializationComplete && this._isVisible && !this._gl) {
+                this._initWebGL();
+                this._shaderParams = this._weatherToUniforms();
+            }
+            this._startAnimation();
+        } else {
+            this._stopAnimation();
+        }
+    }
+    _updateSimpleBg(themeDark) {
+        const container = this._elements && this._elements.simpleBg;
+        const root = this._elements && this._elements.root;
+        if (!container || !root) return;
+        const cfg = this._config || {};
+        const on = cfg.simple_background === true;
+        const useNight = !!themeDark;
+        if (!on) {
+            if (this._simpleBgActive) {
+                root.classList.remove('has-simple-bg');
+                this._simpleBgActive = false;
+                this._simpleBgDark = null;
+            }
+            return;
+        }
+        if (this._simpleBgActive && this._simpleBgDark === useNight) return;
+        const wasActive = this._simpleBgActive;
+        this._simpleBgActive = true;
+        this._simpleBgDark = useNight;
+        root.classList.add('has-simple-bg');
+        if (!wasActive) this._applyWeatherBgActive();
+    }
     _refreshMarqueeObservation() {
         if (!this._marqueeObserver) {
             this._marqueeObserver = new ResizeObserver(entries => {
@@ -2383,15 +2196,17 @@ class AtmosphericWeatherCard extends HTMLElement {
                 }
             });
         }
-        this._marqueeObserver.disconnect(); const bt = this._elements && this._elements.chipsRow;
-        if (bt) {
-            bt.querySelectorAll('.chip.overflow-marquee')
-              .forEach(chip => this._marqueeObserver.observe(chip));
+        this._marqueeObserver.disconnect();
+        for (const els of (this._elements && this._elements.buttonAreaEls) || []) {
+            if (els.row) {
+                els.row.querySelectorAll('.button.overflow-marquee')
+                  .forEach(button => this._marqueeObserver.observe(button));
+            }
         }
         const tw = this._elements && this._elements.textWrapper;
         if (tw) {
-            tw.querySelectorAll('.chip-free .chip.overflow-marquee')
-              .forEach(chip => this._marqueeObserver.observe(chip));
+            tw.querySelectorAll('.button-free .button.overflow-marquee')
+              .forEach(button => this._marqueeObserver.observe(button));
         }
     }
     _measureMarqueeOne(host) {
@@ -2412,51 +2227,44 @@ class AtmosphericWeatherCard extends HTMLElement {
             host.style.removeProperty('--awc-marquee-duration');
         }
     }
-    _computeVerticalVisHeight() {
-        const bt = this._elements && this._elements.chipsRow; if (!bt || !bt.children.length) return; const visCount = parseInt(this._config.chip_area_scroll_count, 10);
-        if (!Number.isFinite(visCount) || visCount < 1) return; const firstChip = bt.children[0]; if (!firstChip || firstChip.offsetHeight < 1) return;
+    _computeVerticalVisHeight(areaIdx) {
+        const els = this._elements && this._elements.buttonAreaEls && this._elements.buttonAreaEls[areaIdx];
+        const bt = els && els.row; if (!bt || !bt.children.length) return;
+        const area = this._areas[areaIdx]; if (!area) return;
+        const visCount = parseInt(area.scroll_count, 10);
+        if (!Number.isFinite(visCount) || visCount < 1) return; const firstButton = bt.children[0]; if (!firstButton || firstButton.offsetHeight < 1) return;
         const gap = parseFloat(getComputedStyle(bt).gap) || 8;
-        bt.style.setProperty('--awc-row-max-height', `${firstChip.offsetHeight * visCount + gap * (visCount - 1)}px`);
+        bt.style.setProperty('--awc-row-max-height', `${firstButton.offsetHeight * visCount + gap * (visCount - 1)}px`);
     }
-    // VISIBILITY, EVENTS & INITIALIZATION
     _handleVisibilityChange(entries) {
         const entry = entries[0], wasVisible = this._isVisible;
         this._isVisible = entry.isIntersecting;
         if (this._elements && this._elements.root) this._elements.root.classList.toggle('is-offscreen', !this._isVisible);
         if (this._isVisible && !wasVisible) {
-            if (this._needsReinit) {
-                this._needsReinit = false; this._initParticles(); if (this._width > 0) this._lastInitWidth = this._width;
-            }
+            this._shaderParams = this._weatherToUniforms();
             this._startAnimation();
         } else if (!this._isVisible && wasVisible) {
             this._stopAnimation();
         }
     }
+    _handleDocVisibility() {
+        if (document.hidden) {
+            this._stopAnimation();
+        } else if (this._isVisible) {
+            this._startAnimation();
+        }
+    }
     _handleTap(e) {
         e.stopPropagation(); const cfg = this._config;
-        const event = new CustomEvent('hass-action', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                config: { entity: cfg.weather_entity, tap_action: cfg.card_tap_action },
-                action: 'tap',
-            },
-        });
-        this.dispatchEvent(event);
+        this.dispatchEvent(new CustomEvent('hass-action', { bubbles: true, composed: true, detail: { config: { entity: cfg.weather_entity, tap_action: cfg.card_tap_action }, action: 'tap' } }));
     }
-    _handleChipClick(e) {
-        const chipEl = e.target.closest('.chip'); if (!chipEl) return; const idx = parseInt(chipEl.dataset.idx, 10);
-        const chip = this._chips && this._chips[idx]; if (!chip || !chip.entity) return; e.stopPropagation();
-        const tapAction = chip.tap_action || { action: 'more-info' };
-        const event = new CustomEvent('hass-action', {
-            bubbles: true,
-            composed: true,
-            detail: {
-                config: { entity: chip.entity, tap_action: tapAction },
-                action: 'tap',
-            },
-        });
-        this.dispatchEvent(event);
+    _handleButtonClick(e) {
+        const buttonEl = e.target.closest('.button'); if (!buttonEl) return; const idx = parseInt(buttonEl.dataset.idx, 10);
+        const areaIdx = parseInt(buttonEl.dataset.area, 10);
+        const area = this._areas && this._areas[areaIdx]; if (!area) return;
+        const button = area.buttons && area.buttons[idx]; if (!button || !button.entity) return; e.stopPropagation();
+        const tapAction = button.tap_action || { action: 'more-info' };
+        this.dispatchEvent(new CustomEvent('hass-action', { bubbles: true, composed: true, detail: { config: { entity: button.entity, tap_action: tapAction }, action: 'tap' } }));
     }
     _tryInitialize() {
         if (this._initializationComplete) return; if (!this._renderGate.hasFirstHass) return; if (!this._renderGate.hasValidDimensions) return;
@@ -2464,1702 +2272,1063 @@ class AtmosphericWeatherCard extends HTMLElement {
         this._initializationComplete = true; const w = this._cachedDimensions.width / this._cachedDimensions.dpr;
         const h = this._cachedDimensions.height / this._cachedDimensions.dpr; this._width = w; this._lastInitWidth = w;
         requestAnimationFrame(() => {
-            if (!this.isConnected) return; this._initParticles(w, h); this._checkRenderGate();
+            if (!this.isConnected) return;
+            if (this._areShadersDisabled()) {
+                this._applyShaderDisabledState(true);
+                return;
+            }
+            if (this._gl && !this._gl.isContextLost() && this._shaderBank) {
+                this._prevShaderParams = null; this._prevFxSpeed = null;
+            } else {
+                this._gl = null; this._glProg = null; this._glUniforms = null;
+                this._initWebGL();
+            }
+            this._shaderParams = this._weatherToUniforms();
+            this._startAnimation();
         });
     }
+    _areShadersDisabled() {
+        const cfg = this._config || {};
+        if (this._weatherBgActive) return true;
+        if ((cfg.weather_image_path || '').trim()) return true;
+        if (cfg.simple_background === true) return true;
+        return cfg.disable_background === true;
+    }
+    _applyShaderDisabledState(disabled) {
+        const canvas = this._elements && this._elements.glCanvas;
+        const root = this._elements && this._elements.root;
+        if (canvas) canvas.style.display = disabled ? 'none' : '';
+        if (root) root.classList.toggle('shaders-off', disabled);
+        if (disabled && this._gl) this._destroyGL();
+    }
     _updateCanvasDimensions(forceW = null, forceH = null) {
-        if (!this._elements && this._elements.root || !this._ctxs) return false;
-        if (this._config.card_square && forceW === null) {
-            const currentW = this._elements.root.clientWidth;
-            if (currentW > 0 && Math.abs(this.clientHeight - currentW) > 1) this.style.height = `${currentW}px`;
-        }
-        let scaledWidth, scaledHeight, dpr, rawW = forceW !== null ? forceW : this._elements.root.clientWidth;
+        if (!this._elements || !this._elements.root) return false;
+        let rawW = forceW !== null ? forceW : this._elements.root.clientWidth;
         let rawH = forceH !== null ? forceH : this._elements.root.clientHeight;
         if (rawW === 0 || rawH === 0) return false;
-        dpr = Math.min(window.devicePixelRatio || 1, this._perfDpr);
-        scaledWidth = rawW * dpr; scaledHeight = rawH * dpr; const totalPixels = scaledWidth * scaledHeight;
-        if (totalPixels > PERFORMANCE_CONFIG.MAX_PIXELS) {
-            const scaleDown = Math.sqrt(PERFORMANCE_CONFIG.MAX_PIXELS / totalPixels);
-            scaledWidth *= scaleDown; scaledHeight *= scaleDown;
-            dpr *= scaleDown; // Lowers internal render res while keeping physical CSS size accurate
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let scaledWidth = Math.floor(rawW * dpr), scaledHeight = Math.floor(rawH * dpr);
+        const maxPx = 1200 * 800;
+        if (scaledWidth * scaledHeight > maxPx) {
+            const s = Math.sqrt(maxPx / (scaledWidth * scaledHeight));
+            scaledWidth = Math.floor(scaledWidth * s);
+            scaledHeight = Math.floor(scaledHeight * s);
         }
-        scaledWidth = Math.floor(scaledWidth); scaledHeight = Math.floor(scaledHeight);
-        const widthChanged = this._cachedDimensions.width !== scaledWidth, dprChanged = this._cachedDimensions.dpr !== dpr;
+        const widthChanged = this._cachedDimensions.width !== scaledWidth;
         const heightDiff = Math.abs(this._cachedDimensions.height - scaledHeight);
-        if (!widthChanged && !dprChanged && heightDiff < 150 * dpr) return false;
+        if (!widthChanged && heightDiff < 100) return false;
         this._cachedDimensions = { width: scaledWidth, height: scaledHeight, dpr };
-        for (const k of ['bg', 'mid', 'fg']) {
-            const canvas = this._elements[k], ctx = this._ctxs[k];
-            if (!canvas || !ctx || (canvas.width === scaledWidth && canvas.height === scaledHeight)) continue;
-            canvas.width = scaledWidth; canvas.height = scaledHeight;
-            canvas.style.width = `${forceW !== null ? forceW : scaledWidth / dpr}px`;
-            canvas.style.height = `${forceH !== null ? forceH : scaledHeight / dpr}px`;
-            ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.scale(dpr, dpr); ctx.imageSmoothingQuality = 'high';
+        const canvas = this._elements.glCanvas;
+        if (canvas) {
+            canvas.width = scaledWidth;
+            canvas.height = scaledHeight;
+            canvas.style.width = `${rawW}px`;
+            canvas.style.height = `${rawH}px`;
+        }
+        const sc = this._elements && this._elements.starCanvas;
+        const sbg = this._elements && this._elements.starBgCanvas;
+        if (sc) {
+            const sw = Math.floor(rawW * dpr);
+            const sh = Math.floor(rawH * dpr);
+            sc.width = sw; sc.height = sh;
+            sc.style.width = `${rawW}px`;
+            sc.style.height = `${rawH}px`;
+            this._starCtx = null;
+            if (sbg) {
+                sbg.width = sw; sbg.height = sh;
+                sbg.style.width = `${rawW}px`;
+                sbg.style.height = `${rawH}px`;
+                this._starBgCtx = null;
+                this._starBgPainted = false;
+            }
         }
         if (scaledWidth > 0 && scaledHeight > 0) {
-            const cssW = scaledWidth / dpr, cssH = scaledHeight / dpr, celestial = this._getCelestialPosition(cssW, cssH);
-            const dx2 = Math.max(celestial.x, cssW - celestial.x), dy2 = Math.max(celestial.y, cssH - celestial.y);
-            const glowRadius = Math.ceil(Math.sqrt(dx2 * dx2 + dy2 * dy2) * 0.3);
-            this._elements.root.style.setProperty('--c-x', `${celestial.x}px`);
-            this._elements.root.style.setProperty('--c-y', `${celestial.y}px`);
-            this._elements.root.style.setProperty('--c-r', `${glowRadius}px`);
-            this._renderGate.hasValidDimensions = true; this._checkRenderGate();
+            this._renderGate.hasValidDimensions = true;
         }
         return true;
     }
-    _scheduleParticleReinit() {
-        this._pendingResize = true;
+    _scheduleResize() {
         if (this._resizeDebounceTimer) clearTimeout(this._resizeDebounceTimer);
         this._resizeDebounceTimer = setTimeout(() => {
             this._resizeDebounceTimer = null;
-            if (this._lastInitWidth > 0 && this._cachedDimensions.width > 0) {
-                const currentCSSWidth = this._cachedDimensions.width / this._cachedDimensions.dpr;
-                const diff = Math.abs(currentCSSWidth - this._lastInitWidth);
-                if (diff < 100) {
-                    this._pendingResize = false;
-                    return;
-                }
+            if (this._gl) {
+                const canvas = this._elements.glCanvas;
+                if (canvas) this._gl.viewport(0, 0, canvas.width, canvas.height);
             }
-            if (this._pendingResize && this._stateInitialized) {
-                this._pendingResize = false;
-                if (this._elements && this._elements.root) this._lastInitWidth = this._elements.root.clientWidth;
-                this._initParticles();
-            }
-        }, PERFORMANCE_CONFIG.RESIZE_DEBOUNCE_MS);
+        }, 300);
     }
-    _checkRenderGate() {
-        if (this._renderGate.isRevealed) return;
-        const canReveal =
-            this._renderGate.hasValidDimensions &&
-            this._renderGate.hasFirstHass &&
-            this._stateInitialized;
-        if (canReveal) {
-            this._renderGate.isRevealed = true;
-            requestAnimationFrame(() => {
-                if (this._elements && this._elements.root) this._elements.root.classList.add('revealed');
+    _bakeStarLayers(baseCount = 1000) {
+        const seed = this._glSeed;
+        let s0 = ((seed * 1667.3) | 0) >>> 0;
+        const rng = () => { s0 = (s0 * 16807 + 0) % 2147483647; return (s0 & 0x7fffffff) / 0x7fffffff; };
+        const sbg = this._elements && this._elements.starBgCanvas;
+        if (!sbg || sbg.width === 0 || sbg.height === 0) return;
+        const W = sbg.width, H = sbg.height;
+        const bgCtx = this._starBgCtx || (this._starBgCtx = sbg.getContext('2d', { alpha: true }));
+        if (!bgCtx) return;
+        bgCtx.clearRect(0, 0, W, H);
+
+        const palettes = [
+            [190, 210, 255],
+            [210, 225, 255],
+            [255, 250, 245],
+            [255, 235, 200],
+        ];
+        const pickColor = (v) => v < 0.15 ? palettes[0] : v < 0.60 ? palettes[1] : v < 0.85 ? palettes[2] : palettes[3];
+        const batches = new Map();
+        const addToBatch = (rgb, alpha, x, y, r) => {
+            const qA = ((alpha * 15 + 0.5) | 0) / 15;
+            const key = `${rgb[0]},${rgb[1]},${rgb[2]}|${qA}`;
+            let b = batches.get(key);
+            if (!b) { b = { rgb, alpha: qA, pts: [] }; batches.set(key, b); }
+            b.pts.push(x, y, r);
+        };
+
+        const tinyCount = Math.floor(baseCount * 1.1);
+        const smallCount = Math.floor(baseCount * 0.35);
+        const clusterCount = Math.floor(baseCount * 0.045);
+
+        const mwActive = baseCount > 750;
+        let mwCosA, mwSinA, mwPerpX, mwPerpY, mwCx, mwCy, mwBandW;
+        if (mwActive) {
+            const mAngle = -0.35 + (rng() - 0.5) * 0.45;
+            mwCosA = Math.cos(mAngle); mwSinA = Math.sin(mAngle); mwPerpX = -mwSinA; mwPerpY = mwCosA;
+            mwBandW = H * 0.18;
+            mwCx = W * 0.5 + (rng() - 0.5) * W * 0.15;
+            mwCy = H * 0.42 + (rng() - 0.5) * H * 0.12;
+        }
+
+        for (let i = 0; i < tinyCount; i++) {
+            let x = rng() * W;
+            let y = rng() * H;
+            if (mwActive && i % 3 === 0) {
+                const bx = mwCx + mwCosA * ((x / W - 0.5) * W * 1.2) + mwPerpX * ((y / H - 0.5) * mwBandW);
+                const by = mwCy + mwSinA * ((x / W - 0.5) * W * 1.2) + mwPerpY * ((y / H - 0.5) * mwBandW);
+                if (bx >= 0 && bx <= W && by >= 0 && by <= H) { x = bx; y = by; }
+            }
+            let r = 0.6 + rng() * 0.6;
+            if (i % 8 === 0) r *= 1.8;
+            r = Math.min(r, 2.5);
+            const alpha = 0.35 + rng() * 0.35;
+            addToBatch(pickColor(rng()), alpha, x, y, r);
+        }
+
+        for (let i = 0; i < smallCount; i++) {
+            let x = rng() * W;
+            let y = rng() * H;
+            if (mwActive && i % 3 === 0) {
+                const bx = mwCx + mwCosA * ((x / W - 0.5) * W * 1.2) + mwPerpX * ((y / H - 0.5) * mwBandW * 0.8);
+                const by = mwCy + mwSinA * ((x / W - 0.5) * W * 1.2) + mwPerpY * ((y / H - 0.5) * mwBandW * 0.8);
+                if (bx >= 0 && bx <= W && by >= 0 && by <= H) { x = bx; y = by; }
+            }
+            let r = 0.8 + rng() * 0.8;
+            if (i % 8 === 0) r *= 1.8;
+            r = Math.min(r, 2.5);
+            const alpha = 0.55 + rng() * 0.35;
+            const rgb = pickColor(rng());
+            addToBatch(rgb, alpha, x, y, r);
+            if (i % 8 === 0) {
+                const glowR = r * 3.0;
+                bgCtx.globalAlpha = alpha * 0.12;
+                const g = bgCtx.createRadialGradient(x, y, r * 0.5, x, y, glowR);
+                g.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},1)`);
+                g.addColorStop(0.4, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0.2)`);
+                g.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
+                bgCtx.fillStyle = g;
+                bgCtx.beginPath();
+                bgCtx.arc(x, y, glowR, 0, 6.2832);
+                bgCtx.fill();
+            }
+        }
+
+        for (let c = 0; c < clusterCount; c++) {
+            const cx = 0.15 * W + rng() * 0.7 * W;
+            const cy = rng() * H;
+            const count = 5 + Math.floor(rng() * 6);
+            for (let j = 0; j < count; j++) {
+                const x = cx + (rng() - 0.5) * 25;
+                const y = cy + (rng() - 0.5) * 18;
+                let r = 0.5 + rng() * 0.5;
+                if (j % 8 === 0) r *= 1.8;
+                r = Math.min(r, 2.5);
+                addToBatch(palettes[1], 0.30 + rng() * 0.20, x, y, r);
+            }
+        }
+
+        for (const batch of batches.values()) {
+            bgCtx.globalAlpha = batch.alpha;
+            bgCtx.fillStyle = `rgb(${batch.rgb[0]},${batch.rgb[1]},${batch.rgb[2]})`;
+            bgCtx.beginPath();
+            const pts = batch.pts;
+            for (let j = 0; j < pts.length; j += 3) {
+                bgCtx.moveTo(pts[j] + pts[j + 2], pts[j + 1]);
+                bgCtx.arc(pts[j], pts[j + 1], pts[j + 2], 0, 6.2832);
+            }
+            bgCtx.fill();
+        }
+        bgCtx.globalAlpha = 1;
+        this._starBgPainted = true;
+
+        const HERO_COUNT = 8;
+        const heroes = [];
+        const dpr = Math.min(window.devicePixelRatio || 1, 1.4);
+        const useOC = typeof OffscreenCanvas !== 'undefined';
+        for (let i = 0; i < HERO_COUNT; i++) {
+            const isFeature = i < 2;
+            const size = Math.min(isFeature ? (1.8 + rng() * 0.4) : (1.3 + rng() * 0.4), 1.8);
+            const haloOuterR = isFeature ? 3.8 : 2.8;
+            const brightness = 0.85 + rng() * 0.15;
+            const rgb = pickColor(rng());
+            const texPx = Math.ceil(size * haloOuterR * 2 + 4) * dpr;
+            const hc = useOC ? new OffscreenCanvas(texPx, texPx) : document.createElement('canvas');
+            if (!useOC) { hc.width = texPx; hc.height = texPx; }
+            const hCtx = hc.getContext('2d', { alpha: true });
+            const mid = texPx / 2;
+            const refSz = size * dpr;
+            const haloA = isFeature ? 0.60 : 0.35;
+            const hg = hCtx.createRadialGradient(mid, mid, refSz * 0.5, mid, mid, refSz * haloOuterR);
+            hg.addColorStop(0, `rgba(255,255,255,${haloA})`);
+            hg.addColorStop(0.15, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(haloA * 0.8).toFixed(3)})`);
+            hg.addColorStop(0.4, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(haloA * 0.25).toFixed(3)})`);
+            hg.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
+            hCtx.fillStyle = hg;
+            hCtx.beginPath();
+            hCtx.arc(mid, mid, refSz * haloOuterR, 0, 6.2832);
+            hCtx.fill();
+
+            if (isFeature) {
+                const rayLen = refSz * 3.5;
+                const rayW = refSz * 0.4;
+                hCtx.save();
+                hCtx.translate(mid, mid);
+                for (let r = 0; r < 4; r++) {
+                    hCtx.rotate(Math.PI / 4);
+                    const rg = hCtx.createLinearGradient(0, 0, rayLen, 0);
+                    rg.addColorStop(0, `rgba(255,255,255,${(haloA * 0.9).toFixed(3)})`);
+                    rg.addColorStop(0.15, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(haloA * 0.7).toFixed(3)})`);
+                    rg.addColorStop(0.5, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(haloA * 0.2).toFixed(3)})`);
+                    rg.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
+                    hCtx.fillStyle = rg;
+                    hCtx.fillRect(0, -rayW / 2, rayLen, rayW);
+                    const rg2 = hCtx.createLinearGradient(0, 0, -rayLen, 0);
+                    rg2.addColorStop(0, `rgba(255,255,255,${(haloA * 0.9).toFixed(3)})`);
+                    rg2.addColorStop(0.15, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(haloA * 0.7).toFixed(3)})`);
+                    rg2.addColorStop(0.5, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${(haloA * 0.2).toFixed(3)})`);
+                    rg2.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
+                    hCtx.fillStyle = rg2;
+                    hCtx.fillRect(-rayLen, -rayW / 2, rayLen, rayW);
+                }
+                hCtx.restore();
+            }
+
+            heroes.push({
+                x: 0.06 + rng() * 0.88,
+                y: 0.06 + rng() * 0.82,
+                size, brightness, bodyR: 0.75,
+                haloTex: hc, haloTexSize: texPx, haloOuterR, refSize: refSz,
+                rgb, fillStr: `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`,
+                phase: rng() * 6.2832,
+                rate: 0.015 + rng() * 0.035,
+                isFeature,
             });
         }
+        this._starHeroes = heroes;
+        this._starDpr = dpr;
     }
-    // TEXTURE BUILDING
-    _buildTextures() {
-        const isLight = this._isLightBackground, rs = this._renderState;
-        if (!rs) return;
-        // --- Rain sprite (64x4 gradient streak) ---
-        const rainRgb = rs.rainRgb;
-        if (!this._rainTex || this._rainTexRgb !== rainRgb) {
-            this._rainTexRgb = rainRgb; const rc = document.createElement('canvas'); rc.width = 64; rc.height = 4;
-            const rCtx = rc.getContext('2d', { willReadFrequently: false });
-            const g = rCtx.createLinearGradient(64, 0, 0, 0);
-            g.addColorStop(0,   `rgba(${rainRgb}, 0.85)`);
-            g.addColorStop(0.5, `rgba(${rainRgb}, 0.2)`);
-            g.addColorStop(1,   `rgba(${rainRgb}, 0)`);
-            rCtx.fillStyle = g; rCtx.fillRect(0, 0, 64, 4); this._rainTex = rc;
+    _updateStars(sunEntity, weatherState) {
+        const cfg = this._config || {};
+        const isNight = this._isTimeNight;
+        const vis = resolveVisuals(weatherState);
+        if (!isNight || !vis.stars || cfg.night_sky_effects === false) {
+            this._starMasterOpacity = 0;
+            return;
         }
-        // --- Snow sprites (foreground 32x32, background 16x16) ---
-        if (!this._snowTexFg || this._snowTexLight !== isLight) {
-            this._snowTexLight = isLight; const sf = document.createElement('canvas'); sf.width = 32; sf.height = 32;
-            const sfCtx = sf.getContext('2d', { willReadFrequently: false });
-            const sg = sfCtx.createRadialGradient(16, 16, 0, 16, 16, 16);
-            if (isLight) {
-                sg.addColorStop(0, 'rgba(255,255,255,1)'); sg.addColorStop(0.5, 'rgba(255,255,255,0.786)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
-            } else {
-                sg.addColorStop(0, 'rgba(255,255,255,1)'); sg.addColorStop(0.5, 'rgba(255,255,255,0.55)'); sg.addColorStop(1, 'rgba(255,255,255,0)');
-            }
-            sfCtx.fillStyle = sg;
-            sfCtx.beginPath(); sfCtx.arc(16, 16, 16, 0, Math.PI * 2); sfCtx.fill();
-            this._snowTexFg = sf; const sb = document.createElement('canvas'); sb.width = 16; sb.height = 16;
-            const sbCtx = sb.getContext('2d', { willReadFrequently: false });
-            if (isLight) {
-                const sbg = sbCtx.createRadialGradient(8, 8, 0, 8, 8, 8); sbg.addColorStop(0, 'rgba(255,255,255,1)'); sbg.addColorStop(1, 'rgba(255,255,255,0)');
-                sbCtx.fillStyle = sbg;
-            } else {
-                sbCtx.fillStyle = 'rgba(255,255,255,1)';
-            }
-            sbCtx.beginPath(); sbCtx.arc(8, 8, 8, 0, Math.PI * 2); sbCtx.fill(); this._snowTexBg = sb;
+
+        const targetStarCount = vis.starCount;
+
+        if (this._currentBakedStarCount !== targetStarCount) {
+            this._currentBakedStarCount = targetStarCount;
+            this._starBgPainted = false;
         }
-        // --- Hail sprite (32x32 hexagonal ice pellet) ---
-        if (!this._hailTex || this._hailTexLight !== isLight) {
-            this._hailTexLight = isLight; const hc = document.createElement('canvas'); hc.width = 32; hc.height = 32;
-            const hcCtx = hc.getContext('2d', { willReadFrequently: false });
-            const center = 16, size = 14;
-            const iceGradient = hcCtx.createRadialGradient(center, center - size * 0.3, 0, center, center, size);
-            if (isLight) {
-                iceGradient.addColorStop(0, 'rgba(240,250,255,1)'); iceGradient.addColorStop(0.5, 'rgba(210,230,250,0.85)');
-                iceGradient.addColorStop(1, 'rgba(170,200,240,0.5)');
-            } else {
-                iceGradient.addColorStop(0, 'rgba(255,255,255,1)'); iceGradient.addColorStop(0.5, 'rgba(230,245,255,0.85)');
-                iceGradient.addColorStop(1, 'rgba(200,225,250,0.5)');
-            }
-            hcCtx.fillStyle = iceGradient; hcCtx.beginPath();
-            for (let j = 0; j < 6; j++) {
-                const angle = (Math.PI * 2 * j) / 6, x = center + Math.cos(angle) * size, y = center + Math.sin(angle) * size;
-                if (j === 0) hcCtx.moveTo(x, y);
-                else hcCtx.lineTo(x, y);
-            }
-            hcCtx.closePath(); hcCtx.fill(); hcCtx.fillStyle = 'rgba(255,255,255,0.6)';
-            hcCtx.beginPath();
-            hcCtx.arc(center - size * 0.3, center - size * 0.3, size * 0.3, 0, Math.PI * 2);
-            hcCtx.fill(); this._hailTex = hc;
-        }
-        // --- Wind vapor sprite (128x24 streaked wisp) ---
-        const isDark = this._isThemeDark, cp = rs.cp;
-        const colorKey = isDark ? `${cp.litR},${cp.litG},${cp.litB}` : `${cp.midR},${cp.midG},${cp.midB}`;
-        if (!this._vaporTex || this._vaporTexColor !== colorKey || this._vaporTexDark !== isDark) {
-            this._vaporTexColor = colorKey; this._vaporTexDark = isDark; const vc = document.createElement('canvas');
-            vc.width = 128; vc.height = 24;
-            const vCtx = vc.getContext('2d', { willReadFrequently: false });
-            const peakAlpha = isDark ? 0.40 : 0.55, hGrad = vCtx.createLinearGradient(0, 12, 128, 12);
-            hGrad.addColorStop(0,    `rgba(${colorKey}, 0)`);
-            hGrad.addColorStop(0.04, `rgba(${colorKey}, ${peakAlpha * 0.18})`);
-            hGrad.addColorStop(0.10, `rgba(${colorKey}, ${peakAlpha * 0.88})`);
-            hGrad.addColorStop(0.16, `rgba(${colorKey}, ${peakAlpha})`);
-            hGrad.addColorStop(0.26, `rgba(${colorKey}, ${peakAlpha * 0.82})`);
-            hGrad.addColorStop(0.40, `rgba(${colorKey}, ${peakAlpha * 0.52})`);
-            hGrad.addColorStop(0.58, `rgba(${colorKey}, ${peakAlpha * 0.26})`);
-            hGrad.addColorStop(0.76, `rgba(${colorKey}, ${peakAlpha * 0.10})`);
-            hGrad.addColorStop(0.92, `rgba(${colorKey}, ${peakAlpha * 0.02})`);
-            hGrad.addColorStop(1,    `rgba(${colorKey}, 0)`);
-            vCtx.fillStyle = hGrad; vCtx.fillRect(0, 0, 128, 24); vCtx.globalCompositeOperation = 'destination-in';
-            const vGrad = vCtx.createLinearGradient(0, 0, 0, 24); vGrad.addColorStop(0,    'rgba(255,255,255,0)');
-            vGrad.addColorStop(0.30, 'rgba(255,255,255,0.75)'); vGrad.addColorStop(0.42, 'rgba(255,255,255,1)');
-            vGrad.addColorStop(0.58, 'rgba(255,255,255,1)'); vGrad.addColorStop(0.70, 'rgba(255,255,255,0.75)');
-            vGrad.addColorStop(1,    'rgba(255,255,255,0)'); vCtx.fillStyle = vGrad; vCtx.fillRect(0, 0, 128, 24);
-            this._vaporTex = vc;
-        }
+        if (this._starMasterOpacity !== vis.starsOpacity) this._starBgPainted = false;
+        this._starMasterOpacity = vis.starsOpacity;
     }
-    // PARTICLE FACTORY
-    _initParticles(forceW = null, forceH = null) {
-        if (!this._elements && this._elements.root) return; let w, h;
-        if (forceW !== null && forceH !== null) {
-            w = forceW; h = forceH;
-        } else {
-            w = this._elements.root.clientWidth; h = this._elements.root.clientHeight;
-        }
-        const p = this._params; if (w === 0 || h === 0 || !p) return; this._clearAllParticles();
-        const fx = this._perfEffects, isUltra = fx >= 2;
-        if (fx >= 1 && this._isThemeDark && this._isTimeNight && (p.type === 'stars' || p.type === 'cloud') && (p.cloud || 0) <= 5 && Math.random() < 0.04) this._initAurora(w, h);
-        if (fx >= 1 && this._isNight && p.type === 'stars' && Math.random() < (isUltra ? 0.002 : 0.0011)) this._comets.push(this._createComet(w, h));
-        if (this._perfFauna >= 2 && Math.random() < 0.25) this._planes.push(this._createPlane(w, h)); if (p.type === 'fog' || p.foggy) this._initFogBanks(w, h);
-        if ((p.count || 0) > 0 && p.type !== 'stars' && p.type !== 'fog') this._initPrecipitation(w, h, p);
-        if ((p.cloud || 0) > 0) this._initClouds(w, h, p); if (this._isNight && (p.cloud || 0) < 5) this._initNightClouds(w, h);
-            const celestialDecor = !this._isNight ? p.celestial : null;
-        const wantsCelestialClouds = fx >= 1 && (p.sunCloudWarm || celestialDecor
-            || (this._isNight && !p.thunder && p.type !== 'hail' && p.atmosphere !== 'night'));
-        if (wantsCelestialClouds) this._initCelestialClouds(w, h, p.sunCloudWarm ? null : celestialDecor);
-        const starBase = (this._renderState && this._renderState.starMode !== 'hidden') ? (p.stars || 0) : 0;
-        const starCount = starBase;
-        if (starCount > 0) this._initStars(w, h, starCount); const ws = (this._lastState || '').toLowerCase();
-        if (fx >= 1 && starCount > 150 && (ws === 'clear-night' || ws === 'sunny' || ws === 'exceptional')) { this._bakeMilkyWay(w, h); }
-        const vaporFlat = p.windVapor === true || (this._windKmh || 0) >= 20;
-        if (fx >= 1) this._initWindVapor(w, h, p.vapor || 24, p.vaporScale || 1.0, vaporFlat);
-        this._bakeAllClouds();
-    }
-    _initAurora(w, h) {
-        const _auroraColors = ['rgba(80, 255, 160, 0.22)', 'rgba(100, 200, 255, 0.22)', 'rgba(180, 100, 255, 0.18)', 'rgba(255, 120, 200, 0.15)'];
-        this._aurora = { phase: 0, waves: Array(6).fill().map((_, i) => ({ y: h * 0.12 + i * 10, speed: 0.006 + Math.random() * 0.012, amplitude: 6 + Math.random() * 8, wavelength: 0.01 + Math.random() * 0.008, color: _auroraColors[Math.floor(Math.random() * 4)], offset: Math.random() * TWO_PI })) };
-    }
-    _createComet(w, h) {
-        return { x: w * 0.15, y: h * 0.08, vx: -2.2 - Math.random() * 1.2, vy: 0.8 + Math.random() * 0.4, life: 1.0, tailBuf: new Float32Array(TRAIL_CAP_COMET * 2), tailHead: 0, tailLen: 0, size: 3 + Math.random() * 2 };
-    }
-    _createPlane(w, h) {
-        const goingRight = Math.random() > 0.5, baseSpeed = 0.6 + Math.random() * 0.5, dir = goingRight ? 1 : -1;
-        const climbAngle = Math.random() < 0.33 ? (1 + Math.random() * 4) * (Math.PI / 180) : 0;
-        return { x: goingRight ? -100 : w + 100, y: h * 0.15 + Math.random() * (h * 0.52), vx: dir * Math.cos(climbAngle) * baseSpeed, vy: -Math.sin(climbAngle) * baseSpeed, climbAngle, scale: 0.5 + Math.random() * 0.4, blinkPhase: Math.random() * 10, histBuf: new Float32Array(TRAIL_CAP_PLANE * 3), histHead: 0, histLen: 0, gapTimer: 0, _lastRecX: -9999, _lastRecY: -9999 };
-    }
-    _initFogBanks(w, h) {
-        for (let i = 0; i < 10; i++) {
-            const layer = i / 10;
-            this._fogBanks.push({ x: Math.random() * w, y: h - (Math.random() * (h * 0.7)), w: w * (1.2 + Math.random() * 0.8), h: 40 + Math.random() * 50, speed: (Math.random() * 0.15 + 0.03) * (Math.random() > 0.5 ? 1 : -1), opacity: this._isLightBackground ? (0.35 + layer * 0.2 + Math.random() * 0.1) : (0.12 + layer * 0.1 + Math.random() * 0.08), layer: layer, phase: Math.random() * TWO_PI });
-        }
-    }
-    _initPrecipitation(w, h, p) {
-        const count = p.count || 0;
-        for (let i = 0; i < count; i++) {
-            let type = p.type;
-            if (p.type === 'mix') {
-                type = Math.random() > 0.5 ? 'rain' : 'snow';
-            } else if (p.type === 'hail') {
-                type = Math.random() > 0.55 ? 'hail' : 'rain';
+    _renderStars(timestamp) {
+        const sc = this._elements && this._elements.starCanvas;
+        const sbg = this._elements && this._elements.starBgCanvas;
+        if (!sc || this._starMasterOpacity <= 0) {
+            if (this._starsDirty && sc && sc.width > 0) {
+                const ctx = this._starCtx || (this._starCtx = sc.getContext('2d', { alpha: true }));
+                if (ctx) ctx.clearRect(0, 0, sc.width, sc.height);
+                this._starsDirty = false;
             }
-            const z = 0.5 + Math.random();
-            const particle = { type, x: Math.random() * w, y: Math.random() * h, z, turbulence: Math.random() * TWO_PI, _fadeIn: 1 };
-            if (type === 'hail') {
-                Object.assign(particle, { speedY: (12 + Math.random() * 8) * z, size: (2 + Math.random() * 2) * z, rotation: Math.random() * TWO_PI, rotationSpeed: (Math.random() - 0.5) * 0.25, op: this._isLightBackground ? 0.5 + Math.random() * 0.4 : 0.4 + Math.random() * 0.4 });
-            } else if (type === 'rain') {
-                Object.assign(particle, { speedY: (6 + Math.random() * 4) * z, len: (14 + Math.random() * 14) * z, op: this._isLightBackground ? 0.35 + Math.random() * 0.35 : 0.25 + Math.random() * 0.35 });
-            } else {
-                // Wide size variance: tiny specks to large soft flakes
-                const sizeRoll = Math.random(); let flakeSize; if (sizeRoll < 0.25)      flakeSize = (0.5 + Math.random() * 0.7) * z;
-                else if (sizeRoll < 0.65)  flakeSize = (1.5 + Math.random() * 1.5) * z;
-                else                        flakeSize = (2.8 + Math.random() * 2.7) * z;
-                Object.assign(particle, { speedY: (0.4 + Math.random() * 0.8) * z * (flakeSize / 3), size: flakeSize, wobblePhase: Math.random() * TWO_PI, wobbleSpeed: 0.02 + Math.random() * 0.02, rotation: Math.random() * TWO_PI, rotationSpeed: (Math.random() - 0.5) * 0.03, op: 0.5 + Math.random() * 0.4 });
-            }
-            if (particle.type === 'rain') this._rain.push(particle);
-            else if (particle.type === 'snow') this._snow.push(particle);
-            else if (particle.type === 'hail') this._hail.push(particle);
+            if (sbg) sbg.style.opacity = '0';
+            return;
         }
-    }
-    _initClouds(w, h, p) {
-        const isStandalone = !this._isImmersive;
-        // Immersive dark-day has no sky layer, so clouds must cover more vertical space.
-        const isDarkDayImmersive = this._isDarkDayImmersive;
-        const heightLimit  = isStandalone ? 0.75 : (isDarkDayImmersive ? 0.72 : 0.55);
-        const totalClouds  = p.cloud || 0; if (totalClouds <= 0) return; const configScale = p.scale || 1.0;
-        const isHeavy     = totalClouds >= 18;
-        const pq = Math.max(0.3, this._perfCloudQuality / 1.5);
-        // Per-session size bias (~±0.13). Shifts rollLarge/rollMedium so reloads
-        // yield visibly different size mixes.
-        this._sessionSizeBias = (Math.random() - 0.5) * 0.26;
-        // Height-proportional puff anatomy — sub-linear so short cards aren't dominated
-        const REFERENCE_HEIGHT = 350;
-        const baseUnit = 100 * Math.pow(Math.max(h, 80) / REFERENCE_HEIGHT, 0.7);
-        // Silhouette compression — wide+flat shape, puffs stay round
-        const baseVCompress = 0.55;
-        // Cluster placement — fewer clusters = visible banks with open sky gaps
-        const clusterCount = isHeavy ? Math.max(3, Math.floor(totalClouds / 6)) : (2 + Math.floor(Math.random() * 2));
-        const clusters = [];
-        for (let c = 0; c < clusterCount; c++) {
-            const baseX = w * ((c + 0.5) / clusterCount);
-            clusters.push({ x: baseX + (Math.random() - 0.5) * w * 0.6, y: h * (0.11 + Math.random() * (heightLimit - 0.16)), spreadX: w * (0.12 + Math.random() * 0.18), spreadY: h * (0.06 + Math.random() * 0.10), weight: 0.5 + Math.random() });
+        const ctx = this._starCtx || (this._starCtx = sc.getContext('2d', { alpha: true }));
+        if (!ctx) return;
+        const cw = sc.width; const ch = sc.height;
+        const master = this._starMasterOpacity;
+        const dpr = this._starDpr || 1;
+
+        if (sbg) sbg.style.opacity = master;
+
+        if (!this._starBgPainted && sbg && sbg.width > 0) {
+            this._bakeStarLayers(this._currentBakedStarCount || 800);
         }
-        const totalWeight = clusters.reduce((sum, c) => sum + c.weight, 0);
-        // Weighted cluster picker (closure reused per cloud)
-        const pickCluster = () => {
-            let roll = Math.random() * totalWeight;
-            for (let c = 0; c < clusters.length; c++) {
-                roll -= clusters[c].weight; if (roll <= 0) return clusters[c];
-            }
-            return clusters[clusters.length - 1];
-        };
-        // Approximate Gaussian via Irwin-Hall (sum of 3 uniforms)
-        const gaussRand = () => (Math.random() + Math.random() + Math.random() - 1.5) / 1.5;
-        // ── Filler wisps (background haze) ──
-        const fillerRatio = isHeavy ? 0.12 : 0.06, fillerCount = Math.floor(totalClouds * fillerRatio);
-        for (let i = 0; i < fillerCount; i++) {
-            const seed = Math.random() * 10000;
-            this._clouds.push({ x: Math.random() * w, y: h * (0.08 + Math.random() * (heightLimit * 0.6 - 0.08)), scale: (0.55 + Math.random() * 0.40) * configScale * 1.6, speed: 0.002 + Math.random() * 0.002, puffs: CloudShapeGenerator.generateWispyPuffs(seed, baseUnit, pq), cloudType: 'stratus', layer: 0, opacity: 0.30 + Math.random() * 0.18, seed, breathPhase: Math.random() * TWO_PI, breathSpeed: 0.001, _hStretch: 1.0, _vCompress: baseVCompress });
-        }
-        // ── Main clouds ──
-        const mainCount  = totalClouds - fillerCount, companions = [];
-        // Pick a sky composition for this session — drives variety across reloads
-        const compositions = p.types || WEATHER_MAP['default'].types;
-        const typePool = compositions[Math.floor(Math.random() * compositions.length)];
-        for (let i = 0; i < mainCount; i++) {
-            const seed  = Math.random() * 10000, type = typePool[Math.floor(Math.random() * typePool.length)];
-            // ── Cluster-based X/Y with type-aware loner escape ──
-            // Cumulus/cirrus have enough internal structure to stand alone.
-            // Organic/stratus/storm are blobs — they need neighbors to look volumetric.
-            let xPos, yPos; const hasStructure = type === 'cumulus' || type === 'cirrus';
-            const lonerChance = hasStructure ? (isHeavy ? 0.40 : 0.20) : (isHeavy ? 0.12 : 0.08);
-            const isLoner = Math.random() < lonerChance, cluster = pickCluster();
-            if (isLoner) {
-                xPos = Math.random() * w;
-            } else {
-                xPos = cluster.x + gaussRand() * cluster.spreadX;
-            }
-            let layer; const spec = CLOUD_TYPES[type] || CLOUD_TYPES.organic; layer = Math.random() < 0.5 ? spec.layers[0] : spec.layers[1];
-            // Puff generation
-            let puffs, isUncinus = false;
-            if (type === 'storm')        puffs = CloudShapeGenerator.generateOrganicPuffs(true, seed, baseUnit, pq);
-            else if (type === 'organic') puffs = CloudShapeGenerator.generateOrganicPuffs(false, seed, baseUnit, pq);
-            else if (type === 'cirrus') {
-                isUncinus = spec.uncinus && Math.random() < spec.uncinus[0];
-                puffs = isUncinus
-                    ? CloudShapeGenerator.generateCirrusUncinusPuffs(seed, baseUnit, pq)
-                    : CloudShapeGenerator.generateCirrusLayeredPuffs(seed, baseUnit, pq);
-            } else {
-                puffs = CloudShapeGenerator.generateMixedPuffs(seed, type === 'stratus' ? 'stratus' : 'cumulus', baseUnit, pq);
-            }
-                    const scaleX = spec.jitterX[0] + Math.random() * spec.jitterX[1];
-            const scaleY = spec.jitterY[0] + Math.random() * spec.jitterY[1];
-            if (puffs) {
-                for (let k = 0; k < puffs.length; k++) {
-                    puffs[k].offsetX *= scaleX; puffs[k].offsetY *= scaleY;
-                }
-            }
-                    let hStretch, vCompress;
-            if (isUncinus) {
-                hStretch  = spec.uncinus[1] + Math.random() * spec.uncinus[2]; vCompress = baseVCompress * spec.uncinus[3];
-            } else {
-                hStretch  = spec.stretch[0] + Math.random() * spec.stretch[1]; vCompress = baseVCompress * spec.flattenMul;
-            }
-            let cloudScale; const sizeRoll = Math.random(); const layerSizeBias = 0.85 + layer * 0.05;
-            const rollLarge = isHeavy ? (0.40 + this._sessionSizeBias) : (0.25 + this._sessionSizeBias);
-            const rollMedium = isHeavy ? (0.88 + this._sessionSizeBias * 0.5) : (0.50 + this._sessionSizeBias * 0.5);
-            if (sizeRoll < rollLarge) {
-                cloudScale = (1.2 + Math.random() * 0.90) * configScale * layerSizeBias;
-            } else if (sizeRoll < rollMedium) {
-                const base = isHeavy ? 0.70 : 0.50, range = isHeavy ? 0.35 : 0.22;
-                cloudScale = (base + Math.random() * range) * configScale * layerSizeBias;
-            } else {
-                const base = isHeavy ? 0.62 : 0.40, range = isHeavy ? 0.14 : 0.18;
-                cloudScale = (base + Math.random() * range) * configScale * layerSizeBias;
-            }
-            cloudScale = Math.min(cloudScale, 2.8);
-                    let yMin = spec.yBand[0];
-            let yMax = spec.yBand[1] < 0 ? heightLimit + spec.yBand[1] : spec.yBand[1];
-            if (isDarkDayImmersive) {
-                if (type === 'stratus')      yMax = 0.48;
-                else if (type === 'cirrus')  yMax = 0.35;
-            }
-                    if (isLoner) {
-                yPos = h * (yMin + Math.random() * (yMax - yMin));
-            } else {
-                const typeY = h * (yMin + Math.random() * (yMax - yMin)), clusterBias = cluster.y + gaussRand() * cluster.spreadY * 0.3;
-                const clamped = Math.max(h * yMin, Math.min(h * yMax, clusterBias)); yPos = typeY * 0.6 + clamped * 0.4;
-            }
-            yPos = Math.max(h * 0.08, yPos);
-            this._clouds.push({ x: xPos, y: yPos, scale: cloudScale, speed: (0.02 + Math.random() * 0.03) * (layer * 0.4 + 1), puffs, cloudType: type, layer, opacity: 1 - (layer * 0.12), seed, breathPhase: Math.random() * TWO_PI, breathSpeed: 0.002 + Math.random() * 0.004, _hStretch: hStretch, _vCompress: vCompress });
-                    if (!p.dark && (type === 'cumulus' || type === 'organic') &&
-                cloudScale > 0.75 * configScale && Math.random() < 0.15) {
-                const cSeed = Math.random() * 10000;
-                const cPuffs = CloudShapeGenerator.generateMixedPuffs(cSeed, 'stratus', baseUnit, pq);
-                const cScaleX = 0.95 + Math.random() * 0.15, cScaleY = 0.92 + Math.random() * 0.12;
-                for (let k = 0; k < cPuffs.length; k++) {
-                    cPuffs[k].offsetX *= cScaleX; cPuffs[k].offsetY *= cScaleY; cPuffs[k].rad *= 0.75;
-                }
-                const compOffX = baseUnit * 0.60, compOffY = baseUnit * 0.20;
-                companions.push({ x: xPos + (Math.random() - 0.5) * compOffX, y: yPos + (Math.random() - 0.5) * compOffY, scale: cloudScale * (0.7 + Math.random() * 0.3), speed: 0.01 + Math.random() * 0.02, puffs: cPuffs, cloudType: 'stratus', layer: Math.max(0, layer - 1), opacity: 0.45 + Math.random() * 0.20, seed: cSeed, breathPhase: Math.random() * TWO_PI, breathSpeed: 0.002, _hStretch: 1.4 + Math.random() * 0.5, _vCompress: baseVCompress * 0.85 });
-            }
-        }
-        for (let c = 0; c < companions.length; c++) { this._clouds.push(companions[c]); }
-        const cirrusAtmos = p.atmosphere === 'fair' || p.atmosphere === 'clear' || p.atmosphere === 'windy';
-        if (!p.dark && totalClouds >= 12 && cirrusAtmos) {
-            const accentCount = 1 + Math.floor(Math.random() * 2);
-            for (let i = 0; i < accentCount; i++) {
-                const seed = Math.random() * 10000, cSpec = CLOUD_TYPES.cirrus, useUncinus = cSpec.uncinus && Math.random() < cSpec.uncinus[0];
-                const cPuffs = useUncinus
-                    ? CloudShapeGenerator.generateCirrusUncinusPuffs(seed, baseUnit, pq)
-                    : CloudShapeGenerator.generateCirrusLayeredPuffs(seed, baseUnit, pq);
-                const cScaleX = cSpec.jitterX[0] + Math.random() * cSpec.jitterX[1], cScaleY = cSpec.jitterY[0] + Math.random() * cSpec.jitterY[1];
-                for (let k = 0; k < cPuffs.length; k++) {
-                    cPuffs[k].offsetX *= cScaleX; cPuffs[k].offsetY *= cScaleY;
-                }
-                const aHStretch = useUncinus
-                    ? cSpec.uncinus[1] + Math.random() * cSpec.uncinus[2]
-                    : cSpec.stretch[0] + Math.random() * cSpec.stretch[1];
-                const aVCompress = baseVCompress * (useUncinus ? cSpec.uncinus[3] : cSpec.flattenMul);
-                this._clouds.push({ x: Math.random() * w, y: h * (0.05 + Math.random() * 0.12), scale: (1.0 + Math.random() * 0.4) * configScale, speed: 0.015 + Math.random() * 0.01, puffs: cPuffs, cloudType: 'cirrus', layer: Math.floor(Math.random() * 2), opacity: 0.55 + Math.random() * 0.20, seed, breathPhase: Math.random() * TWO_PI, breathSpeed: 0.002, _hStretch: aHStretch, _vCompress: aVCompress });
-            }
-        }
-            if (!p.dark && p.atmosphere === 'overcast') {
-            const seed = Math.random() * 10000;
-            const puffs = CloudShapeGenerator.generateMixedPuffs(seed, 'cumulus', baseUnit, pq);
-            const scX = 0.92 + Math.random() * 0.12, scY = 0.90 + Math.random() * 0.14;
-            for (let k = 0; k < puffs.length; k++) {
-                puffs[k].offsetX *= scX; puffs[k].offsetY *= scY;
-            }
-            this._clouds.push({ x: w * (0.20 + Math.random() * 0.60), y: h * (0.18 + Math.random() * 0.22), scale: 2.0 + Math.random() * 0.5, speed: 0.015 + Math.random() * 0.015, puffs, cloudType: 'cumulus', layer: 2, opacity: 0.90, seed, breathPhase: Math.random() * TWO_PI, breathSpeed: 0.002 + Math.random() * 0.002, _hStretch: 1.0, _vCompress: baseVCompress * 1.20 });
-        }
-        this._clouds.sort((a, b) => a.layer - b.layer);
-        if (totalClouds > 0) {
-                    const scudCount = isDarkDayImmersive
-                ? 4 + Math.floor(Math.random() * 3)
-                : 2 + Math.floor(Math.random() * 3);
-            for (let i = 0; i < scudCount; i++) {
-                const seed = Math.random() * 10000;
-                this._fgClouds.push({ x: Math.random() * w, y: isDarkDayImmersive ? h * 0.30 + Math.random() * (h * 0.45) : Math.random() * (h * heightLimit) - 40, scale: (0.8 + Math.random() * 0.4) * configScale * 1.8, speed: 0.1 + Math.random() * 0.06, puffs: CloudShapeGenerator.generateMixedPuffs(seed, 'cumulus', baseUnit, pq), cloudType: 'scud', layer: 5, opacity: isDarkDayImmersive ? 0.45 : 0.65, seed, breathPhase: Math.random() * TWO_PI, breathSpeed: 0.004, _hStretch: 1.0, _vCompress: baseVCompress });
-            }
-        }
-    }
-    _initNightClouds(w, h) {
-        const pq = Math.max(0.3, this._perfCloudQuality / 1.5);
-        for (let i = 0; i < 4; i++) {
-            const seed = Math.random() * 10000, puffs = CloudShapeGenerator.generateMixedPuffs(seed, 'stratus', 100, pq);
-            this._clouds.push({ x: Math.random() * w, y: Math.random() * (h * 0.35), scale: 0.85 + Math.random() * 0.3, speed: 0.02 + Math.random() * 0.02, puffs, cloudType: 'stratus', layer: 4, opacity: 0.35, seed, breathPhase: Math.random() * TWO_PI, breathSpeed: 0.002 });
-        }
-    }
-    _initCelestialClouds(w, h, decorStyle = null) {
-        const celestial = this._getCelestialPosition(w, h), cx = celestial.x, cy = celestial.y, isExceptional = (this._params.cloud || 0) === 0;
-        const isNight = this._isNight, isDarkDay = !isNight && this._isThemeDark, isDarkDayImmersive = this._isDarkDayImmersive;
-        const pq = Math.max(0.3, this._perfCloudQuality / 1.5);
-        const opMul = isNight
-            ? (this._isThemeDark ? 0.40 : 0.62)
-            : (isDarkDayImmersive ? 0.75 : (isDarkDay ? 0.45 : 1.0));
-        // Sun-proportional unit so cluster scales with sun_moon_size, not card size.
-        // Default sun (r=31) → sunUnit=1.0, celestialBaseUnit≈100 (generator default).
-        const sunBaseR = this._celestialSize ? this._celestialSize / 2 : 31, sunUnit = sunBaseR / 31, celestialBaseUnit = sunBaseR * 3.2;
-            if (!isNight) {
-            this._celestialClouds.push({ x: cx, y: cy, scale: decorStyle ? 2.2 : 1.8, speed: 0.002, puffs: CloudShapeGenerator.generateWispyPuffs(Math.random() * 10000, celestialBaseUnit, pq), opacity: isDarkDayImmersive ? 0.22 : (isDarkDay ? 0.10 : (decorStyle ? 0.20 : 0.15)), seed: Math.random(), breathPhase: 0, breathSpeed: 0.001, baseX: cx, baseY: cy, driftPhase: 0, _vSquash: 1.0, _sunUnit: sunUnit });
-        }
-        const scatterBase = decorStyle ? Math.max(3, decorStyle.count) : 7;
-        const scatterCount = isExceptional ? 2 : (isNight ? 5 : (isDarkDay ? 4 : scatterBase));
-        const scatterOpMul = decorStyle ? opMul * 0.70 : opMul, isWarm = !decorStyle && !isNight && !isDarkDay;
-            const heroCount = scatterCount >= 5 ? 2 : 1;
-        const topCount = isExceptional ? 1 : Math.max(1, Math.floor(scatterCount * 0.28));
-        const sideCount = Math.max(1, scatterCount - heroCount - topCount);
-        const pushCelestial = (ox, oy, scale, vSquash, opBase) => {
-            this._celestialClouds.push({ x: cx + ox, y: cy + oy, scale, speed: 0.004 + Math.random() * 0.004, puffs: CloudShapeGenerator.generateSunDecorationPuffs(Math.random() * 10000, celestialBaseUnit, pq), opacity: opBase * scatterOpMul, seed: Math.random(), breathPhase: Math.random() * TWO_PI, breathSpeed: 0.002 + Math.random() * 0.002, baseX: cx + ox, baseY: cy + oy, driftPhase: Math.random() * TWO_PI, _vSquash: vSquash, _sunUnit: sunUnit });
-        };
-        for (let i = 0; i < heroCount; i++) {
-            const side = heroCount === 1 ? (Math.random() < 0.5 ? -1 : 1) : (i === 0 ? -1 : 1);
-            const ox = side * (20 + Math.random() * 40) * sunUnit, oy = (35 + Math.random() * 45) * sunUnit;
-                    const heroScale = isWarm ? (0.85 + Math.random() * 0.45) : (1.0 + Math.random() * 0.60);
-            pushCelestial(ox, oy, heroScale, 0.70 + Math.random() * 0.08, 0.55 + Math.random() * 0.20);
-        }
-        for (let i = 0; i < sideCount; i++) {
-            const angleBias = (Math.random() < 0.5 ? -1 : 1) * (0.9 + Math.random() * 0.6);
-            const radBase = isWarm ? 42 : 55, radRange = isWarm ? 28 : 35;
-            const ox = Math.cos(angleBias) * (radBase + Math.random() * radRange) * sunUnit;
-            const oy = (Math.abs(Math.sin(angleBias)) * (20 + Math.random() * 40) - 5) * sunUnit;
-            const sideScale = isWarm ? (0.60 + Math.random() * 0.40) : (0.48 + Math.random() * 0.40);
-            pushCelestial(ox, oy, sideScale, 0.74 + Math.random() * 0.10, 0.40 + Math.random() * 0.25);
-        }
-        for (let i = 0; i < topCount; i++) {
-            const spread = isWarm ? 100 : 130, ox = (Math.random() - 0.5) * spread * sunUnit, oy = (-30 - Math.random() * 28) * sunUnit;
-            const topScale = isWarm ? (0.42 + Math.random() * 0.28) : (0.32 + Math.random() * 0.25);
-            pushCelestial(ox, oy, topScale, 0.70 + Math.random() * 0.10, 0.32 + Math.random() * 0.18);
-        }
-    }
-    _initStars(w, h, count) {
-        const tier1Count = Math.floor(count * 0.70), tier2Count = Math.floor(count * 0.285);
-        const isUltra = this._perfEffects >= 2;
-        const isGolden = this._renderState && this._renderState.starMode === 'golden';
-        const palette = isGolden ? STAR_PALETTE_GOLDEN : STAR_PALETTE_GLOW;
-        for (let i = 0; i < count; i++) {
-            const isCluster = Math.random() < 0.3; let x = Math.random() * w; let y = Math.random() * h * 0.85;
-            if (isCluster) {
-                x += (Math.random() - 0.5) * 90; y += (Math.random() - 0.5) * 60;
-            }
-            const tier = i < tier1Count ? 'bg' : i < tier1Count + tier2Count ? 'mid' : 'hero';
-            const tp = STAR_TIER_PROPS[tier], size = tp[0] + Math.random() * tp[1], brightness = tp[2] + Math.random() * tp[3];
-            const twinkleSpeed = tp[4] + Math.random() * tp[5], k = Math.random();
-            const pc = k < palette[0][0] ? palette[0] : k > palette[1][0] ? palette[2] : palette[1];
-                    const rgb = hslToRgb(pc[1], pc[2], pc[3]);
-            const fillStr = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-            const star = { x, y, baseSize: size, phase: Math.random() * TWO_PI, rate: twinkleSpeed, brightness, tier, _fill: fillStr, _stroke: fillStr, _r: rgb[0], _g: rgb[1], _b: rgb[2] };
-            if (tier === 'hero') {
-                const isFeature = i >= count - 2;
-                if (isGolden) {
-                    star._bodyAlphaRatio = 0.85; star._haloInnerR = 0.6; star._haloOuterR = isFeature ? 2.8 : 2.2; star._bodyR = 0.65; star._spikeRatio = isFeature ? 0.28 : 0.22; star._spikeLen = isFeature ? 2.0 : 1.4;
-                } else {
-                    const haloBoost = isUltra ? 1.25 : 1.0;
-                    star._bodyAlphaRatio = 1.0; star._haloInnerR = 0.6; star._haloOuterR = (isFeature ? 3.8 : 3.0) * haloBoost; star._bodyR = 0.6; star._spikeRatio = isFeature ? 0.38 : 0.3; star._spikeLen = (isFeature ? 2.8 : 2.0) * haloBoost; star._crownRatio = isFeature ? 0.34 : 0.28; star._crownLen = (isFeature ? 3.2 : 2.5) * haloBoost;
-                }
-                const haloDpr = isUltra ? 2 : 1;
-                const haloSize = Math.ceil(size * star._haloOuterR * 2 + 2) * haloDpr, hc = document.createElement('canvas');
-                hc.width = haloSize; hc.height = haloSize;
-                const hCtx = hc.getContext('2d', { willReadFrequently: false });
-                const cx = haloSize / 2; const refSize = size * haloDpr;
-                const haloAlpha = isGolden ? (isFeature ? 0.45 : 0.35) : (isFeature ? 0.35 : 0.25);
-                const hg = hCtx.createRadialGradient(cx, cx, refSize * star._haloInnerR, cx, cx, refSize * star._haloOuterR);
-                if (isUltra && !isGolden) {
-                    hg.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${haloAlpha})`);
-                    hg.addColorStop(0.25, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${haloAlpha * 0.6})`);
-                    hg.addColorStop(0.55, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${haloAlpha * 0.2})`);
-                    hg.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
-                } else {
-                    hg.addColorStop(0, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${haloAlpha})`);
-                    hg.addColorStop(1, `rgba(${rgb[0]},${rgb[1]},${rgb[2]},0)`);
-                }
-                hCtx.fillStyle = hg; hCtx.beginPath(); hCtx.arc(cx, cx, refSize * star._haloOuterR, 0, TWO_PI);
-                hCtx.fill(); star._haloTex = hc; star._haloTexSize = haloSize;
-                star._haloRefSize = refSize;
-            }
-            this._stars.push(star);
-        }
-    }
-    _bakeMilkyWay(w, h) {
-        const isGolden = this._renderState && this._renderState.starMode === 'golden';
-        const palette = isGolden ? STAR_PALETTE_GOLDEN : STAR_PALETTE_GLOW, c = document.createElement('canvas');
-        c.width = w; c.height = h;
-        const ctx = c.getContext('2d', { willReadFrequently: false });
-        const lat = (this._hass && this._hass.config) ? this._hass.config.latitude : 50;
-        const angle = -0.35 - Math.abs(lat) * 0.004 + (Math.random() - 0.5) * 0.45;
-        const cosA = Math.cos(angle), sinA = Math.sin(angle), perpX = -sinA, perpY = cosA, scale = 0.25 + Math.random() * 1.05;
-        const diag = Math.sqrt(w * w + h * h), bandW = h * 0.14 * scale, moon = this._getCelestialPosition(w, h);
-        let cx = w * 0.5, cy = h * 0.42; const dxM = cx - moon.x, dyM = cy - moon.y;
-        if (Math.sqrt(dxM * dxM + dyM * dyM) < h * 0.3) {
-            cx += perpX * h * 0.18 * (moon.x < w * 0.5 ? 1 : -1); cy += perpY * h * 0.18 * (moon.x < w * 0.5 ? 1 : -1);
-        }
-        cx += (Math.random() - 0.5) * w * 0.15; cy += (Math.random() - 0.5) * h * 0.12; const hazeRgb = isGolden ? '180,140,50' : '160,175,210';
-        const hazeSpan = diag * 0.35 * scale;
-        for (let n = 0; n < 6; n++) {
-            const along = (n - 2.5) * hazeSpan * 0.4, hx = cx + cosA * along, hy = cy + sinA * along;
-            if (hy < -bandW || hy > h + bandW) continue; const hr = bandW * (1.4 + Math.random() * 0.8);
-            const hg = ctx.createRadialGradient(hx, hy, 0, hx, hy, hr), hazeOp = 0.06 + Math.random() * 0.04;
-            hg.addColorStop(0, `rgba(${hazeRgb},${hazeOp})`);
-            hg.addColorStop(0.5, `rgba(${hazeRgb},${hazeOp * 0.45})`);
-            hg.addColorStop(1, `rgba(${hazeRgb},0)`);
-            ctx.fillStyle = hg; ctx.beginPath(); ctx.arc(hx, hy, hr, 0, TWO_PI);
-            ctx.fill();
-        }
-        const dustCount = Math.floor((350 + Math.random() * 150) * scale), dustBatches = new Map();
-        for (let i = 0; i < dustCount; i++) {
-            const along = (Math.random() - 0.5) * diag * 1.1 * scale;
-            const spread = (Math.random() + Math.random() + Math.random() + Math.random()) / 4 - 0.5;
-            const across = spread * bandW * 1.6, dx = cx + cosA * along + perpX * across, dy = cy + sinA * along + perpY * across;
-            if (dx < -1 || dx > w + 1 || dy < 0 || dy > h * 0.90) continue; const dist = Math.abs(spread) * 2; const falloff = Math.max(0, 1 - dist * dist);
-            const op = (0.22 + falloff * 0.28) * (0.7 + Math.random() * 0.3), qOp = ((op * 20 + 0.5) | 0) / 20, k = Math.random();
-            const pc = k < palette[0][0] ? palette[0] : k > palette[1][0] ? palette[2] : palette[1];
-            const rgb = hslToRgb(pc[1], pc[2], pc[3]);
-            const fillStr = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-            const key = fillStr + '|' + qOp; let batch = dustBatches.get(key);
-            if (!batch) { batch = { fill: fillStr, op: qOp, items: [] }; dustBatches.set(key, batch); }
-            batch.items.push(dx, dy, 0.45 + Math.random() * 0.4);
-        }
-        for (const batch of dustBatches.values()) {
-            ctx.globalAlpha = batch.op; ctx.fillStyle = batch.fill; ctx.beginPath();
-            const items = batch.items;
-            for (let j = 0; j < items.length; j += 3) {
-                ctx.moveTo(items[j] + items[j + 2], items[j + 1]); ctx.arc(items[j], items[j + 1], items[j + 2], 0, TWO_PI);
-            }
-            ctx.fill();
-        }
-        const dotR = isGolden ? 0.55 : 0.5, count = Math.floor((180 + Math.random() * 50) * scale), batches = new Map();
-        for (let i = 0; i < count; i++) {
-            const along = (Math.random() - 0.5) * diag * 1.2 * scale;
-            const spread = (Math.random() + Math.random() + Math.random()) / 3 - 0.5;
-            const across = spread * bandW * 2, dx = cx + cosA * along + perpX * across, dy = cy + sinA * along + perpY * across;
-            if (dx < -2 || dx > w + 2 || dy < 0 || dy > h * 0.90) continue; const dist = Math.abs(spread) * 2; const falloff = Math.max(0, 1 - dist * dist);
-            const k = Math.random();
-            const pc = k < palette[0][0] ? palette[0] : k > palette[1][0] ? palette[2] : palette[1];
-            const rgb = hslToRgb(pc[1], pc[2], pc[3]);
-            const fillStr = `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`;
-            const size = 0.8 + Math.random() * 0.6 + falloff * 0.6;
-            const op = Math.min(1, (0.45 + falloff * 0.40) * (0.8 + Math.random() * 0.2));
-            const qOp = ((op * 20 + 0.5) | 0) / 20, key = fillStr + '|' + qOp;
-            let batch = batches.get(key);
-            if (!batch) { batch = { fill: fillStr, op: qOp, items: [] }; batches.set(key, batch); }
-            batch.items.push(dx, dy, size * dotR);
-        }
-        for (const batch of batches.values()) {
-            ctx.globalAlpha = batch.op; ctx.fillStyle = batch.fill; ctx.beginPath();
-            const items = batch.items;
-            for (let j = 0; j < items.length; j += 3) {
-                ctx.moveTo(items[j] + items[j + 2], items[j + 1]); ctx.arc(items[j], items[j + 1], items[j + 2], 0, TWO_PI);
-            }
-            ctx.fill();
-        }
-        this._milkyWay = c;
-    }
-    _initWindVapor(w, h, count = 24, scale = 1.0, flat = false) {
-        const isImm = this._isDarkDayImmersive, yTop    = h * (isImm ? 0.18 : 0.25), yBottom = h * (isImm ? 0.78 : 0.65);
-        const yBand   = Math.max(16, yBottom - yTop), sibGap  = Math.max(8, yBand * 0.12), rotLimit = flat ? 0.008 : 1.0;
-        let placed = 0;
-        while (placed < count) {
-            const gSize = Math.min(2 + Math.floor(Math.random() * 2), count - placed);
-            const gY = yTop + Math.random() * yBand, gX = Math.random() * w, gRot = (Math.random() - 0.5) * 0.06 * rotLimit;
-            for (let k = 0; k < gSize; k++) {
-                const yOff = (k - (gSize - 1) * 0.5) * sibGap + (Math.random() - 0.5) * 2;
-                const finalY = Math.min(yBottom, Math.max(yTop, gY + yOff)), yNorm = yBand > 0 ? (finalY - yTop) / yBand : 0.5;
-                const tier = yNorm < 0.33 ? 0 : (yNorm < 0.66 ? 1 : 2), depthScale = 0.5 + tier * 0.25, sizeRoll = Math.random(), isHero = sizeRoll > 0.92;
-                const isThin = sizeRoll < 0.15, thickMul = isHero ? 1.5 : (isThin ? 0.7 : 1.0), isOrganic = flat ? false : Math.random() < 0.20;
-                const vw = w * (0.18 + Math.random() * 0.45) * scale * depthScale * (isHero ? 1.3 : (isOrganic ? 0.75 : 1.0));
-                this._windVapor.push({ x: gX + (Math.random() - 0.5) * w * 0.15, y: finalY, w: vw, speed: (0.8 + Math.random() * 1.4) * depthScale, tier, phase: Math.random() * TWO_PI, phaseSpeed: 0.005 + Math.random() * 0.005, drift: flat ? 0.5 + Math.random() * 1.0 : 1.5 + Math.random() * 2.5, gustWeight: 0.5 + Math.random() * 0.5, squash: (0.038 + Math.random() * 0.025) * thickMul * (isOrganic ? 1.35 : 1.0), baseRotation: (gRot + (Math.random() - 0.5) * (isOrganic ? 0.06 : 0.02)) * rotLimit, taperDir: Math.random() < 0.5 ? -1 : 1, depthNorm: yNorm, curvature: isOrganic ? (Math.random() - 0.5) * 0.15 : 0 });
-                placed++;
-            }
-        }
-    }
-    _createBolt(w, h) {
-        const x = Math.random() * (w * 0.7) + (w * 0.15), segments = [];
-        let curX = x, curY = 0, iter = 0; const mainBias = (Math.random() - 0.5) * 15;
-        while (curY < h && iter < 80) {
-            const nextY = curY + 12 + Math.random() * 20, nextX = curX + mainBias + (Math.random() * 30 - 15);
-            segments.push({ x: curX, y: curY, nx: nextX, ny: nextY, branch: false });
-            if (Math.random() < (this._perfEffects >= 2 ? 0.25 : 0.18) && curY > 20) {
-                const branchDir = Math.random() > 0.5 ? 1 : -1;
-                const branchLen = this._perfEffects >= 2 ? (18 + Math.random() * 38) : (15 + Math.random() * 30);
-                segments.push({ x: curX, y: curY, nx: curX + branchDir * branchLen, ny: curY + 15 + Math.random() * 25, branch: true });
-            }
-            curX = nextX; curY = nextY; iter++;
-        }
-        return {
-            segments, life: 1.0, alpha: 1.0, glow: 1.0,
-            _outerStroke: 'rgb(160, 190, 255)',
-            _glowStroke: 'rgb(180, 210, 255)',
-            _coreStroke: 'rgb(255, 255, 255)',
-            _branchStroke: 'rgb(200, 220, 255)'
-        };
-    }
-    // CLOUD & MOON BAKING
-    _allocCloudAtlas() {
-        let canvas;
-        try {
-            canvas = new OffscreenCanvas(this._perfCloudRes, this._perfCloudRes);
-        } catch (e) {
-            canvas = document.createElement('canvas'); canvas.width = this._perfCloudRes; canvas.height = this._perfCloudRes;
-        }
-        return { canvas, ctx: canvas.getContext('2d', { willReadFrequently: false }) };
-    }
-    _bakeAllClouds() {
-        const rs = this._renderState; if (!rs) return; if (!this._cloudAtlases) this._cloudAtlases = [];
-        if (this._cloudAtlases.length === 0) this._cloudAtlases.push(this._allocCloudAtlas());
-        for (let i = 0; i < this._cloudAtlases.length; i++) { this._cloudAtlases[i].ctx.clearRect(0, 0, this._perfCloudRes, this._perfCloudRes); }
-        const atlases = this._cloudAtlases, alloc = () => this._allocCloudAtlas();
-        const packer = {
-            atlases,
-            index: 0,
-            x: 0, y: 0, rowHeight: 0,
-            get ctx()    { return atlases[this.index].ctx; },
-            get canvas() { return atlases[this.index].canvas; },
-            advance() {
-                if (this.index + 1 >= atlases.length) {
-                    if (atlases.length >= CLOUD_ATLAS_MAX) return false; atlases.push(alloc());
-                }
-                this.index++; this.x = 0; this.y = 0; this.rowHeight = 0;
-                return true;
-            }
-        };
-        for (let i = 0; i < this._clouds.length; i++) this._bakeCloud(this._clouds[i], packer);
-        for (let i = 0; i < this._fgClouds.length; i++) this._bakeCloud(this._fgClouds[i], packer);
-        const palette = rs.celestialCloudPalette;
-        const cpCelestial = CELESTIAL_CLOUD_PALETTES[palette] || CELESTIAL_CLOUD_PALETTES.cool;
-        for (let i = 0; i < this._celestialClouds.length; i++) { this._bakeCelestialCloud(this._celestialClouds[i], cpCelestial); }
-    }
-    _bakeCloud(cloud, packer) {
-        const puffs = cloud.puffs; if (!puffs || puffs.length === 0) return; const rs = this._renderState;
-        const cp = rs.cp, isLightBg = this._isLightBackground, isThemeDark = this._isThemeDark, isTimeNight = this._isTimeNight;
-        const dpr = Math.min(this._perfCloudQuality, this._cachedDimensions.dpr), globalOpacity = rs.cloudGlobalOp, highlightOffsetBase = cp.highlightOffsetBase;
-        const hOffset = cp.hOffset, rainyOpacityMul = cp.rainyOpacityMul, ambient = cp.ambient;
-        const hStretch  = cloud._hStretch  !== undefined ? cloud._hStretch  : 1.0;
-        const vCompress = cloud._vCompress !== undefined ? cloud._vCompress : 0.55;
-        const layerHighlightOffset = (cloud.layer === 5 && !isThemeDark) ? 0.50 : highlightOffsetBase;
-        const spec = CLOUD_TYPES[cloud.cloudType] || CLOUD_TYPES.organic, prof = spec.profile;
-        const shadowCut = prof[0], surfaceCut = prof[1], hlMul = prof[2], shadowRad = prof[3], surfaceRad = prof[4];
-        const maxRadMul = Math.max(shadowRad, surfaceRad, 1.0);
-        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-        for (let j = 0; j < puffs.length; j++) {
-            const p = puffs[j], px = p.offsetX * hStretch, py = p.offsetY * vCompress, sq = p.squash !== undefined ? p.squash : 1.0;
-            const radH = p.rad * hStretch * maxRadMul, radV = p.rad * sq * vCompress * maxRadMul;
-            if (px - radH < minX) minX = px - radH; if (px + radH > maxX) maxX = px + radH; if (py - radV < minY) minY = py - radV;
-            if (py + radV > maxY) maxY = py + radV;
-        }
-        const margin = 6; minX -= margin; minY -= margin; maxX += margin; maxY += margin;
-        const bakeW = Math.ceil(maxX - minX), bakeH = Math.ceil(maxY - minY);
-        if (bakeW <= 0 || bakeH <= 0) return; const physW = Math.ceil(bakeW * dpr); const physH = Math.ceil(bakeH * dpr);
-        if (physW > this._perfCloudRes || physH > this._perfCloudRes) return;
-        if (packer.x + physW + 2 > this._perfCloudRes) {
-            packer.x = 0; packer.y += packer.rowHeight + 2; packer.rowHeight = 0;
-        }
-        if (packer.y + physH > this._perfCloudRes) { if (!packer.advance()) return; }
-        const atlasX = packer.x, atlasY = packer.y;
-        packer.x += physW + 2; if (physH > packer.rowHeight) packer.rowHeight = physH; const oc = packer.ctx;
-        oc.save(); oc.translate(atlasX, atlasY); oc.scale(dpr, dpr);
-        const t = spec.tint;
-        const litR = cp.litR + t[0], litG = cp.litG + t[1], litB = cp.litB + t[2];
-        const midR = cp.midR + t[3], midG = cp.midG + t[4], midB = cp.midB + t[5];
-        const shadowR = cp.shadowR + t[6], shadowG = cp.shadowG + t[7], shadowB = cp.shadowB + t[8];
-        const shadeH = bakeH || 1, bodyHlScale = hlMul * 0.50 + 0.10, baseOpacity = globalOpacity * cloud.opacity * ambient;
-        // Immersive-light differentiation: inner gradient stops pull in tighter (see below)
-        // and a quadratic bottom-fade is applied post-modifier to prevent stacked-halo mush.
-        const isImmersiveLight = isLightBg && this._isImmersive;
-        const simpleGrad = this._perfCloudQuality <= 1.0;
-        for (let j = 0; j < puffs.length; j++) {
-            const puff = puffs[j], sq = puff.squash !== undefined ? puff.squash : 1.0, drawX = puff.offsetX * hStretch  - minX;
-            const drawY = puff.offsetY * vCompress - minY, normalizedY = drawY / shadeH, posFactor = Math.max(0.20, 1 - normalizedY * 0.68);
-            const depth = puff.depth, isShadow  = depth < shadowCut, isSurface = !isShadow && depth > surfaceCut;
-            let pR, pG, pB, finalOpacity, pRadius, pHlX = 0, pHlY = 0;
-            if (isShadow) {
-                const sf = posFactor * 0.30; pR = (midR * sf + shadowR * (1 - sf)) | 0; pG = (midG * sf + shadowG * (1 - sf)) | 0;
-                pB = (midB * sf + shadowB * (1 - sf)) | 0; finalOpacity = baseOpacity * 0.72; pRadius = puff.rad * shadowRad;
-                pHlY = -puff.rad * layerHighlightOffset * 0.15;
-            } else if (isSurface) {
-                const sf = posFactor * (0.55 + puff.shade * 0.45); pR = (litR * sf + midR * (1 - sf)) | 0; pG = (litG * sf + midG * (1 - sf)) | 0;
-                pB = (litB * sf + midB * (1 - sf)) | 0; finalOpacity = baseOpacity * (0.68 + puff.shade * 0.30); pRadius = puff.rad * surfaceRad;
-                const diffuse = normalizedY * normalizedY * 0.65; pHlX = -puff.rad * hOffset * hlMul * (1 - diffuse);
-                pHlY = -puff.rad * layerHighlightOffset * hlMul * (1 - diffuse * 0.5);
-            } else {
-                const sf = posFactor * (0.40 + puff.shade * 0.50); pR = (litR * sf + midR * (1 - sf)) | 0; pG = (litG * sf + midG * (1 - sf)) | 0;
-                pB = (litB * sf + midB * (1 - sf)) | 0; finalOpacity = baseOpacity * (0.55 + puff.shade * 0.35); pRadius = puff.rad;
-                const diffuse = normalizedY * normalizedY * 0.65; pHlX = -puff.rad * hOffset * bodyHlScale * (1 - diffuse);
-                pHlY = -puff.rad * layerHighlightOffset * bodyHlScale * (1 - diffuse * 0.5);
-            }
-            if (rainyOpacityMul !== 1.0) finalOpacity = Math.min(1.0, finalOpacity * rainyOpacityMul);
-            if (isLightBg) {
-                const bottomFade = isImmersiveLight ? 0.50 : 0.30; finalOpacity *= 1 - normalizedY * normalizedY * bottomFade;
-            }
-            let dR = pR, dG = pG, dB = pB, dMidR = midR, dMidG = midG, dMidB = midB, dShadR = shadowR, dShadG = shadowG, dShadB = shadowB;
-            if (isThemeDark && finalOpacity < 0.20) {
-                const dim = isTimeNight ? 0.40 : 0.75;
-                finalOpacity = Math.min(1.0, finalOpacity * (isTimeNight ? 2.5 : 2.0));
-                dR = (dR * dim) | 0; dG = (dG * dim) | 0; dB = (dB * dim) | 0;
-                dMidR = (dMidR * dim) | 0; dMidG = (dMidG * dim) | 0; dMidB = (dMidB * dim) | 0;
-                dShadR = (dShadR * dim) | 0; dShadG = (dShadG * dim) | 0; dShadB = (dShadB * dim) | 0;
-            }
-            if (finalOpacity < 0.005) continue; oc.save(); oc.translate(drawX, drawY);
-            if (puff.rotation) oc.rotate(puff.rotation); oc.scale(hStretch, sq * vCompress);
-            const grad = oc.createRadialGradient(pHlX, pHlY, 0, 0, 0, pRadius);
-            if (simpleGrad) {
-                grad.addColorStop(0, `rgba(${dR},${dG},${dB},${finalOpacity})`);
-                grad.addColorStop(1, `rgba(${dShadR},${dShadG},${dShadB},0)`);
-            } else if (isShadow) {
-                grad.addColorStop(0,    `rgba(${dR},${dG},${dB},${finalOpacity})`);
-                grad.addColorStop(0.45, `rgba(${dShadR},${dShadG},${dShadB},${finalOpacity * 0.55})`);
-                grad.addColorStop(1.0,  `rgba(${dShadR},${dShadG},${dShadB},0)`);
-            } else if (isSurface) {
-                grad.addColorStop(0,    `rgba(${dR},${dG},${dB},${finalOpacity})`);
-                grad.addColorStop(0.22, `rgba(${dR},${dG},${dB},${finalOpacity * 0.90})`);
-                if (isLightBg) {
-                    grad.addColorStop(0.45, `rgba(${dMidR},${dMidG},${dMidB},${finalOpacity * (isImmersiveLight ? 0.52 : 0.46)})`);
-                    grad.addColorStop(isImmersiveLight ? 0.62 : 0.70, `rgba(${dShadR},${dShadG},${dShadB},${finalOpacity * (isImmersiveLight ? 0.09 : 0.12)})`);
-                    grad.addColorStop(isImmersiveLight ? 0.82 : 0.90, `rgba(${dShadR},${dShadG},${dShadB},${finalOpacity * 0.01})`);
-                } else {
-                    grad.addColorStop(0.40, `rgba(${dMidR},${dMidG},${dMidB},${finalOpacity * 0.42})`);
-                    grad.addColorStop(0.65, `rgba(${dShadR},${dShadG},${dShadB},${finalOpacity * 0.10})`);
-                }
-                grad.addColorStop(1.0, `rgba(${dShadR},${dShadG},${dShadB},0)`);
-            } else {
-                const midStop = 0.28 + puff.softness * 0.22;
-                grad.addColorStop(0, `rgba(${dR},${dG},${dB},${finalOpacity})`);
-                if (isLightBg) {
-                    grad.addColorStop(midStop, `rgba(${dMidR},${dMidG},${dMidB},${finalOpacity * (isImmersiveLight ? 0.74 : 0.68)})`);
-                    const shelf = midStop + (1.0 - midStop) * 0.42;
-                    grad.addColorStop(shelf, `rgba(${dShadR},${dShadG},${dShadB},${finalOpacity * (isImmersiveLight ? 0.14 : 0.18)})`);
-                    grad.addColorStop(shelf + (1.0 - shelf) * (isImmersiveLight ? 0.42 : 0.55), `rgba(${dShadR},${dShadG},${dShadB},${finalOpacity * 0.02})`);
-                    grad.addColorStop(1.0, `rgba(${dShadR},${dShadG},${dShadB},0)`);
-                } else {
-                    grad.addColorStop(midStop, `rgba(${dMidR},${dMidG},${dMidB},${finalOpacity * 0.78})`);
-                    grad.addColorStop(0.65, `rgba(${dShadR},${dShadG},${dShadB},${finalOpacity * 0.28})`);
-                    grad.addColorStop(0.85, `rgba(${dShadR},${dShadG},${dShadB},0)`);
-                }
-            }
-            oc.fillStyle = grad; oc.beginPath(); oc.arc(0, 0, pRadius, 0, TWO_PI);
-            oc.fill(); oc.restore();
-        }
-        oc.restore(); cloud._bakedCanvas  = packer.canvas; cloud._atlasX       = atlasX;
-        cloud._atlasY       = atlasY; cloud._atlasW       = physW; cloud._atlasH       = physH;
-        cloud._bakeOffX     = minX; cloud._bakeOffY     = minY; cloud._bakeLogicalW = bakeW;
-        cloud._bakeLogicalH = bakeH;
-    }
-    _bakeCelestialCloud(cloud, cp) {
-        const puffs = cloud.puffs; if (!puffs || puffs.length === 0) return;
-        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-        for (let j = 0; j < puffs.length; j++) {
-            const p = puffs[j], r = p.rad * 1.08;
-            if (p.offsetX - r < minX) minX = p.offsetX - r; if (p.offsetX + r > maxX) maxX = p.offsetX + r; if (p.offsetY - r < minY) minY = p.offsetY - r;
-            if (p.offsetY + r > maxY) maxY = p.offsetY + r;
-        }
-        const pad = 5; minX -= pad; minY -= pad; maxX += pad; maxY += pad; const bakeW = Math.ceil(maxX - minX);
-        const bakeH = Math.ceil(maxY - minY); if (bakeW <= 0 || bakeH <= 0) return; const shadeH = bakeH || 1;
-        const oc = document.createElement('canvas'); oc.width = bakeW; oc.height = bakeH;
-        const oCtx = oc.getContext('2d', { willReadFrequently: false });
-        for (let j = 0; j < puffs.length; j++) {
-            const puff = puffs[j], drawX = puff.offsetX - minX, drawY = puff.offsetY - minY, normY = drawY / shadeH;
-            const posFactor = Math.max(0.20, 1 - normY * 0.55), depth = puff.depth, isShadow  = depth < 0.30, isSurface = depth > 0.65;
-            let pR, pG, pB, opMul, radMul, hlYOff;
-            if (isShadow) {
-                const sf = posFactor * 0.30; pR = (cp.midR * sf + cp.shadowR * (1 - sf)) | 0; pG = (cp.midG * sf + cp.shadowG * (1 - sf)) | 0;
-                pB = (cp.midB * sf + cp.shadowB * (1 - sf)) | 0; opMul = 0.72; radMul = 0.88;
-                hlYOff = 0;
-            } else if (isSurface) {
-                const sf = posFactor * (0.55 + puff.shade * 0.45); pR = (cp.litR * sf + cp.midR * (1 - sf)) | 0; pG = (cp.litG * sf + cp.midG * (1 - sf)) | 0;
-                pB = (cp.litB * sf + cp.midB * (1 - sf)) | 0; opMul = 0.70 + puff.shade * 0.28; radMul = 1.05;
-                hlYOff = -puff.rad * 0.42;
-            } else {
-                const sf = posFactor * (0.42 + puff.shade * 0.48); pR = (cp.litR * sf + cp.midR * (1 - sf)) | 0; pG = (cp.litG * sf + cp.midG * (1 - sf)) | 0;
-                pB = (cp.litB * sf + cp.midB * (1 - sf)) | 0; opMul = 0.58 + puff.shade * 0.32; radMul = 1.0;
-                hlYOff = -puff.rad * 0.22;
-            }
-            const finalOp = cloud.opacity * puff.shade * opMul; if (finalOp < 0.005) continue; const pRadius = puff.rad * radMul;
-            const grad = oCtx.createRadialGradient(0, hlYOff, 0, 0, 0, pRadius);
-            if (isShadow) {
-                grad.addColorStop(0,    `rgba(${pR},${pG},${pB},${finalOp})`);
-                grad.addColorStop(0.45, `rgba(${cp.shadowR},${cp.shadowG},${cp.shadowB},${finalOp * 0.55})`);
-                grad.addColorStop(1.0,  `rgba(${cp.shadowR},${cp.shadowG},${cp.shadowB},0)`);
-            } else if (isSurface) {
-                grad.addColorStop(0,    `rgba(${pR},${pG},${pB},${finalOp})`);
-                grad.addColorStop(0.22, `rgba(${pR},${pG},${pB},${finalOp * 0.90})`);
-                grad.addColorStop(0.48, `rgba(${cp.midR},${cp.midG},${cp.midB},${finalOp * 0.52})`);
-                grad.addColorStop(0.72, `rgba(${cp.shadowR},${cp.shadowG},${cp.shadowB},${finalOp * 0.14})`);
-                grad.addColorStop(1.0,  `rgba(${cp.shadowR},${cp.shadowG},${cp.shadowB},0)`);
-            } else {
-                const midStop = 0.30 + puff.softness * 0.18;
-                grad.addColorStop(0,             `rgba(${pR},${pG},${pB},${finalOp})`);
-                grad.addColorStop(midStop,       `rgba(${cp.midR},${cp.midG},${cp.midB},${finalOp * 0.72})`);
-                grad.addColorStop(midStop + 0.30,`rgba(${cp.shadowR},${cp.shadowG},${cp.shadowB},${finalOp * 0.20})`);
-                grad.addColorStop(1.0,           `rgba(${cp.shadowR},${cp.shadowG},${cp.shadowB},0)`);
-            }
-            oCtx.save(); oCtx.translate(drawX, drawY); if (puff.rotation) oCtx.rotate(puff.rotation);
-            if (puff.squash !== 1.0) oCtx.scale(1, puff.squash); oCtx.fillStyle = grad; oCtx.beginPath();
-            oCtx.arc(0, 0, pRadius, 0, TWO_PI); oCtx.fill(); oCtx.restore();
-        }
-        cloud._bakedCanvas = oc; cloud._bakeOffX = minX; cloud._bakeOffY = minY;
-        cloud._bakeW = bakeW; cloud._bakeH = bakeH;
-    }
-    _buildMoonCache(ctx, moonRadius, moonScale, w, h, useLightColors, styleKey) {
-        const mc = {};
-            const applyStops = (grad, cfg, peak) => {
-            for (let si = 0; si < cfg.length; si++) {
-                const stop = cfg[si];
-                grad.addColorStop(stop[0], stop[2] === 0 ? `rgba(${stop[1]}, 0)` : `rgba(${stop[1]}, ${stop[2] / peak})`);
-            }
-        };
-            if (useLightColors) {
-            const lightGlowR = Math.min(h, w) * 0.336 * moonScale, glow = ctx.createRadialGradient(0, 0, 0, 0, 0, lightGlowR);
-            const cfg = MOON_STYLE_COLORS.glow[styleKey]; applyStops(glow, cfg.stops, cfg.peak); mc.glow = glow;
-            mc.glowR = lightGlowR; mc.glowPeak = cfg.peak;
-        }
-            {
-            const g = ctx.createRadialGradient(-moonRadius * 0.3, -moonRadius * 0.3, 0, 0, 0, moonRadius);
-            const cfg = MOON_STYLE_COLORS.fullDisc[styleKey]; applyStops(g, cfg.stops, cfg.peak); mc.fullDisc = g;
-            mc.fullDiscPeak = cfg.peak;
-        }
-            {
-            const g = ctx.createRadialGradient(-moonRadius * 0.2, -moonRadius * 0.2, 0, 0, 0, moonRadius);
-            const cfg = MOON_STYLE_COLORS.partDisc[styleKey]; applyStops(g, cfg.stops, cfg.peak); mc.partDisc = g;
-            mc.partDiscPeak = cfg.peak;
-        }
-        {
-            const g = ctx.createRadialGradient(0, 0, 0, 0, 0, moonRadius), limbAlpha = useLightColors ? 0.12 : 0.22;
-            g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.55, 'rgba(0,0,0,0)');
-            g.addColorStop(1, `rgba(0,0,0,${limbAlpha})`);
-            mc.limbDark = g;
-        }
-        return mc;
-    }
-    // RENDERING (PER-FRAME)
-    _drawCelestialGlow(ctx, w, h) {
-        const glow = this._renderState.glow; if (!glow) return; const fadeOpacity = this._layerFadeProgress.effects;
-        const { x: cx, y: cy } = this._getCelestialPosition(w, h);
-        const sunBaseR = this._celestialSize ? this._celestialSize / 2 : 31, sizeCap = Math.min(w, h) * 0.9;
-            const t = (Math.sin(this._sunPulsePhase * 2.8 / glow.breathPeriodMul) + 1) / 2;
-        const [gR, gG, gB] = glow.color; ctx.save(); if (glow.compOp) ctx.globalCompositeOperation = glow.compOp;
-        ctx.translate(cx, cy);
-        if (glow.showDisc) {
-                    const edgeLimit = Math.min(cx, cy, w - cx, h - cy);
-            const ringFull = sunBaseR * 5.8, ringScale = Math.min(1, edgeLimit / ringFull), ringOk = glow.showHalo && ringScale >= 0.75;
-            const breathBoost = glow.showHalo && !ringOk ? 1.8 : 1.0, gb = glow.glowBoost || 1.0;
-            const breathOuterR = Math.min(sunBaseR * (1.5 + t * 0.9 * glow.breathAmp), sizeCap);
-            const bodyStop = Math.min(sunBaseR / breathOuterR, 0.72), peakStop = bodyStop + (1 - bodyStop) * 0.45;
-            const peakAlpha = (Math.min(0.62, (0.15 + t * 0.27 * glow.breathAmp) * gb)).toFixed(3);
-            const boostedPeakAlpha = (Math.min(0.62, (0.15 + t * 0.27 * glow.breathAmp) * breathBoost * gb)).toFixed(3);
-            const usedPeakAlpha = breathBoost === 1.0 ? peakAlpha : boostedPeakAlpha;
-            const roundedR = Math.round(breathOuterR);
-            if (!this._breathGlowCache ||
-                this._breathGlowCache.r !== roundedR ||
-                this._breathGlowCache.pa !== usedPeakAlpha ||
-                this._breathGlowCache.colorKey !== `${gR}_${gG}_${gB}`) {
-                const bg = ctx.createRadialGradient(0, 0, 0, 0, 0, breathOuterR);
-                bg.addColorStop(0,        `rgba(${gR},${gG},${gB},0)`);
-                bg.addColorStop(bodyStop, `rgba(${gR},${gG},${gB},0)`);
-                bg.addColorStop(peakStop, `rgba(${gR},${gG},${gB},${usedPeakAlpha})`);
-                bg.addColorStop(1,        `rgba(${gR},${gG},${gB},0)`);
-                this._breathGlowCache = { grad: bg, r: roundedR, pa: usedPeakAlpha, colorKey: `${gR}_${gG}_${gB}` };
-            }
-            ctx.globalAlpha = fadeOpacity; ctx.fillStyle = this._breathGlowCache.grad; fillCircle(ctx, 0, 0, breathOuterR);
-                    if (!this._sunDiscGrad || this._sunDiscGradR !== sunBaseR) {
-                const g = ctx.createRadialGradient(0, 0, 0, 0, 0, sunBaseR * 3.0);
-                if (this._isLightBackground) {
-                    g.addColorStop(0.00, 'rgba(255, 255, 255, 1)'); g.addColorStop(0.10, 'rgba(255, 255, 240, 0.98)');
-                    g.addColorStop(0.28, 'rgba(255, 242, 170, 0.94)'); g.addColorStop(0.33, 'rgba(255, 210, 90, 0.82)');
-                    g.addColorStop(0.36, 'rgba(255, 198, 65, 0.60)'); g.addColorStop(0.42, 'rgba(255, 188, 52, 0.38)');
-                    g.addColorStop(0.70, 'rgba(255, 178, 42, 0.20)'); g.addColorStop(1.00, 'rgba(255, 162, 32, 0)');
-                } else {
-                    g.addColorStop(0.00, 'rgba(255, 238, 200, 1)'); g.addColorStop(0.10, 'rgba(255, 230, 178, 0.96)');
-                    g.addColorStop(0.28, 'rgba(255, 214, 130, 0.90)'); g.addColorStop(0.33, 'rgba(255, 188, 72, 0.78)');
-                    g.addColorStop(0.36, 'rgba(255, 176, 54, 0.56)'); g.addColorStop(0.42, 'rgba(255, 188, 52, 0.38)');
-                    g.addColorStop(0.70, 'rgba(255, 178, 42, 0.20)'); g.addColorStop(1.00, 'rgba(255, 162, 32, 0)');
-                }
-                this._sunDiscGrad = g; this._sunDiscGradR = sunBaseR;
-            }
-            ctx.fillStyle = this._sunDiscGrad; fillCircle(ctx, 0, 0, sunBaseR * 3.0);
-            // ---- HALO RINGS (same glow.color as annulus; skipped when rings can't fit) ----
-            if (ringOk) {
-                const r1Inner = sunBaseR * 2.0 * ringScale, r1Outer = sunBaseR * 3.6 * ringScale, r2Inner = sunBaseR * 3.8 * ringScale;
-                const r2Outer = sunBaseR * 5.8 * ringScale;
-                const colorKey = `${gR}_${gG}_${gB}`;
-                if (!this._haloGrad || this._haloGradR !== r2Outer || this._haloGradColor !== colorKey) {
-                    const g1 = ctx.createRadialGradient(0, 0, r1Inner, 0, 0, r1Outer);
-                    g1.addColorStop(0,    `rgba(${gR},${gG},${gB},0)`);
-                    g1.addColorStop(0.25, `rgba(${gR},${gG},${gB},0.10)`);
-                    g1.addColorStop(0.45, `rgba(${gR},${gG},${gB},0.18)`);
-                    g1.addColorStop(0.65, `rgba(${gR},${gG},${gB},0.11)`);
-                    g1.addColorStop(1,    `rgba(${gR},${gG},${gB},0)`);
-                    const g2 = ctx.createRadialGradient(0, 0, r2Inner, 0, 0, r2Outer);
-                    g2.addColorStop(0,   `rgba(${gR},${gG},${gB},0)`);
-                    g2.addColorStop(0.3, `rgba(${gR},${gG},${gB},0.06)`);
-                    g2.addColorStop(0.5, `rgba(${gR},${gG},${gB},0.10)`);
-                    g2.addColorStop(0.7, `rgba(${gR},${gG},${gB},0.055)`);
-                    g2.addColorStop(1,   `rgba(${gR},${gG},${gB},0)`);
-                    this._haloGrad = { g1, g2, r1: r1Outer, r2: r2Outer };
-                    this._haloGradR = r2Outer; this._haloGradColor = colorKey;
-                }
-                ctx.globalAlpha = fadeOpacity * Math.min(1.0, (0.45 + t * 0.65) * gb); ctx.fillStyle = this._haloGrad.g1;
-                fillCircle(ctx, 0, 0, this._haloGrad.r1); ctx.fillStyle = this._haloGrad.g2; fillCircle(ctx, 0, 0, this._haloGrad.r2);
-            }
-        } else {
-            // ---- DIFFUSE MODE (sun-behind-clouds backlight) ----
-            const csGlowScale = sunBaseR / 26, outerR = Math.min(92 * csGlowScale * glow.sizeMul, sizeCap);
-            const coreR  = Math.min(42 * csGlowScale * glow.sizeMul, sizeCap * 0.45);
-            if (!this._diffuseGlowCache ||
-                this._diffuseGlowCache.key !== glow.cacheKey ||
-                this._diffuseGlowCache.outerR !== outerR) {
-                const outer = ctx.createRadialGradient(0, 0, 0, 0, 0, outerR);
-                outer.addColorStop(0,    `rgba(${gR},${gG},${gB},0.58)`);
-                outer.addColorStop(0.14, `rgba(${gR},${gG},${gB},0.32)`);
-                outer.addColorStop(0.32, `rgba(${gR},${gG},${gB},0.12)`);
-                outer.addColorStop(0.60, `rgba(${gR},${gG},${gB},0.025)`);
-                outer.addColorStop(1,    `rgba(${gR},${gG},${gB},0)`);
-                const core = ctx.createRadialGradient(0, 0, 0, 0, 0, coreR);
-                core.addColorStop(0,    `rgba(${gR},${gG},${gB},0.48)`);
-                core.addColorStop(0.35, `rgba(${gR},${gG},${gB},0.18)`);
-                core.addColorStop(1,    `rgba(${gR},${gG},${gB},0)`);
-                this._diffuseGlowCache = { outer, core, outerR, coreR, key: glow.cacheKey };
-            }
-            // Subtle opacity breath — slow pulse matches heavy atmosphere
-            const breathMod = 1.0 + (t - 0.5) * 0.20 * glow.breathAmp, dc = this._diffuseGlowCache;
-            ctx.globalAlpha = Math.min(1.0, fadeOpacity * glow.intensity * breathMod);
-            ctx.fillStyle = dc.outer; fillCircle(ctx, 0, 0, dc.outerR); ctx.fillStyle = dc.core;
-            fillCircle(ctx, 0, 0, dc.coreR);
-        }
-        ctx.restore();
-    }
-    _drawCelestialClouds(ctx, w, h, effectiveWind) {
-        const fadeOpacity = this._layerFadeProgress.clouds; if (fadeOpacity <= 0) return; const len = this._celestialClouds.length;
-        ctx.globalAlpha = fadeOpacity;
-        for (let i = 0; i < len; i++) {
-            const cloud = this._celestialClouds[i]; if (!cloud._bakedCanvas) continue; const sunUnit = cloud._sunUnit !== undefined ? cloud._sunUnit : 1.0;
-            cloud.driftPhase += 0.008; cloud.breathPhase += cloud.breathSpeed; const driftX = Math.sin(cloud.driftPhase) * 12 * sunUnit;
-            const driftY = Math.cos(cloud.driftPhase * 0.7) * 4 * sunUnit; cloud.x = cloud.baseX + driftX + effectiveWind * 0.3;
-            cloud.y = cloud.baseY + driftY; const driftClamp = 60 * sunUnit;
-            if (cloud.x > cloud.baseX + driftClamp) cloud.x = cloud.baseX + driftClamp;
-            if (cloud.x < cloud.baseX - driftClamp) cloud.x = cloud.baseX - driftClamp;
-            const breathScale = 1 + Math.sin(cloud.breathPhase) * 0.02, vSquash = cloud._vSquash !== undefined ? cloud._vSquash : 0.55;
-            const scaleX = cloud.scale * breathScale, scaleY = cloud.scale * vSquash * breathScale, drawX = cloud.x + cloud._bakeOffX * scaleX;
-            const drawY = cloud.y + cloud._bakeOffY * scaleY, drawW = cloud._bakeW * scaleX, drawH = cloud._bakeH * scaleY;
-            if (drawX + drawW < 0 || drawX > w || drawY + drawH < 0 || drawY > h) continue;
-            ctx.drawImage(cloud._bakedCanvas, drawX, drawY, drawW, drawH);
-        }
-        ctx.globalAlpha = 1;
-    }
-    _drawClouds(ctx, cloudList, w, h, effectiveWind, globalOpacity) {
-        if (cloudList.length === 0) return; const fadeOpacity = this._layerFadeProgress.clouds; if (fadeOpacity <= 0) return;
-        const rs = this._renderState; if (!rs) return; const yLift = h * 0.06;
-        ctx.globalAlpha = fadeOpacity;
-        for (let i = 0; i < cloudList.length; i++) {
-            const cloud = cloudList[i], depthFactor = 1 + cloud.layer * 0.2;
-            cloud.x += cloud.speed * effectiveWind * depthFactor; if (cloud.x > w + 280) cloud.x = -280; if (cloud.x < -280) cloud.x = w + 280;
-            cloud.breathPhase += cloud.breathSpeed; if (!cloud._bakedCanvas) continue; const breathScale = 1 + Math.sin(cloud.breathPhase) * 0.022;
-            const drawScale = cloud.scale * breathScale, yDrift = Math.sin(cloud.breathPhase * 2.4) * 3.5, destX = cloud.x + cloud._bakeOffX * drawScale;
-            const destY = (cloud.y - yLift + yDrift) + cloud._bakeOffY * drawScale;
-            const destW = cloud._bakeLogicalW * drawScale, destH = cloud._bakeLogicalH * drawScale;
-                    if (destX + destW < 0 || destX > w || destY + destH < 0 || destY > h) continue;
-            ctx.drawImage(
-                cloud._bakedCanvas,
-                cloud._atlasX, cloud._atlasY, cloud._atlasW, cloud._atlasH,
-                destX, destY, destW, destH
-            );
-        }
-        ctx.globalAlpha = 1;
-    }
-    _drawStars(ctx, w, h, dpr) {
-        const starFade = this._layerFadeProgress.stars, starMode = this._renderState.starMode;
-        if (starFade <= 0.01 || starMode === 'hidden') return; const len = this._stars.length; const isGolden = starMode === 'golden';
-        const immH = this._isImmersive ? h * 0.95 : 0, dotR = isGolden ? 0.55 : 0.5, batches = new Map();
-        if (this._milkyWay) {
-            ctx.globalAlpha = starFade; ctx.drawImage(this._milkyWay, 0, 0); ctx.globalAlpha = 1;
-        }
-        for (let i = 0; i < len; i++) {
-            const s = this._stars[i]; s.phase += s.rate;
-            const twinkle = Math.sin(s.phase) + Math.sin(s.phase * 3) * 0.5 + Math.sin(s.phase * 0.3) * 0.25;
-            const size = s.baseSize * (1 + twinkle * 0.30), horizFade = immH > 0 ? (1 - Math.pow(s.y / immH, 3)) : 1.0;
-            const op = Math.min(1, Math.max(0, s.brightness * (1 + twinkle * 0.22) * starFade * horizFade));
-            if (op <= 0.05) continue;
-            if (s.tier === 'hero') {
-                ctx.globalCompositeOperation = isGolden ? 'source-over' : 'lighter'; ctx.globalAlpha = isGolden ? op * s._bodyAlphaRatio : op;
-                ctx.fillStyle = s._fill; fillCircle(ctx, s.x, s.y, size * s._bodyR);
-                if (s._haloTex) {
-                    ctx.globalAlpha = op; const scale = size / s._haloRefSize; const drawSize = s._haloTexSize * scale;
-                    ctx.drawImage(s._haloTex, s.x - drawSize * 0.5, s.y - drawSize * 0.5, drawSize, drawSize);
-                }
-                const spike = size * s._spikeLen; ctx.globalAlpha = op * s._spikeRatio; ctx.strokeStyle = s._stroke;
-                ctx.lineWidth = 0.5; ctx.beginPath(); ctx.moveTo(s.x - spike, s.y); ctx.lineTo(s.x + spike, s.y);
-                ctx.moveTo(s.x, s.y - spike); ctx.lineTo(s.x, s.y + spike); ctx.stroke();
-                if (!isGolden && s._crownLen) {
-                    const crown = size * s._crownLen; ctx.globalAlpha = op * s._crownRatio; ctx.translate(s.x, s.y);
-                    ctx.rotate(s.phase * 0.18); ctx.strokeStyle = s._stroke; ctx.lineWidth = 0.8;
-                    ctx.beginPath();
-                    for (let r = 0; r < 4; r++) {
-                        const a = (r / 4) * TWO_PI + Math.PI / 4; ctx.moveTo(0, 0); ctx.lineTo(Math.cos(a) * crown, Math.sin(a) * crown);
-                    }
-                    ctx.stroke(); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-                }
-                ctx.globalCompositeOperation = 'source-over';
-            } else {
-                        const qOp = ((op * 20 + 0.5) | 0) / 20;
-                const key = s._fill + '|' + qOp; let batch = batches.get(key);
-                if (!batch) {
-                    batch = { fill: s._fill, op: qOp, items: [] };
-                    batches.set(key, batch);
-                }
-                batch.items.push(s.x, s.y, size * dotR);
-            }
-        }
-        for (const batch of batches.values()) {
-            if (isGolden) ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = batch.op; ctx.fillStyle = batch.fill;
-            ctx.beginPath(); const items = batch.items;
-            for (let j = 0; j < items.length; j += 3) {
-                ctx.moveTo(items[j] + items[j + 2], items[j + 1]); ctx.arc(items[j], items[j + 1], items[j + 2], 0, TWO_PI);
-            }
-            ctx.fill(); if (isGolden) ctx.globalCompositeOperation = 'source-over';
-        }
-        ctx.globalAlpha = 1;
-    }
-    _drawShootingStars(ctx, w, h) {
-        const fadeOpacity = this._layerFadeProgress.stars, dpr = this._cachedDimensions.dpr;
-        const isUltra = this._perfEffects >= 2;
-        const trailCap = isUltra ? 36 : TRAIL_CAP_SHOOTING_STAR;
-        if (Math.random() < 0.002145 && this._shootingStars.length < LIMITS.MAX_SHOOTING_STARS) {
-            let spawnX;
-            if (Math.random() < 0.70) {
-                spawnX = Math.random() * (w * 0.6);
-            } else {
-                spawnX = (w * 0.6) + Math.random() * (w * 0.4);
-            }
-            const dirX = Math.random() < 0.3 ? -1 : 1, bolide = Math.random() < 0.18;
-            const speed = bolide ? 3.5 + Math.random() * 2.0 : 5.0 + Math.random() * 5.0;
-            const isInk = !this._isThemeDark, colorRoll = Math.random();
-            let headRgb, tailRgb;
-            if (isInk) {
-                headRgb = 'rgb(50,55,65)'; tailRgb = 'rgb(60,65,80)';
-            } else if (colorRoll < 0.55) {
-                headRgb = 'rgb(255,255,255)'; tailRgb = 'rgb(255,255,240)';
-            } else if (colorRoll < 0.75) {
-                headRgb = 'rgb(255,245,210)'; tailRgb = 'rgb(255,230,180)';
-            } else if (colorRoll < 0.92) {
-                headRgb = 'rgb(210,255,225)'; tailRgb = 'rgb(180,240,200)';
-            } else {
-                headRgb = 'rgb(255,210,160)'; tailRgb = 'rgb(255,185,130)';
-            }
-            this._shootingStars.push({ x: spawnX, y: Math.random() * (h * 0.5), vx: speed * dirX, vy: 2.0 + Math.random() * 2.0, life: 1.0, decay: bolide ? 0.032 : 0.045, size: bolide ? 2.5 + Math.random() * 1.5 : 1.5 + Math.random() * 1.5, _bolide: bolide, _headRgb: headRgb, _tailRgb: tailRgb, tailBuf: new Float32Array(trailCap * 2), tailHead: 0, tailLen: 0, _trailCap: trailCap });
-        }
-        ctx.lineCap = 'round';
-        for (let i = this._shootingStars.length - 1; i >= 0; i--) {
-            const s = this._shootingStars[i]; s.x += s.vx; s.vy += 0.045;
-            s.y += s.vy; s.life -= s.decay; const sCap = s._trailCap || TRAIL_CAP_SHOOTING_STAR; s.tailBuf[s.tailHead * 2] = s.x;
-            s.tailBuf[s.tailHead * 2 + 1] = s.y; s.tailHead = (s.tailHead + 1) % sCap;
-            if (s.tailLen < sCap) s.tailLen++;
-            if (s.life <= 0) {
-                this._shootingStars.splice(i, 1);
-                continue;
-            }
-            const opacity = s.life * fadeOpacity; ctx.globalAlpha = opacity; ctx.fillStyle = s._headRgb;
-            const flare = s._bolide && s.life < 0.15 ? 1 + (0.15 - s.life) * 8 : 1;
-            const headSize = s.size * (0.3 + s.life * 0.7) * flare; fillCircle(ctx, s.x, s.y, headSize); ctx.lineWidth = headSize * 0.8;
-            ctx.strokeStyle = s._tailRgb;
-            // Alpha-banded shooting star tail: 4 bands (22 segments → 4 strokes).
-            // Linear alpha fade approximated at band midpoints.
-            const tailSegs = s.tailLen - 1;
-            const tailBands = isUltra ? 8 : 4;
-            for (let band = 0; band < tailBands; band++) {
-                const jStart = (band * tailSegs / tailBands) | 0, jEnd = ((band + 1) * tailSegs / tailBands) | 0;
-                if (jStart >= jEnd) continue; const midJ = (jStart + jEnd) * 0.5; ctx.globalAlpha = opacity * (1 - midJ / s.tailLen);
-                ctx.beginPath();
-                for (let j = jStart; j <= jEnd; j++) {
-                    const idx = (((s.tailHead - 1 - j) % sCap) + sCap) % sCap;
-                    const px = s.tailBuf[idx * 2], py = s.tailBuf[idx * 2 + 1]; if (j === jStart) ctx.moveTo(px, py);
-                    else ctx.lineTo(px, py);
-                }
-                ctx.stroke();
-            }
-        }
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1;
-    }
-    _drawComets(ctx, w, h) {
-        const badWeather = this._renderState.isBadWeatherForComets, dpr = this._cachedDimensions.dpr;
-        if (this._isNight && !badWeather && this._comets.length === 0 && Math.random() < (this._perfEffects >= 2 ? 0.0005 : 0.0002728)) {
-            const startX = Math.random() < 0.5 ? -60 : w + 60, dir = startX < 0 ? 1 : -1, speed = 2.2 + Math.random() * 1.3, isInk = !this._isThemeDark;
-            const colorRoll = Math.random(); let coreRgb, glowRgb, tailRgb;
-            if (isInk) {
-                coreRgb = '50,60,75'; glowRgb = '70,85,105'; tailRgb = 'rgb(65,80,100)';
-            } else if (colorRoll < 0.50) {
-                coreRgb = '220,240,255'; glowRgb = '100,200,255'; tailRgb = 'rgb(160,210,255)';
-            } else if (colorRoll < 0.78) {
-                coreRgb = '200,255,220'; glowRgb = '120,220,160'; tailRgb = 'rgb(150,230,180)';
-            } else {
-                coreRgb = '255,240,200'; glowRgb = '230,190,100'; tailRgb = 'rgb(240,210,150)';
-            }
-            this._comets.push({ x: startX, y: Math.random() * (h * 0.4), vx: speed * dir, vy: speed * 0.15, size: 1.5 + Math.random(), life: 1.2, _coreRgb: coreRgb, _glowRgb: glowRgb, _tailRgb: tailRgb, tailBuf: new Float32Array(TRAIL_CAP_COMET * 2), tailHead: 0, tailLen: 0 });
-        }
-        const fadeOpacity = this._layerFadeProgress.stars; if (fadeOpacity <= 0) return;
-        for (let i = this._comets.length - 1; i >= 0; i--) {
-            const c = this._comets[i]; c.x += c.vx; c.y += c.vy;
-            c.life -= 0.005;
-            if (c.life <= 0) {
-                this._comets.splice(i, 1);
-                continue;
-            }
-            c.tailBuf[c.tailHead * 2] = c.x; c.tailBuf[c.tailHead * 2 + 1] = c.y; c.tailHead = (c.tailHead + 1) % TRAIL_CAP_COMET;
-            if (c.tailLen < TRAIL_CAP_COMET) c.tailLen++;
-                    if (c.tailLen > 2) {
-                const newestIdx = (((c.tailHead - 1) % TRAIL_CAP_COMET) + TRAIL_CAP_COMET) % TRAIL_CAP_COMET;
-                const oldestIdx = (((c.tailHead - c.tailLen) % TRAIL_CAP_COMET) + TRAIL_CAP_COMET) % TRAIL_CAP_COMET;
-                const hx = c.tailBuf[newestIdx * 2], hy = c.tailBuf[newestIdx * 2 + 1];
-                const tx = c.tailBuf[oldestIdx * 2], ty = c.tailBuf[oldestIdx * 2 + 1];
-                const currentDist = Math.sqrt((hx - tx) ** 2 + (hy - ty) ** 2); if (currentDist > 170) c.tailLen--;
-            }
-            const opacity = Math.min(1, c.life) * fadeOpacity;
-            if (!c._g) {
-                const r = c.size * 4, g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-                g.addColorStop(0, `rgba(${c._coreRgb},1)`);
-                g.addColorStop(0.4, `rgba(${c._glowRgb},0.4)`);
-                g.addColorStop(1, `rgba(${c._glowRgb},0)`);
-                c._g = g;
-            }
-            ctx.globalAlpha = opacity; ctx.translate(c.x, c.y); ctx.fillStyle = c._g;
-            fillCircle(ctx, 0, 0, c.size * 4); ctx.translate(-c.x, -c.y); ctx.lineCap = 'butt';
-            ctx.lineJoin = 'round'; ctx.strokeStyle = c._tailRgb; const tailSegs = c.tailLen - 1;
-            for (let band = 0; band < 8; band++) {
-                const jStart = (band * tailSegs / 8) | 0, jEnd = ((band + 1) * tailSegs / 8) | 0;
-                if (jStart >= jEnd) continue; const midP = (jStart + jEnd) * 0.5 / c.tailLen; ctx.lineWidth = c.size * (1 - midP * 0.8);
-                ctx.globalAlpha = opacity * (1 - midP) * 0.6; ctx.beginPath();
-                for (let j = jStart; j <= jEnd; j++) {
-                    const idx = (((c.tailHead - 1 - j) % TRAIL_CAP_COMET) + TRAIL_CAP_COMET) % TRAIL_CAP_COMET;
-                    const px = c.tailBuf[idx * 2], py = c.tailBuf[idx * 2 + 1]; if (j === jStart) ctx.moveTo(px, py);
-                    else ctx.lineTo(px, py);
-                }
-                ctx.stroke();
-            }
-        }
-        ctx.globalAlpha = 1; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    _drawMoon(ctx, w, h) {
-        if (!this._isTimeNight) return; if (!this._stateInitialized || !this._renderGate.isRevealed) return;
-        const fadeOpacity = this._layerFadeProgress.stars; if (fadeOpacity <= 0.05) return; const celestial = this._getCelestialPosition(w, h);
-        const moonX = celestial.x, moonY = celestial.y;
-            const sunBaseR = this._celestialSize ? this._celestialSize / 2 : 31;
-        const moonRadius = sunBaseR * 0.85;
-        const moonScale = moonRadius / 18; // crater geometry authored at r=18
-        const useLightColors = !this._isThemeDark;
-            const rawMoonStyle = (this._config.celestial_moon_style || '').toLowerCase();
-        const isColoredStyle = rawMoonStyle === 'yellow' || rawMoonStyle === 'blue'
-            || rawMoonStyle === 'purple' || rawMoonStyle === 'grey';
-        const mStyleKey = isColoredStyle ? rawMoonStyle : (useLightColors ? 'blue' : 'dark');
+
+        ctx.clearRect(0, 0, cw, ch);
+        const heroes = this._starHeroes;
+        if (!heroes) { ctx.globalAlpha = 1; this._starsDirty = true; return; }
         ctx.save();
-        if (this._moonRotationRad) {
-            ctx.translate(moonX, moonY); ctx.rotate(this._moonRotationRad); ctx.translate(-moonX, -moonY);
-        }
-            const cloudCover = (this._params && this._params.cloud) || 0;
-        const glowWeatherScale = cloudCover > 30 ? 0.4 : cloudCover > 20 ? 0.6 : cloudCover > 10 ? 0.8 : 1;
-        const glowIntensity = 0.23 + this._moonPhaseConfig.illumination * 0.18;
-        const atmScale = (!useLightColors && (this._params && this._params.atmosphere) === 'fair') ? 0.79 : 1.0;
-        let effectiveGlow = glowIntensity * fadeOpacity * glowWeatherScale * atmScale;
-        if (useLightColors) effectiveGlow *= 0.85;
-            const cacheKey = mStyleKey + (useLightColors ? 'L' : 'D');
-        if (!this._moonCache || this._moonCache.key !== cacheKey || this._moonCache.mr !== moonRadius) {
-            this._moonCache = this._buildMoonCache(ctx, moonRadius, moonScale, w, h,
-                useLightColors, mStyleKey);
-            this._moonCache.key = cacheKey; this._moonCache.mr = moonRadius;
-        }
-        const mc = this._moonCache;
-        if (useLightColors) {
-            ctx.globalCompositeOperation = 'source-over'; const lightGlowR = mc.glowR; ctx.save();
-            ctx.translate(moonX, moonY); ctx.globalAlpha = effectiveGlow * mc.glowPeak; ctx.fillStyle = mc.glow;
-            fillCircle(ctx, 0, 0, lightGlowR); ctx.restore(); ctx.beginPath();
-            ctx.arc(moonX, moonY, moonRadius + 1.5, 0, TWO_PI);
-            const rsKey = MOON_STYLE_COLORS.ringStroke[mStyleKey] ? mStyleKey : 'yellow';
-            const ringCfg = MOON_STYLE_COLORS.ringStroke[rsKey]; ctx.globalAlpha = ringCfg.op * fadeOpacity;
-            ctx.strokeStyle = ringCfg._rgb || (ringCfg._rgb = `rgb(${ringCfg.rgb})`);
-            ctx.lineWidth = 1.5; ctx.stroke(); ctx.globalAlpha = 1;
-        } else {
-                    const maxR = Math.min(
-                Math.min(h, w) * 0.28 * moonScale,
-                moonX, w - moonX, moonY, h - moonY
-            );
-                    if (!mc.darkGlow || mc.darkGlowR !== maxR) {
-                const g = ctx.createRadialGradient(0, 0, 0, 0, 0, maxR); g.addColorStop(0,   'rgba(180, 200, 255, 1)');
-                g.addColorStop(0.5, 'rgba(165, 195, 245, 0.4)'); g.addColorStop(1,   'rgba(150, 180, 220, 0)'); mc.darkGlow = g;
-                mc.darkGlowR = maxR;
+        ctx.scale(dpr, dpr);
+        ctx.globalCompositeOperation = 'lighter';
+        const cssW = cw / dpr;
+        const cssH = ch / dpr;
+        for (let i = 0; i < heroes.length; i++) {
+            const h = heroes[i];
+            h.phase += h.rate;
+            const twinkle = Math.sin(h.phase) + Math.sin(h.phase * 2.7) * 0.5 + Math.sin(h.phase * 0.4) * 0.3;
+            const size = h.size * (1 + twinkle * 0.35);
+            const op = Math.min(1, Math.max(0, h.brightness * (1 + twinkle * 0.40))) * master;
+            if (op < 0.05) continue;
+            const px = h.x * cssW;
+            const py = h.y * cssH;
+            if (h.haloTex) {
+                ctx.globalAlpha = op;
+                const scale = size / h.refSize;
+                const drawSize = h.haloTexSize * scale / dpr;
+                ctx.drawImage(h.haloTex, px - drawSize * 0.5, py - drawSize * 0.5, drawSize, drawSize);
             }
-            ctx.globalCompositeOperation = 'screen'; ctx.save(); ctx.translate(moonX, moonY);
-            ctx.globalAlpha = effectiveGlow; ctx.fillStyle = mc.darkGlow; fillCircle(ctx, 0, 0, maxR);
-            ctx.restore();
+            ctx.globalAlpha = Math.min(1, op * 1.1);
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(px, py, size * h.bodyR, 0, 6.2832);
+            ctx.fill();
         }
         ctx.globalCompositeOperation = 'source-over';
-            if (!useLightColors) {
-            ctx.save(); ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'rgba(0, 0, 0, 1)';
-            fillCircle(ctx, moonX, moonY, moonRadius - 0.5); ctx.restore();
-        } else {
-            ctx.save(); ctx.globalAlpha = fadeOpacity;
-            ctx.fillStyle = MOON_STYLE_COLORS.lightDisc[mStyleKey] || 'rgb(228,234,248)';
-            fillCircle(ctx, moonX, moonY, moonRadius - 0.5); ctx.restore();
-        }
-        ctx.save(); ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius, 0, TWO_PI);
-        ctx.clip(); const illumination = this._moonPhaseConfig.illumination; const direction = this._moonPhaseConfig.direction;
-        if (illumination <= 0) {
-            const nmKey = mStyleKey, nmFills = MOON_STYLE_COLORS.newMoon[nmKey];
-            for (let fi = 0; fi < nmFills.length; fi++) {
-                const fill = nmFills[fi]; ctx.globalAlpha = fill.op * fadeOpacity;
-                ctx.fillStyle = fill._rgb || (fill._rgb = `rgb(${fill.rgb})`);
-                fillCircle(ctx, moonX, moonY, moonRadius);
-            }
-            ctx.globalAlpha = 1;
-        } else if (illumination >= 1) {
-                    ctx.save();
-            ctx.translate(moonX, moonY); ctx.globalAlpha = fadeOpacity * mc.fullDiscPeak; ctx.fillStyle = mc.fullDisc;
-            fillCircle(ctx, 0, 0, moonRadius); ctx.restore();
-        } else {
-                    const dsKey = mStyleKey;
-            const ds = MOON_STYLE_COLORS.darkSide[dsKey]; ctx.globalAlpha = ds.op * fadeOpacity;
-            ctx.fillStyle = ds._rgb || (ds._rgb = `rgb(${ds.rgb})`);
-            fillCircle(ctx, moonX, moonY, moonRadius); ctx.globalAlpha = 1;
-            if (!useLightColors) {
-                const earthshineOp = (1 - illumination) * 0.08 * fadeOpacity; ctx.globalAlpha = earthshineOp; ctx.fillStyle = 'rgb(100, 115, 145)';
-                fillCircle(ctx, moonX, moonY, moonRadius); ctx.globalAlpha = 1;
-            }
-            const terminatorWidth = Math.abs(1 - illumination * 2) * moonRadius, isGibbous = illumination > 0.5;
-            ctx.beginPath();
-            if (direction === 'right') {
-                ctx.arc(moonX, moonY, moonRadius, -Math.PI / 2, Math.PI / 2, false);
-                ctx.ellipse(moonX, moonY, terminatorWidth, moonRadius, 0, Math.PI / 2, -Math.PI / 2, !isGibbous);
-            } else {
-                ctx.arc(moonX, moonY, moonRadius, Math.PI / 2, -Math.PI / 2, false);
-                ctx.ellipse(moonX, moonY, terminatorWidth, moonRadius, 0, -Math.PI / 2, Math.PI / 2, !isGibbous);
-            }
-            ctx.closePath();
-                    ctx.save();
-            ctx.translate(moonX, moonY); ctx.globalAlpha = fadeOpacity * mc.partDiscPeak; ctx.fillStyle = mc.partDisc;
-            ctx.fill(); ctx.restore();
-        }
-        ctx.save(); ctx.translate(moonX, moonY); ctx.globalAlpha = fadeOpacity;
-        ctx.fillStyle = mc.limbDark; fillCircle(ctx, 0, 0, moonRadius); ctx.restore();
+        this._drawShootingStars(ctx, cssW, cssH);
         ctx.restore();
-        // Craters — drawn from MOON_CRATERS geometry table, scaled with moon size.
-        // Unrolled: avoids per-frame array allocation in hot path.
-        if (illumination > 0.05) {
-            const op = fadeOpacity * Math.min(1, illumination * 4.0), ms = moonScale, lc = useLightColors;
-            ctx.save(); ctx.beginPath(); ctx.arc(moonX, moonY, moonRadius, 0, TWO_PI);
-            ctx.clip(); ctx.shadowOffsetX = 0.8 * ms; ctx.shadowOffsetY = 0.8 * ms;
-            ctx.shadowBlur = 2.0 * ms; ctx.shadowColor = lc ? 'rgba(100,110,140,0.25)' : 'rgba(0,0,0,0.45)'; ctx.globalAlpha = op * (lc ? 0.12 : 0.13);
-            ctx.fillStyle = lc ? 'rgb(180,190,210)' : 'rgb(30,35,50)';
-            for (let m = 0; m < MOON_CRATERS.maria.length; m++) {
-                const c = MOON_CRATERS.maria[m]; ctx.beginPath();
-                ctx.ellipse(moonX + c.dx * ms, moonY + c.dy * ms, c.rx * ms, c.ry * ms, c.rot, 0, TWO_PI);
-                ctx.fill();
-            }
-            ctx.globalAlpha = op * (lc ? 0.16 : 0.22); ctx.fillStyle = lc ? 'rgb(170,180,200)' : 'rgb(25,30,45)';
-            for (let m = 0; m < MOON_CRATERS.mariaInner.length; m++) {
-                const c = MOON_CRATERS.mariaInner[m]; ctx.beginPath();
-                ctx.ellipse(moonX + c.dx * ms, moonY + c.dy * ms, c.rx * ms, c.ry * ms, c.rot, 0, TWO_PI);
-                ctx.fill();
-            }
-            ctx.shadowColor = 'transparent'; ctx.globalAlpha = op * (lc ? 0.10 : 0.13); ctx.fillStyle = lc ? 'rgb(175,185,205)' : 'rgb(25,30,45)';
-            for (let m = 0; m < MOON_CRATERS.detail.length; m++) {
-                const c = MOON_CRATERS.detail[m]; fillCircle(ctx, moonX + c.dx * ms, moonY + c.dy * ms, c.r * ms);
-            }
-            ctx.globalAlpha = op * (lc ? 0.10 : 0.12); ctx.fillStyle = lc ? 'rgb(255,255,255)' : 'rgb(200,210,230)';
-            for (let m = 0; m < MOON_CRATERS.rimHighlights.length; m++) {
-                const c = MOON_CRATERS.rimHighlights[m]; fillCircle(ctx, moonX + c.dx * ms, moonY + c.dy * ms, c.r * ms);
-            }
-            ctx.globalAlpha = 1; ctx.restore();
-        }
-        ctx.restore();
-    }
-    _drawRain(ctx, w, h, effectiveWind) {
-        const fadeOpacity = this._layerFadeProgress.precipitation; if (fadeOpacity <= 0) return; const isDay = this._isLightBackground;
-        const rgbBase = this._renderState.rainRgb, len = this._rain.length, dpr = this._cachedDimensions.dpr;
-        if (!this._rainTex) return;
-        for (let i = 0; i < len; i++) {
-            const pt = this._rain[i]; pt.turbulence += 0.025; const turbX = Math.sin(pt.turbulence) * 0.4;
-            const speedFactor = (1 + this._windSpeed * 0.25) * (pt.z * 0.8 + 0.2), moveX = (effectiveWind * 1.8 + turbX) * (pt.z * 0.65 + 0.35);
-            const moveY = (pt.speedY * speedFactor); pt.x += moveX; pt.y += moveY;
-            if (pt.y > h + 10) {
-                pt.y = -40 - (Math.random() * 20); pt.x = Math.random() * w;
-            }
-            if (pt.x > w + 20) pt.x = -20;
-            else if (pt.x < -20) pt.x = w + 20;
-            const baseOp = isDay ? 0.75 : 0.60, finalOp = (pt.z * baseOp) * fadeOpacity * pt.op;
-            if (finalOp < 0.02) continue; const dropLen = pt.len * (1.0 + (this._windSpeed * 0.3)); const width = Math.max(0.6, pt.z * 1.2);
-            ctx.translate(pt.x, pt.y); ctx.rotate(Math.atan2(moveY, moveX)); ctx.globalAlpha = finalOp;
-            ctx.drawImage(this._rainTex, -dropLen, -width / 2, dropLen, width); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
         ctx.globalAlpha = 1;
+        this._starsDirty = true;
     }
-    _drawSnow(ctx, w, h, effectiveWind) {
-        const fadeOpacity = this._layerFadeProgress.precipitation; if (fadeOpacity <= 0) return; const len = this._snow.length;
-        const isLight = this._isLightBackground; if (!this._snowTexFg) return;
-        for (let i = 0; i < len; i++) {
-            const pt = this._snow[i]; pt.wobblePhase += pt.wobbleSpeed; const wobble = Math.sin(pt.wobblePhase) * 1.5;
-            pt.turbulence += 0.01; const turbX = Math.sin(pt.turbulence) * 0.5; pt.y += pt.speedY;
-            pt.x += (wobble + turbX + effectiveWind * 0.8) * (pt.z * 0.65 + 0.35);
-            if (pt.y > h + 5) {
-                pt.y = -5; pt.x = Math.random() * w;
-            }
-            if (pt.x > w + 10) pt.x = -10;
-            else if (pt.x < -10) pt.x = w + 10;
-            const shimmer = 0.92 + Math.sin(pt.wobblePhase * 2.5) * 0.08, glimmer = 0.8 + Math.sin(pt.wobblePhase * 3) * 0.2;
-            const finalOpacity = pt.op * fadeOpacity * glimmer, drawSize = pt.size * shimmer;
-            if (pt.z > 0.7) {
-                        const gMul = isLight ? 1.4 : 1.0;
-                const gRad = isLight ? 0.9 : 1.5, r = drawSize * gRad;
-                ctx.globalAlpha = Math.min(1, finalOpacity * gMul); ctx.drawImage(this._snowTexFg, pt.x - r, pt.y - r, r * 2, r * 2);
-            } else {
-                        const smallR = drawSize * 0.75;
-                const alphaOp = isLight ? 1.3 : 0.8; ctx.globalAlpha = Math.min(1, finalOpacity * alphaOp);
-                ctx.drawImage(this._snowTexBg, pt.x - smallR, pt.y - smallR, smallR * 2, smallR * 2);
-            }
+    _drawShootingStars(ctx, w, h) {
+        const m = this._starMasterOpacity, S = this._shootingStars, K = this._comets;
+        if (Math.random() < 0.00429 && S.length < 2) {
+            const sx = Math.random() < 0.7 ? Math.random() * w * 0.6 : w * 0.6 + Math.random() * w * 0.4;
+            const dx = Math.random() < 0.3 ? -1 : 1, bl = Math.random() < 0.18;
+            const sp = bl ? 3.5 + Math.random() * 2 : 5 + Math.random() * 5, cr = Math.random();
+            const [hr, tr] = cr < 0.55 ? ['rgb(255,255,255)', 'rgb(255,255,240)']
+                : cr < 0.75 ? ['rgb(255,245,210)', 'rgb(255,230,180)']
+                : cr < 0.92 ? ['rgb(210,255,225)', 'rgb(180,240,200)']
+                : ['rgb(255,210,160)', 'rgb(255,185,130)'];
+            S.push({ x: sx, y: Math.random() * h * 0.5, vx: sp * dx, vy: 2 + Math.random() * 2,
+                life: 1, dc: bl ? 0.032 : 0.045, sz: bl ? 2.5 + Math.random() * 1.5 : 1.5 + Math.random() * 1.5,
+                bl, hr, tr, tb: new Float32Array(44), th: 0, tl: 0 });
         }
-        ctx.globalAlpha = 1;
-    }
-    _drawHail(ctx, w, h, effectiveWind) {
-        const fadeOpacity = this._layerFadeProgress.precipitation; if (fadeOpacity <= 0) return; const len = this._hail.length;
-        const isLight = this._isLightBackground, dpr = this._cachedDimensions.dpr;
-        if (!this._hailTex) return;
-        for (let i = 0; i < len; i++) {
-            const pt = this._hail[i]; pt.turbulence += 0.035; const turbX = Math.sin(pt.turbulence) * 1.2;
-            pt.y += pt.speedY * (1 + this._windSpeed * 0.35); pt.x += (effectiveWind * 2.5 + turbX) * (pt.z * 0.65 + 0.35); pt.rotation += pt.rotationSpeed;
-            if (pt.y > h + 10) {
-                pt.y = -15 - (Math.random() * 20); pt.x = Math.random() * w;
-            }
-            const baseOp = pt.z > 1.1 ? pt.op * 1.1 : pt.op * 0.75; ctx.globalAlpha = baseOp * fadeOpacity; ctx.translate(pt.x, pt.y);
-            ctx.rotate(pt.rotation);
-            ctx.drawImage(this._hailTex, -pt.size, -pt.size, pt.size * 2, pt.size * 2);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        ctx.globalAlpha = 1;
-    }
-    _drawLightning(ctx, w, h) {
-        if (!(this._params && this._params.thunder)) return; const fadeOpacity = this._layerFadeProgress.effects;
-        const isStandalone = this._config.card_style === 'standalone';
-        if (Math.random() < 0.0072 && this._bolts.length < LIMITS.MAX_BOLTS) {
-            this._flashOpacity = 0.92; this._flashHold = this._isLightBackground ? 7 : 6; this._bolts.push(this._createBolt(w, h));
-            if (Math.random() < 0.25 && this._bolts.length < LIMITS.MAX_BOLTS) { this._bolts.push(this._createBolt(w, h)); }
-        }
-        if (!this._isLightBackground && isStandalone) {
-            ctx.save(); ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 0.18 * fadeOpacity;
-            ctx.fillStyle = 'rgb(0, 0, 10)'; ctx.fillRect(0, 0, w, h); ctx.restore();
-        }
-        if (this._flashOpacity > 0) {
-            if (this._flashHold > 0) {
-                this._flashHold--;
-            } else {
-                this._flashOpacity *= this._isLightBackground ? 0.72 : 0.62;
-                if (this._flashOpacity > 0.08 && this._flashOpacity < 0.45 && Math.random() < 0.12) {
-                    this._flashOpacity = 0.5 + Math.random() * 0.25; this._flashHold = 2;
+        ctx.lineCap = 'round';
+        for (let i = S.length - 1; i >= 0; i--) {
+            const s = S[i]; s.x += s.vx; s.vy += 0.045; s.y += s.vy; s.life -= s.dc;
+            s.tb[s.th * 2] = s.x; s.tb[s.th * 2 + 1] = s.y; s.th = (s.th + 1) % 22; if (s.tl < 22) s.tl++;
+            if (s.life <= 0) { S.splice(i, 1); continue; }
+            const op = s.life * m; ctx.globalAlpha = op; ctx.fillStyle = s.hr;
+            const fl = s.bl && s.life < 0.15 ? 1 + (0.15 - s.life) * 8 : 1;
+            const hs = s.sz * (0.3 + s.life * 0.7) * fl;
+            ctx.beginPath(); ctx.arc(s.x, s.y, hs, 0, 6.2832); ctx.fill();
+            ctx.lineWidth = hs * 0.8; ctx.strokeStyle = s.tr;
+            const segs = s.tl - 1;
+            for (let b = 0; b < 4; b++) {
+                const j0 = b * segs >> 2, j1 = (b + 1) * segs >> 2;
+                if (j0 >= j1) continue;
+                ctx.globalAlpha = op * (1 - (j0 + j1) * 0.5 / s.tl); ctx.beginPath();
+                for (let j = j0; j <= j1; j++) {
+                    const idx = (((s.th - 1 - j) % 22) + 22) % 22;
+                    j === j0 ? ctx.moveTo(s.tb[idx * 2], s.tb[idx * 2 + 1]) : ctx.lineTo(s.tb[idx * 2], s.tb[idx * 2 + 1]);
                 }
-            }
-            if (isStandalone) {
-                ctx.save();
-                ctx.globalCompositeOperation = this._isThemeDark ? 'screen' : 'source-over';
-                ctx.globalAlpha = this._flashOpacity * fadeOpacity * (this._isLightBackground ? 0.80 : 0.50);
-                ctx.fillStyle = this._isLightBackground ? 'rgb(255, 255, 255)' : 'rgb(220, 235, 255)';
-                ctx.fillRect(0, 0, w, h); ctx.restore();
-            }
-            if (this._flashOpacity < 0.005) this._flashOpacity = 0;
-        }
-        if (this._bolts.length > 0) {
-            ctx.save();
-            ctx.globalCompositeOperation = this._isThemeDark ? 'lighter' : 'source-over';
-            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            for (let i = this._bolts.length - 1; i >= 0; i--) {
-                const bolt = this._bolts[i], segs = bolt.segments, segLen = segs.length;
-                // Build trunk path once, stroke multiple times for glow layers
-                ctx.beginPath();
-                for (let j = 0; j < segLen; j++) {
-                    const seg = segs[j];
-                    if (!seg.branch) {
-                        if (seg.y === 0) ctx.moveTo(seg.x, seg.y); ctx.lineTo(seg.nx, seg.ny);
-                    }
-                }
-                // Glow passes (skip when glow has decayed to zero)
-                if (bolt.glow > 0) {
-                    // Pass 1: Wide diffuse glow (replaces shadowBlur = 20)
-                    ctx.globalAlpha = bolt.glow * fadeOpacity * 0.15; ctx.strokeStyle = bolt._glowStroke; ctx.lineWidth = 24;
-                    ctx.stroke();
-                    // Pass 2: Medium glow halo
-                    ctx.globalAlpha = bolt.glow * fadeOpacity * 0.3; ctx.lineWidth = 14; ctx.stroke();
-                }
-                // Pass 3: Outer visible stroke (always active while bolt lives)
-                ctx.globalAlpha = bolt.alpha * 0.35 * fadeOpacity; ctx.strokeStyle = bolt._outerStroke; ctx.lineWidth = 8;
                 ctx.stroke();
-                // Pass 4: Hot white core (re-strokes same trunk path)
-                ctx.globalAlpha = bolt.alpha * fadeOpacity; ctx.strokeStyle = bolt._coreStroke; ctx.lineWidth = 2.5;
-                ctx.stroke();
-                // Branches — thin secondary forks
-                ctx.globalAlpha = bolt.alpha * 0.6 * fadeOpacity; ctx.strokeStyle = bolt._branchStroke; ctx.lineWidth = 1.5;
-                for (let j = 0; j < segLen; j++) {
-                    const seg = segs[j];
-                    if (seg.branch) {
-                        ctx.beginPath(); ctx.moveTo(seg.x, seg.y); ctx.lineTo(seg.nx, seg.ny);
-                        ctx.stroke();
-                    }
+            }
+        }
+        if (!K.length && Math.random() < 0.0005456) {
+            const sx = Math.random() < 0.5 ? -60 : w + 60, dir = sx < 0 ? 1 : -1, sp = 2.2 + Math.random() * 1.3, cr = Math.random();
+            const [co, gl, tr] = cr < 0.50 ? ['220,240,255', '100,200,255', 'rgb(160,210,255)']
+                : cr < 0.78 ? ['200,255,220', '120,220,160', 'rgb(150,230,180)']
+                : ['255,240,200', '230,190,100', 'rgb(240,210,150)'];
+            K.push({ x: sx, y: Math.random() * h * 0.4, vx: sp * dir, vy: sp * 0.15, sz: 1.5 + Math.random(),
+                life: 1.2, co, gl, tr, tb: new Float32Array(200), th: 0, tl: 0, _g: null });
+        }
+        for (let i = K.length - 1; i >= 0; i--) {
+            const c = K[i]; c.x += c.vx; c.y += c.vy; c.life -= 0.005;
+            if (c.life <= 0) { K.splice(i, 1); continue; }
+            c.tb[c.th * 2] = c.x; c.tb[c.th * 2 + 1] = c.y; c.th = (c.th + 1) % 100; if (c.tl < 100) c.tl++;
+            if (c.tl > 2) {
+                const ni = (((c.th - 1) % 100) + 100) % 100, oi = (((c.th - c.tl) % 100) + 100) % 100;
+                const dx = c.tb[ni * 2] - c.tb[oi * 2], dy = c.tb[ni * 2 + 1] - c.tb[oi * 2 + 1];
+                if (dx * dx + dy * dy > 28900) c.tl--;
+            }
+            const op = Math.min(1, c.life) * m;
+            if (!c._g) {
+                const r = c.sz * 4, g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
+                g.addColorStop(0, `rgba(${c.co},1)`); g.addColorStop(0.4, `rgba(${c.gl},0.4)`); g.addColorStop(1, `rgba(${c.gl},0)`);
+                c._g = g;
+            }
+            ctx.globalAlpha = op; ctx.save(); ctx.translate(c.x, c.y); ctx.fillStyle = c._g;
+            ctx.beginPath(); ctx.arc(0, 0, c.sz * 4, 0, 6.2832); ctx.fill(); ctx.restore();
+            ctx.lineCap = 'butt'; ctx.strokeStyle = c.tr; const segs = c.tl - 1;
+            for (let b = 0; b < 8; b++) {
+                const j0 = (b * segs / 8) | 0, j1 = ((b + 1) * segs / 8) | 0;
+                if (j0 >= j1) continue; const mp = (j0 + j1) * 0.5 / c.tl;
+                ctx.lineWidth = c.sz * (1 - mp * 0.8); ctx.globalAlpha = op * (1 - mp) * 0.6; ctx.beginPath();
+                for (let j = j0; j <= j1; j++) {
+                    const idx = (((c.th - 1 - j) % 100) + 100) % 100;
+                    j === j0 ? ctx.moveTo(c.tb[idx * 2], c.tb[idx * 2 + 1]) : ctx.lineTo(c.tb[idx * 2], c.tb[idx * 2 + 1]);
                 }
-                bolt.alpha -= 0.05; if (bolt.glow > 0) bolt.glow -= 0.075; if (bolt.alpha <= 0) this._bolts.splice(i, 1);
+                ctx.stroke();
             }
-            ctx.restore();
-        }
-    }
-    _drawAurora(ctx, w, h) {
-        if (!this._aurora) return; const fadeOpacity = this._layerFadeProgress.effects; this._aurora.phase += 0.006;
-        ctx.save();
-        ctx.globalCompositeOperation = this._isThemeDark ? 'lighter' : 'source-over';
-        ctx.globalAlpha = fadeOpacity; const waves = this._aurora.waves; const waveLen = waves.length;
-        for (let wi = 0; wi < waveLen; wi++) {
-            const wave = waves[wi];
-            if (!wave._g) {
-                const g = ctx.createLinearGradient(0, wave.y - 20, 0, wave.y + 50); g.addColorStop(0, 'rgba(0, 0, 0, 0)'); g.addColorStop(0.3, wave.color);
-                g.addColorStop(0.6, wave.color.replace(/[\d.]+\)$/, '0.1)')); g.addColorStop(1, 'rgba(0, 0, 0, 0)'); wave._g = g;
-            }
-            ctx.fillStyle = wave._g; ctx.beginPath();
-            for (let x = 0; x <= w; x += 6) {
-                const y = wave.y + Math.sin(x * wave.wavelength + this._aurora.phase * wave.speed * 100 + wave.offset) * wave.amplitude;
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.lineTo(w, wave.y + 60); ctx.lineTo(0, wave.y + 60); ctx.closePath();
-            ctx.fill();
-        }
-        ctx.restore();
-    }
-    _drawFog(ctx, w, h) {
-        const fadeOpacity = this._layerFadeProgress.effects, len = this._fogBanks.length, dpr = this._cachedDimensions.dpr;
-        for (let i = 0; i < len; i++) {
-            const f = this._fogBanks[i]; f.x += f.speed; f.phase += 0.008;
-            if (f.x > w + f.w / 2) f.x = -f.w / 2; if (f.x < -f.w / 2) f.x = w + f.w / 2; const undulation = Math.sin(f.phase) * 5;
-            if (!f._g) {
-                const color = this._isLightBackground ? '190,200,215' : (this._isTimeNight ? '85,90,105' : '72,81,95');
-                const g = ctx.createRadialGradient(0, 0, 0, 0, 0, f.w / 2);
-                g.addColorStop(0, `rgba(${color},1)`);
-                g.addColorStop(0.5, `rgba(${color},0.6)`);
-                g.addColorStop(1, `rgba(${color},0)`);
-                f._g = g;
-                f._baseOp = f.opacity * (1 + f.layer * 0.2) *
-                    (this._isLightBackground ? 0.60 : 1.0);
-            }
-            const vSquash = 0.1 + f.layer * 0.18; ctx.scale(1, vSquash); const drawY = (f.y + undulation) / vSquash;
-            ctx.globalAlpha = f._baseOp * fadeOpacity; ctx.translate(f.x, drawY); ctx.fillStyle = f._g;
-            ctx.beginPath(); ctx.ellipse(0, 0, f.w / 2, f.h, 0, 0, TWO_PI); ctx.fill();
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         }
         ctx.globalAlpha = 1;
     }
-    _drawWindVapor(ctx, w, h, effectiveWind) {
-        const fadeOpacity = this._layerFadeProgress.effects; if (fadeOpacity <= 0) return; if (!this._vaporTex) return;
-        const p = this._params, windKmh = this._windKmh || 0, dpr = this._cachedDimensions.dpr, windNorm = Math.min(1.0, Math.max(0, windKmh / 50));
-        const windIntensity = windNorm * windNorm, isWindy = p.windVapor === true, pool = this._windVapor.length;
-        let activeCount, vaporOp, baseHStretch, speedMul;
-        if (isWindy) {
-            activeCount = pool; vaporOp = 1.0; baseHStretch = 1.2 + 0.8 * windIntensity; speedMul = 0.12 + 0.35 * windIntensity;
-        } else if (windKmh >= 15) {
-            activeCount = Math.round(pool * 0.75); vaporOp = 0.90; baseHStretch = 1.0 + 0.4 * windIntensity; speedMul = 0.06 + 0.18 * windIntensity;
-        } else {
-            activeCount = Math.round(pool * 0.58); vaporOp = 0.92; baseHStretch = 1.0; speedMul = 0.03;
-        }
-        if (this._isDarkDayImmersive) {
-            activeCount = Math.max(activeCount, Math.round(pool * 0.58)); vaporOp = Math.max(vaporOp, 1.05);
-        }
-        const len = Math.min(pool, activeCount); if (len <= 0) return; const gustVal = this._windGust * windIntensity;
-        const isDark = this._isThemeDark;
-        const rotFade = isWindy ? 0 : (windKmh >= 15 ? Math.max(0, 1 - windIntensity * 2.0) : 1.0);
-        const windThin = 1.0 - windIntensity * 0.25, shear = windIntensity * 0.12;
-        ctx.globalCompositeOperation = isDark ? 'screen' : 'source-over';
-        for (let i = 0; i < len; i++) {
-            const v = this._windVapor[i]; v.phase += v.phaseSpeed * Math.max(speedMul, 0.04); const gustBoost = Math.max(0, gustVal) * v.gustWeight * 1.2;
-            const baseVelocity = (v.speed * speedMul) + effectiveWind * speedMul; v.x += (baseVelocity + gustBoost) * (1 + this._windSpeed * 0.15);
-            const undulation = Math.sin(v.phase) * v.drift; if (v.x > w + v.w) v.x = -v.w; if (v.x < -v.w * 1.5) v.x = w + v.w;
-            const tierOp = isDark ? (0.28 + v.tier * 0.24) : (0.45 + v.tier * 0.28);
-            const depthFade = 0.40 + (v.depthNorm || 0.5) * 0.60, gustOpBump = Math.max(0, gustVal) * 0.15;
-            const hStretch = baseHStretch + Math.max(0, gustVal) * 0.25, drawW = v.w * hStretch, drawH = Math.min(10, v.w * v.squash * windThin);
-            ctx.globalAlpha = Math.min(1.0, (tierOp + gustOpBump) * depthFade * fadeOpacity * vaporOp * (isDark ? 0.85 : 1));
-            const rot = v.baseRotation * rotFade + Math.sin(v.phase * 0.7) * 0.02, curve = v.curvature || 0, sh = shear * (v.tier * 0.5 + 0.5) + curve;
-            ctx.setTransform(dpr, sh * dpr, 0, dpr, (v.x) * dpr, (v.y + undulation) * dpr);
-            ctx.rotate(rot); if (v.taperDir < 0) ctx.scale(-1, 1);
-            ctx.drawImage(this._vaporTex, -drawW * 0.5, -drawH * 0.5, drawW, drawH);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        ctx.globalAlpha = 1; ctx.globalCompositeOperation = 'source-over';
+    _glslVert() {
+        return `#version 300 es
+precision mediump float;
+in vec2 a_pos;
+out vec2 v_uv;
+void main() {
+    v_uv = a_pos * 0.5 + 0.5;
+    gl_Position = vec4(a_pos, 0.0, 1.0);
+}`;
     }
-    _drawBirds(ctx, w, h) {
-        for (let i = this._birds.length - 1; i >= 0; i--) {
-            const b = this._birds[i]; b.x += b.vx; b.flapPhase += b.flapSpeed;
-            b.y += (b.vy - Math.sin(b.flapPhase) * b.size * 0.04); const isOffRight = b.vx > 0 && b.x > w + 100; const isOffLeft = b.vx < 0 && b.x < -100;
-            if (isOffRight || isOffLeft) this._birds.splice(i, 1);
-        }
-        const p = this._params, isSevereWeather = this._renderState.isSevereWeather;
-            if (!isSevereWeather && this._birds.length === 0) {
-            const dir = Math.random() > 0.5 ? 1 : -1, startX = dir === 1 ? -60 : w + 60, depthScale = 0.9 + Math.random() * 0.5;
-            const baseSpeed = (0.9 + Math.random() * 0.5), finalSpeed = baseSpeed * depthScale * dir, isSingle = Math.random() < 0.3;
-            const flockSize = isSingle ? 1 : 5 + Math.floor(Math.random() * 8), startY = h * 0.20 + Math.random() * (h * 0.47);
-            this._birds.push({ x: startX, y: startY, vx: finalSpeed, vy: (Math.random() - 0.5) * 0.1, flapPhase: 0, flapSpeed: 0.15 + Math.random() * 0.05, size: 2.4 * depthScale });
-            if (!isSingle) {
-                const formation = Math.floor(Math.random() * 3), ySlope = Math.random() > 0.5 ? 1 : -1;
-                for (let i = 1; i < flockSize; i++) {
-                    let offX = 0, offY = 0;
-                    if (formation === 0) {
-                        const row = Math.floor((i + 1) / 2), side = i % 2 === 0 ? 1 : -1;
-                        offX = -15 * row; offY = 8 * row * side;
-                    } else if (formation === 1) {
-                        offX = -18 * i; offY = 10 * i * ySlope;
-                    } else {
-                        offX = -15 * i + (Math.random() - 0.5) * 20; offY = (Math.random() - 0.5) * 40;
-                    }
-                    const scaledOffX = offX * depthScale, scaledOffY = offY * depthScale;
-                    this._birds.push({ x: startX + (scaledOffX * dir), y: startY + scaledOffY, vx: finalSpeed, vy: (Math.random() - 0.5) * 0.05, flapPhase: i + Math.random(), flapSpeed: 0.15 + Math.random() * 0.05, size: (1.8 + Math.random() * 0.6) * depthScale });
+    _glslClouds() {
+        return `
+float awc_hash(vec2 p){
+    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+    p3 += dot(p3, p3.yzx + 33.33);
+    return fract((p3.x + p3.y) * p3.z);
+}
+float awc_noise(vec2 p){
+    vec2 i = floor(p), f = fract(p);
+    vec2 u = f*f*(3.0-2.0*f);
+    return mix(mix(awc_hash(i), awc_hash(i+vec2(1.0,0.0)), u.x),
+               mix(awc_hash(i+vec2(0.0,1.0)), awc_hash(i+vec2(1.0,1.0)), u.x), u.y);
+}
+const mat2 AWC_ROT = mat2(0.80, 0.60, -0.60, 0.80);
+float awc_fbm(vec2 p){
+    float v = 0.0, a = 0.5, tot = 0.0;
+    for (int i = 0; i < 3; i++){ v += a * awc_noise(p); tot += a; p = AWC_ROT * p * 2.0; a *= 0.5; }
+    return v / tot;
+}`;
+    }
+    _glslFrag(variant = 'sky') {
+        const snow = variant === 'snow';
+        const snowUniforms = snow ? 'uniform float u_density;\nuniform float u_hail;\nuniform float u_grain;\n' : '';
+        const overlay = snow ? `
+float awcIce(vec2 FC, float time) {
+    vec2 r = u_resolution.xy;
+    float fall = mix(1.0, 7.0, u_hail);
+    float wob  = mix(1.0, 0.0, u_hail);
+    float tilt = mix(0.0, 0.5, u_hail);
+    float t = time * fall;
+    float acc = 0.0;
+    for (float i = 1.0; i < 14.0; i += 1.5) {
+        float s = -0.4 + i;
+        float v = (2.0 + sin(i)) * s / i;
+        vec2 p = (FC / r.x) * s + vec2(sin(t + i) * wob + t * v * tilt, t * v);
+        float h = fract(sin(dot(floor(p), floor(p) + i)) * 4e3);
+        float rad = 0.024 * (1.0 + 1.6 / i) * u_grain * mix(1.0, 0.7, u_hail);
+        acc += smoothstep(rad, -0.5 * rad, length(fract(p) - 0.5 + (h - 0.5) * 0.7));
+    }
+    return acc;
+}
+// Snow flakes over the cloud field, with a faint day-only contact rim.
+vec3 awcOverlay(vec3 col, vec2 fc, float T){
+    float sn = clamp(awcIce(fc, T * 0.5), 0.0, 1.0) * u_density;
+    float rim = sn * (1.0 - sn) * 4.0;
+    col = mix(col, col * 0.84, rim * (1.0 - u_dark) * 0.5);
+    vec3 flake = mix(vec3(1.0), vec3(0.96, 0.98, 1.0), u_dark);
+    flake = mix(flake, flake * vec3(0.95, 0.98, 1.0), u_hail);
+    col = mix(col, flake, sn * mix(0.90, 1.0, u_dark));
+    return col;
+}` : `
+vec3 awcOverlay(vec3 col, vec2 fc, float T){ return col; }`;
+        return `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time;
+uniform vec2  u_resolution;
+uniform float u_dark;
+uniform float u_wind;
+uniform float u_cloud_density;
+uniform float u_cloud_shade;
+uniform float u_cloud_base;
+uniform float u_cloud_size;
+uniform float u_cloud_gap;
+uniform float u_fx_speed;
+uniform vec3 u_sky_top;
+uniform vec3 u_sky_mid;
+uniform vec3 u_sky_low;
+uniform vec3 u_sky_base;
+uniform sampler2D u_noise;
+${snowUniforms}vec4 vnoise4(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = p - i;
+    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    return texture(u_noise, (i + f + 0.5) / 256.0);
+}
+// 2-octave multichannel value-fbm; the four channels drive the sky-gradient warp.
+vec4 fbm4(vec2 p) {
+    mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+    vec4 value = vec4(0.0);
+    float amp = 0.5, norm = 0.0;
+    for (int i = 0; i < 2; i++) {
+        value += amp * vnoise4(p);
+        norm += amp;
+        p = rot * p * 2.02 + vec2(float(i) * 1.7, float(i) * 3.1);
+        amp *= 0.5;
+    }
+    return value / norm;
+}
+
+const float AWC_CLOUD_FREQ = 3.0;
+
+float vnoiseS(vec2 p){
+    vec2 i = floor(p);
+    vec2 f = p - i;
+    f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+    return textureLod(u_noise, (i + f + 0.5) / 256.0, 0.0).r;
+}
+
+float cFbmT(vec2 d, float freq, float gain, int oct, float ev){
+    vec2 p = d * freq;
+    float v = 0.0, a = 1.0, tot = 0.0;
+    for (int i = 0; i < 6; i++){
+        if (i >= oct) break;
+        vec2 dir = vec2(cos(float(i) * 2.4), sin(float(i) * 2.4));
+        v   += a * vnoiseS(p + dir * (ev * (0.3 + float(i) * 0.25)));
+        tot += a;
+        p    = p * 2.5 + vec2(float(i) * 1.7, float(i) * 2.3);
+        a   *= gain;
+    }
+    return v / tot;
+}
+
+
+float cloudTexture(vec2 dm, float gain, float ev){
+    float macroFreq = AWC_CLOUD_FREQ / u_cloud_size;
+    float macro  = cFbmT(dm, macroFreq, gain, 4, ev);
+    float detail = cFbmT(dm, 9.0, 0.5, 3, ev * 1.3);
+    return macro + (detail - 0.5) * 0.26;
+}
+
+float coverageMask(vec2 dm, float ev){
+    return cFbmT(dm, (AWC_CLOUD_FREQ / u_cloud_size) * 0.34, 0.55, 2, ev * 0.7);
+}
+
+vec2 awcFlow(vec2 d, float ev){
+    float n1 = vnoiseS(d * 0.4 + vec2(ev * 0.11, -ev * 0.0880));
+    float n2 = vnoiseS(d * 0.4 + vec2(5.2 - ev * 0.0990, 1.7 + ev * 0.11));
+    vec2 flow = (vec2(n1, n2) - 0.5);
+    float ang = (n1 - 0.5) * 6.2831853 + ev * 0.35;
+    vec2 swirl = vec2(cos(ang), sin(ang)) * (n2 - 0.5);
+    return (flow * 0.14 + swirl * 0.10);
+}
+vec3 cloudField(vec2 d, float t, float ev, float gain, float thr, float maskAmt){
+    vec2 q  = d - vec2(t * 0.07, t * 0.028);
+    q += awcFlow(q, ev);
+    float tex  = cloudTexture(q, gain, ev);
+    float mask = coverageMask(q, ev);
+    float localThr = thr - (mask - 0.5) * maskAmt;
+    float texUp = cloudTexture(q + vec2(0.0, 0.0800), gain, ev);
+    float occ = texUp - localThr;
+    return vec3(tex, localThr, occ);
+}
+
+vec4 awcClouds(vec2 p){
+    float gain  = mix(0.5, 0.56, smoothstep(0.8, 1.3, u_fx_speed));
+    float speed = max(u_fx_speed, 0.15);
+    float t     = u_time * speed;
+    float wind  = u_time * u_wind * 0.05;
+    float ev = u_time * (0.065 + u_fx_speed * 0.16);
+
+    vec3 skyAvg = (u_sky_top + u_sky_mid + u_sky_low + u_sky_base) * 0.25;
+
+    vec3 litDay     = mix(vec3(0.99, 0.99, 0.96), u_sky_top, 0.18);
+    vec3 litNight   = vec3(0.55, 0.62, 0.79);
+    vec3 lit        = mix(litDay, litNight, u_dark);
+    vec3 shadeDay   = mix(vec3(0.86, 0.88, 0.92), mix(u_sky_mid, u_sky_low, 0.5), mix(0.45, 0.85, u_cloud_shade));
+    vec3 shadeNight = mix(u_sky_mid, vec3(0.10, 0.15, 0.32), 0.62);
+    vec3 shade      = mix(shadeDay, shadeNight, u_dark);
+
+    float thr0    = mix(0.56, 0.32, u_cloud_density) - u_cloud_base * 0.06;
+    float maskAmt = mix(0.3, 0.42, u_cloud_density);
+
+    vec3 front = cloudField((p - vec2(wind, 0.0)) * 1.30, t, ev, gain, thr0, maskAmt);
+
+    float fd = front.x - front.y;
+    float occ = front.z;
+    float arv = u_resolution.x / u_resolution.y;
+    vec2 seedOff = textureLod(u_noise, vec2(0.137, 0.519), 0.0).rg - 0.5;
+    vec2 vigCen = vec2(arv * 0.5, 0.5) + seedOff * vec2(arv * 0.3, 0.26) + vec2(sin(u_time * 0.011) * arv * 0.1, cos(u_time * 0.013) * 0.09);
+    vec2 vrel = (p - vigCen) / vec2(arv * 0.6, 0.6);
+    fd -= max(0.0, 0.55 - dot(vrel, vrel)) * u_cloud_gap;
+
+    vec3 hilite   = lit + vec3(0.05, 0.05, 0.03) * (1.0 - u_dark) + vec3(0.03, 0.05, 0.1) * u_dark;
+    float fCov    = smoothstep(0.0, 0.03, fd);
+    float fSoft   = smoothstep(mix(-0.09, -0.045, u_dark), 0.04, fd);
+    float form    = smoothstep(-0.04, mix(0.34, 0.46, u_dark), fd);
+    float core    = smoothstep(0.2, 0.44, fd);
+    vec3 frontCol = mix(shade, lit, form);
+    frontCol      = mix(frontCol, hilite, core * mix(0.5, 0.18, u_dark));
+    float shadow  = smoothstep(0.0, 0.33, occ) * (1.0 - core * 0.5);
+    vec3 shadowCol = mix(frontCol * vec3(0.9, 0.91, 0.93), mix(frontCol, vec3(0.10, 0.14, 0.30), 0.6), u_dark);
+    frontCol      = mix(frontCol, shadowCol, shadow);
+    float thinness = 1.0 - smoothstep(-0.02, 0.08, fd);
+    vec3 thinTarget = mix(skyAvg, mix(skyAvg, litNight, 0.5), u_dark);
+    frontCol       = mix(frontCol, thinTarget, thinness * mix(0.22, 0.17, u_dark));
+    float rimBand  = smoothstep(0.0, 0.04, fd) * (1.0 - smoothstep(0.04, 0.11, fd));
+    vec3 rimDark   = mix(skyAvg, vec3(0.05, 0.06, 0.11), 0.45);
+    frontCol       = mix(frontCol, rimDark, rimBand * u_dark * 0.18);
+    frontCol       = mix(frontCol, frontCol * 0.82, rimBand * (1.0 - u_dark) * 0.35);
+    float frontA   = max(fCov, fSoft * 0.78);
+
+    vec3 col = mix(skyAvg, frontCol, frontA);
+    float alpha = frontA;
+    float dh = fract(sin(dot(p * 511.0 + u_time, vec2(12.9898, 78.233))) * 43758.5453);
+    col += (dh - 0.5) * (1.5 / 255.0);
+    return vec4(col, min(alpha, 1.0));
+}
+${overlay}
+void main() {
+    vec2 uv = v_uv;
+    float ar = u_resolution.x / u_resolution.y;
+    vec2 p = vec2(uv.x * ar, uv.y);
+    float skyClock = u_time * 0.44 * 0.27;
+    float warpClock = u_time * 0.576 * 0.27;
+    vec2 warpSeed = vec2(warpClock * 0.34, -warpClock * 0.26);
+    vec4 warpA = fbm4(uv * 1.3 + warpSeed);
+    vec4 warpB = fbm4(uv * 0.9 - warpSeed * 1.4 + warpA.rg * 1.7);
+    vec2 skyWarp = (warpB.rg - 0.5) * 1.7 + (warpA.ba - 0.5) * 0.7;
+
+    vec2 lightCenter = vec2(
+        0.18 + sin(skyClock * 0.6) * 0.28 + cos(skyClock * 0.21) * 0.15,
+        0.82 + cos(skyClock * 0.45) * 0.22 + sin(skyClock * 0.17) * 0.12
+    );
+    vec2 warpedUV = uv + skyWarp;
+    float radialDist = length(warpedUV - lightCenter);
+    float skyGrad = clamp(radialDist * 0.62, 0.0, 1.0);
+
+    float split1 = 0.33 + sin(skyClock * 0.8) * 0.14 + warpA.r * 0.08;
+    float split2 = 0.66 + cos(skyClock * 0.65 + 1.7) * 0.14 + warpB.g * 0.08;
+    split1 = clamp(split1, 0.08, split2 - 0.08);
+    split2 = clamp(split2, split1 + 0.08, 0.92);
+
+    vec3 sky = u_sky_top;
+    sky = mix(sky, u_sky_mid, smoothstep(0.0, split2, skyGrad));
+    sky = mix(sky, u_sky_low, smoothstep(split1, 1.0, skyGrad));
+    sky = mix(sky, u_sky_base, smoothstep(split2, 1.0, skyGrad));
+
+    float breathe = sin(skyClock * 1.1 + warpB.b * 3.0) * 0.5 + 0.5;
+    vec3 breatheTint = mix(vec3(-0.030, -0.010, 0.030), vec3(0.030, 0.012, -0.025), breathe);
+    sky += breatheTint * (1.0 - u_dark * 0.6);
+    sky *= (1.0 - u_cloud_shade * 0.12);
+    vec4 clouds = awcClouds(p);
+    vec3 final = mix(sky, clouds.rgb, clouds.a);
+    final = awcOverlay(final, gl_FragCoord.xy, u_time);
+    fragColor = vec4(final, 1.0);
+}`;
+    }
+    // Header, uniforms and helpers for the water (rain-on-glass) shader.
+    _glslGlassPreamble(extraUniforms) {
+        return `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform float u_time, u_dark;
+uniform vec2 u_resolution;
+uniform vec3 u_sky_top, u_sky_mid, u_sky_low, u_sky_base;
+uniform float u_ref_height;
+${extraUniforms}
+${this._glslClouds()}
+#define S(a,b,t) smoothstep(a,b,t)
+${this._glslSkyRefract()}`;
+    }
+    _glslSkyRefract() {
+        return `
+vec3 skyRefract(vec2 rUV, float T) {
+    float td = T * 0.4;
+    vec2 lc = vec2(0.2 + sin(td * 0.7) * 0.35, 0.5 + cos(td * 0.5) * 0.35);
+    float breath = 0.40 + sin(T * 0.5) * 0.15 + sin(T * 0.31) * 0.10;
+    float nz = awc_fbm(rUV * 3.0 + T * 0.12);
+    float rd = length(rUV - lc) + (nz - 0.5) * 0.50;
+    float g = clamp(rd * breath + (nz - 0.5) * 0.25, 0.0, 1.0);
+    float gSplit1 = clamp(0.33 + sin(T * 0.35) * 0.14 + (nz - 0.5) * 0.16, 0.08, 0.84);
+    float gSplit2 = clamp(0.66 + cos(T * 0.28 + 1.7) * 0.14 + (nz - 0.5) * 0.14, gSplit1 + 0.08, 0.92);
+    vec3 sky = u_sky_top;
+    sky = mix(sky, u_sky_mid, smoothstep(0.0, gSplit2, g));
+    sky = mix(sky, u_sky_low, smoothstep(gSplit1, 1.0, g));
+    sky = mix(sky, u_sky_base, smoothstep(gSplit2, 1.0, g));
+    return sky;
+}`;
+    }
+    // Rain-on-glass remixed from "Heartfelt" https://www.shadertoy.com/view/ltffzl — CC BY-NC-SA 3.0.
+    _glslFragWater() {
+        return `${this._glslGlassPreamble('uniform float u_fx_speed, u_rain_intensity, u_lightning;')}
+vec3 N13(float p){
+    vec3 p3=fract(vec3(p)*vec3(.1031,.11369,.13787));
+    p3+=dot(p3,p3.yzx+19.19);
+    return fract(vec3((p3.x+p3.y)*p3.z,(p3.x+p3.z)*p3.y,(p3.y+p3.z)*p3.x));
+}
+float N(float t){return fract(sin(t*12345.564)*7658.76);}
+float Saw(float b,float t){return S(0.,b,t)*S(1.,b,t);}
+vec2 DropLayer2(vec2 uv,float t){
+    vec2 UV=uv;
+    uv.y+=t*0.75;
+    float gridScale = mix(0.95, 0.78, u_rain_intensity);
+    vec2 a=vec2(6.,1.) * gridScale;
+    vec2 grid=a*2.;
+    vec2 id=floor(uv*grid);
+    float colShift=N(id.x);
+    uv.y+=colShift;
+    id=floor(uv*grid);
+    vec3 n=N13(id.x*35.2+id.y*2376.1);
+    vec2 st=fract(uv*grid)-vec2(.5,0.);
+    float x=n.x-.5;
+    float y=UV.y*20.;
+    float wiggle=sin(y+sin(y));
+    x+=wiggle*(.5-abs(x))*(n.z-.5);
+    x*=.7;
+    float ti=fract(t+n.z);
+    y=(Saw(.85,ti)-.5)*.76+.5;
+    vec2 p=vec2(x,y);
+    float dropRadius = mix(0.44, 0.58, u_rain_intensity);
+    float d=length((st-p)*a.yx);
+    float mainDrop=S(dropRadius,.0,d);
+    float r=sqrt(S(1.,y,st.y));
+    float cd=abs(st.x-x);
+    float trail=S(.23*r,.15*r*r,cd);
+    float trailFront=S(-.02,.02,st.y-y);
+    trail*=trailFront*r*r;
+    y=UV.y;
+    float trail2=S(.2*r,.0,cd);
+    float droplets=max(0.,(sin(y*(1.-y)*120.)-st.y))*trail2*trailFront*n.z;
+    y=fract(y*10.)+(st.y-.5);
+    float dd=length(st-vec2(x,y));
+    droplets=S(.3,0.,dd);
+    float m=mainDrop+droplets*r*trailFront;
+    return vec2(m,trail);
+}
+float StaticDrops(vec2 uv,float t){
+    uv*=40.;
+    vec2 id=floor(uv);
+    uv=fract(uv)-.5;
+    vec3 n=N13(id.x*107.45+id.y*3543.654);
+    vec2 p=(n.xy-.5)*.7;
+    float d=length(uv-p);
+    float fade=Saw(.025,fract(t+n.z));
+    float c=S(.3,0.,d)*fract(n.z*10.)*fade;
+    return c;
+}
+vec2 Drops(vec2 uv,float t,float l0,float l1,float l2){
+    float s=StaticDrops(uv,t)*l0;
+    vec2 m1=DropLayer2(uv,t)*l1;
+    vec2 m2 = vec2(0.0);
+    if (l2 > 0.001) m2 = DropLayer2(uv*1.85,t)*l2;
+    float c=s+m1.x+m2.x;
+    c=S(.3,1.,c);
+    return vec2(c,max(m1.y*l0,m2.y*l1));
+}
+void main(){
+    vec2 UV = v_uv;
+    float T = u_time;
+    vec2 uv = (gl_FragCoord.xy - 0.5*u_resolution) / max(u_resolution.y, u_ref_height);
+    float t = T * 0.2 * u_fx_speed;
+
+    float sd = S(-.5,1.,u_rain_intensity)*2., l1 = S(.1,.75,u_rain_intensity), l2 = S(.2,.85,u_rain_intensity);
+    vec2 c = Drops(uv, t, sd, l1, l2);
+    vec2 e = vec2(.001, 0.);
+    vec2 n = vec2(Drops(uv+e,t,sd,l1,l2).x - c.x, Drops(uv+e.yx,t,sd,l1,l2).x - c.x);
+    vec2 rUV = UV + n * mix(6.0, 28.0, u_dark);
+    vec3 col = skyRefract(rUV, T);
+    if (u_lightning > 0.0) {
+        float s = sin(T * 0.79) + sin(T * 1.49) + sin(T * 0.52);  // quasi-periodic -> irregular timing
+        float strike = smoothstep(1.45, 2.35, s); strike *= strike; // sharp onset, fires more often
+        strike *= 0.7 + 0.3 * sin(T * 33.0 + s * 5.0);            // gentle flicker while lit
+        vec2 cellPos = vec2(0.50 + 0.34 * sin(T * 0.17 + 1.3), 0.70 + 0.12 * sin(T * 0.11 + 0.5));
+        float rad    = 0.52 + 0.16 * sin(T * 0.13 + 2.1);        // breathing size
+        float aspY   = 1.5 + 0.40 * sin(T * 0.09);
+        float blob = smoothstep(rad, 0.0, length((rUV - cellPos) * vec2(1.1, aspY)));
+        blob *= 0.55 + 0.45 * awc_fbm(rUV * 1.8 + T * 0.012);     // soft cloud shape
+        vec3 cellCol = mix(vec3(0.60, 0.72, 1.0), vec3(0.78, 0.85, 1.0), u_dark);
+        col += cellCol * u_lightning * strike * blob * 0.7;
+    }
+    col += min(c.y, 1.0) * mix(0.033, 0.055, u_dark);
+    fragColor = vec4(col, 1.0);
+}`;
+    }
+    _destroyGL() {
+        const gl = this._gl;
+        if (gl && !gl.isContextLost()) {
+            if (this._glBuf) gl.deleteBuffer(this._glBuf);
+            if (this._glNoiseTex) gl.deleteTexture(this._glNoiseTex);
+            if (this._shaderBank) {
+                for (const b of Object.values(this._shaderBank)) {
+                    if (b.prog) gl.deleteProgram(b.prog);
                 }
             }
         }
-        if (this._birds.length === 0) return;
-        const birdColor = this._isLightBackground ? 'rgba(40, 45, 50, 0.8)' : 'rgba(195, 203, 212, 0.55)';
-        ctx.save(); ctx.strokeStyle = birdColor; ctx.lineJoin = 'round';
-        ctx.lineCap = 'round'; const widthBuckets = new Map(); const len = this._birds.length;
-        for (let i = 0; i < len; i++) {
-            const b = this._birds[i], envelope = Math.sin(b.flapPhase * 0.35);
-            const wingOffset = Math.sin(b.flapPhase) * b.size * Math.max(0, envelope);
-            const dir = b.vx > 0 ? 1 : -1, lw = Math.max(0.8, b.size * 0.5), qw = Math.round(lw * 4) / 4;
-            let bucket = widthBuckets.get(qw);
-            if (!bucket) { bucket = []; widthBuckets.set(qw, bucket); }
-            const halfSpan = b.size / 2.4;
-            bucket.push(
-                b.x - b.size * dir, b.y + wingOffset - halfSpan,
-                b.x, b.y,
-                b.x - b.size * dir, b.y + wingOffset + halfSpan
+        this._gl = null; this._glProg = null; this._glUniforms = null;
+        this._glBuf = null; this._shaderBank = null; this._glNoiseTex = null;
+        this._activeShaderKey = null; this._prevShaderParams = null;
+        this._prevFxSpeed = null;
+    }
+    _initWebGL() {
+        const canvas = this._elements.glCanvas;
+        if (!canvas) return;
+        const gl = canvas.getContext('webgl2', { alpha: true, premultipliedAlpha: true, antialias: false });
+        if (!gl || gl.isContextLost()) { console.warn('AWC: WebGL2 not available'); this._applyShaderDisabledState(true); return; }
+        this._gl = gl;
+        this._prevShaderParams = null; this._prevFxSpeed = null;
+        this._activeShaderKey = null;
+        const vertSrc = this._glslVert();
+        const needed = this._shaderParams ? (this._shaderParams.shader || 'sky') : 'sky';
+        const shaders = [{ key: 'sky', frag: this._glslFrag() }];
+        if (needed !== 'sky') shaders.push({ key: needed, frag: this._glslFragFor(needed) });
+        this._vertSrc = vertSrc;
+        const compiled = shaders.map(s => {
+            const vs = gl.createShader(gl.VERTEX_SHADER);
+            gl.shaderSource(vs, vertSrc); gl.compileShader(vs);
+            const fs = gl.createShader(gl.FRAGMENT_SHADER);
+            gl.shaderSource(fs, s.frag); gl.compileShader(fs);
+            return { key: s.key, vs, fs };
+        });
+        const ext = gl.getExtension('KHR_parallel_shader_compile');
+        if (ext) {
+            this._pollShaderCompile(gl, compiled, ext);
+        } else {
+            this._finalizeShaders(gl, compiled);
+        }
+    }
+    _pollShaderCompile(gl, compiled, ext) {
+        const COMPLETION = 0x91B1;
+        const poll = () => {
+            if (!this.isConnected) return;
+            const allDone = compiled.every(c =>
+                gl.getShaderParameter(c.vs, COMPLETION) && gl.getShaderParameter(c.fs, COMPLETION)
             );
-        }
-        for (const [lw, pts] of widthBuckets) {
-            ctx.lineWidth = lw; ctx.beginPath();
-            for (let j = 0; j < pts.length; j += 6) {
-                ctx.moveTo(pts[j], pts[j + 1]); ctx.lineTo(pts[j + 2], pts[j + 3]); ctx.lineTo(pts[j + 4], pts[j + 5]);
+            if (allDone) {
+                this._finalizeShaders(gl, compiled);
+            } else {
+                requestAnimationFrame(poll);
             }
-            ctx.stroke();
-        }
-        ctx.restore();
+        };
+        requestAnimationFrame(poll);
     }
-    _drawPlanes(ctx, w, h) {
-        const dpr = this._cachedDimensions.dpr;
-        if (this._planes.length === 0 && Math.random() < 0.0025) this._planes.push(this._createPlane(w, h));
-        for (let i = this._planes.length - 1; i >= 0; i--) {
-            const plane = this._planes[i], dir = plane.vx > 0 ? 1 : -1;
-            if (plane._sinA === undefined) {
-                plane._sinA = Math.sin(plane.climbAngle); plane._cosA = Math.cos(plane.climbAngle);
-            }
-            const sinA = plane._sinA, cosA = plane._cosA;
-            plane.x += plane.vx; plane.y += plane.vy;
-            if (plane.gapTimer > 0) {
-                plane.gapTimer -= 1;
-            } else if (Math.random() < 0.005) {
-                plane.gapTimer = 8 + Math.random() * 14;
-            }
-            const wi = plane.histHead; const dxR = plane.x - plane._lastRecX, dyR = plane.y - plane._lastRecY;
-            if (dxR * dxR + dyR * dyR >= 1.0) {
-                plane.histBuf[wi * 3] = plane.x; plane.histBuf[wi * 3 + 1] = plane.y + (Math.random() - 0.5) * 1.5;
-                plane.histBuf[wi * 3 + 2] = plane.gapTimer > 0 ? 1 : 0; plane.histHead = (wi + 1) % TRAIL_CAP_PLANE;
-                if (plane.histLen < TRAIL_CAP_PLANE) plane.histLen++;
-                plane._lastRecX = plane.x; plane._lastRecY = plane.y;
-            } const windShift = (this._windSpeed || 0) * 0.15;
-            for (let j = 1; j < plane.histLen; j++) {
-                const ridx = (((plane.histHead - 1 - j) % TRAIL_CAP_PLANE) + TRAIL_CAP_PLANE) % TRAIL_CAP_PLANE;
-                plane.histBuf[ridx * 3] += windShift; plane.histBuf[ridx * 3 + 1] += 0.02;
-            }
-            if (plane.histLen > 2) {
-                const baseOp = this._isThemeDark ? 0.12 : 0.23;
-                const trailColor = this._isThemeDark ? 'rgb(210,220,240)' : 'rgb(255,255,255)';
-                const histLen = plane.histLen; ctx.strokeStyle = trailColor; ctx.lineCap = 'butt';
-                ctx.lineJoin = 'round'; const trailBaseW = 2.5 * plane.scale;
-                // Draw contrail as alpha-banded polylines
-                const trailSegs = histLen - 1;
-                for (let oi = 0; oi < 2; oi++) {
-                    const offset = CONTRAIL_OFFSETS[oi], oX = sinA * offset * plane.scale * dir, oY = cosA * offset * plane.scale;
-                    for (let band = 0; band < 5; band++) {
-                        const kStart = (band * trailSegs / 5) | 0, kEnd = ((band + 1) * trailSegs / 5) | 0;
-                        if (kStart >= kEnd) continue;
-                        // Alpha from the original 3-piece curve at band midpoint
-                        const midP = (kStart + kEnd) * 0.5 / histLen; let bandAlpha; if (midP < 0.05) bandAlpha = (midP / 0.05) * baseOp;
-                        else if (midP < 0.6) bandAlpha = baseOp * (1 - (midP - 0.05) * 0.727);
-                        else bandAlpha = baseOp * 0.6 * (1 - (midP - 0.6) / 0.4);
-                        if (bandAlpha < 0.005) continue; ctx.globalAlpha = bandAlpha; ctx.lineWidth = trailBaseW * (1 + midP * 1.2);
-                        ctx.beginPath(); let drawing = false, segPts = 0;
-                        for (let k = kStart; k <= kEnd; k++) {
-                            const ridx = (((plane.histHead - 1 - k) % TRAIL_CAP_PLANE) + TRAIL_CAP_PLANE) % TRAIL_CAP_PLANE;
-                            const gap = plane.histBuf[ridx * 3 + 2];
-                            if (gap > 0.5) {
-                                if (drawing && segPts < 2) { ctx.beginPath(); }
-                                drawing = false; segPts = 0;
-                            } else {
-                                const px = plane.histBuf[ridx * 3] + oX, py = plane.histBuf[ridx * 3 + 1] + oY;
-                                if (!drawing) { ctx.moveTo(px, py); drawing = true; segPts = 0; }
-                                else { ctx.lineTo(px, py); segPts++; }
-                            }
-                        }
-                        ctx.stroke();
+    _glslFragFor(key) {
+        if (key === 'water') return this._glslFragWater();
+        if (key === 'snow') return this._glslFrag('snow');
+        return this._glslFrag();
+    }
+    _uniformNamesFor(key) {
+        const sky = ['u_time','u_resolution','u_dark','u_wind','u_cloud_density','u_cloud_shade','u_cloud_base','u_cloud_size','u_cloud_gap','u_fx_speed','u_sky_top','u_sky_mid','u_sky_low','u_sky_base','u_noise'];
+        if (key === 'sky') return sky;
+        if (key === 'snow') return [...sky, 'u_density','u_hail','u_grain'];
+        const base = ['u_time','u_resolution','u_dark','u_fx_speed','u_sky_top','u_sky_mid','u_sky_low','u_sky_base','u_ref_height'];
+        if (key === 'water') return [...base, 'u_rain_intensity', 'u_lightning'];
+        return base;
+    }
+    _buildProgram(gl, key, vs, fs) {
+        if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) { console.error(`AWC ${key} vertex:`, gl.getShaderInfoLog(vs)); gl.deleteShader(vs); gl.deleteShader(fs); return null; }
+        if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) { console.error(`AWC ${key} fragment:`, gl.getShaderInfoLog(fs)); gl.deleteShader(vs); gl.deleteShader(fs); return null; }
+        const prog = gl.createProgram();
+        gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+        gl.deleteShader(vs); gl.deleteShader(fs);
+        if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) { console.error(`AWC ${key} link:`, gl.getProgramInfoLog(prog)); gl.deleteProgram(prog); return null; }
+        const uniformNames = this._uniformNamesFor(key);
+        const uniforms = {};
+        for (const n of uniformNames) uniforms[n] = gl.getUniformLocation(prog, n);
+        return { prog, uniforms };
+    }
+    _finalizeShaders(gl, compiled) {
+        if (!this._shaderBank) this._shaderBank = {};
+        for (const c of compiled) {
+            const built = this._buildProgram(gl, c.key, c.vs, c.fs);
+            if (built) this._shaderBank[c.key] = built;
+        }
+        if (!this._shaderBank.sky) return;
+
+        const buf = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+        this._glBuf = buf;
+        const skyBank = this._shaderBank.sky;
+        this._glProg = skyBank.prog;
+        this._glUniforms = skyBank.uniforms;
+        gl.useProgram(skyBank.prog);
+        const loc = gl.getAttribLocation(skyBank.prog, 'a_pos');
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        this._activeShaderKey = 'sky';
+        if (!this._glNoiseTex) {
+            const NOISE_SIZE = 256;
+            const noiseData = new Uint8Array(NOISE_SIZE * NOISE_SIZE * 4);
+            const seed = this._glSeed || 0;
+            for (let iy = 0; iy < NOISE_SIZE; iy++) {
+                for (let ix = 0; ix < NOISE_SIZE; ix++) {
+                    const idx = (iy * NOISE_SIZE + ix) * 4;
+                    for (let ch = 0; ch < 4; ch++) {
+                        const sx = ix + seed * 0.7127 + ch * 53.1;
+                        const sy = iy + seed * 1.3517 + ch * 97.3;
+                        let v = Math.sin(sx * 127.1 + sy * 311.7) * 43758.5453;
+                        v = v - Math.floor(v);
+                        noiseData[idx + ch] = v * 255.0;
                     }
                 }
-                ctx.globalAlpha = 1; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             }
-            ctx.translate(plane.x, plane.y); ctx.scale(plane.scale, plane.scale); if (plane.climbAngle > 0) ctx.rotate(-plane.climbAngle * dir);
-            ctx.globalAlpha = 0.9;
-            ctx.strokeStyle = this._isThemeDark ? 'rgb(125, 135, 145)' : 'rgb(105, 110, 120)';
-            ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-            ctx.beginPath();
-            for (let seg = 0; seg < PLANE_PATH.length; seg++) {
-                const s = PLANE_PATH[seg]; ctx.moveTo(s[0] * dir, s[1]); ctx.lineTo(s[2] * dir, s[3]);
-            }
-            ctx.stroke(); ctx.globalAlpha = 1; plane.blinkPhase += 0.12;
-            if (Math.sin(plane.blinkPhase) > 0.75) {
-                ctx.globalAlpha = 1.0;
-                ctx.fillStyle = plane.vx > 0 ? (this._isThemeDark ? 'rgb(90, 255, 130)' : 'rgb(50, 255, 80)') : (this._isThemeDark ? 'rgb(255, 100, 100)' : 'rgb(255, 50, 50)');
-                fillCircle(ctx, 0, 1, this._isThemeDark ? 1.5 : 1.8); ctx.globalAlpha = 1;
-            }
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0); if (plane.x < -450 || plane.x > w + 450) this._planes.splice(i, 1);
+            const noiseTex = gl.createTexture();
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, noiseTex);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA8, NOISE_SIZE, NOISE_SIZE, 0, gl.RGBA, gl.UNSIGNED_BYTE, noiseData);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.generateMipmap(gl.TEXTURE_2D);
+            this._glNoiseTex = noiseTex;
         }
-        ctx.globalAlpha = 1; ctx.lineCap = 'butt'; ctx.lineJoin = 'miter';
+        if (this._glNoiseTex && this._glUniforms && this._glUniforms.u_noise != null) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this._glNoiseTex);
+            gl.uniform1i(this._glUniforms.u_noise, 0);
+        }
+        this._startAnimation();
     }
-    // ANIMATION LOOP
-    _animate(timestamp) {
-        if (!this.isConnected || this._animID === null || !this._isVisible) {
-            this._stopAnimation();
-            return;
+    _weatherToUniforms() {
+        const key = WEATHER_VISUALS[this._weatherState] ? this._weatherState : 'default';
+        const vis = { ...VISUAL_DEFAULTS, ...WEATHER_VISUALS[key] };
+        const colors = SKY_COLORS[key] || SKY_COLORS['default'];
+        const isDark = this._isThemeDark ? 1.0 : 0.0;
+        const skyColors = isDark ? colors.skyNight : colors.skyDay;
+        const WIND_FULL_KMH = 80;
+        const wind = Math.min(1.0, (this._windKmh || 0) / WIND_FULL_KMH);
+        const fxSpeed = vis.engine === 'water' ? (0.4 + vis.rain * 0.9) : vis.cloudSpeed;
+        const program = vis.engine === 'water' ? 'water' : (vis.snowfall > 0 ? 'snow' : 'sky');
+        const p = this._shaderParams;
+        if (p && p.shader === program && p.dark === isDark && p.wind === wind
+            && p.fxSpeed === fxSpeed
+            && p.cloudDensity === vis.cloudCover && p.cloudShade === vis.cloudShadow && p.cloudBase === vis.cloudThickness && p.cloudSize === vis.cloudScale && p.cloudGap === vis.clearing
+            && p.rainIntensity === vis.rain && p.density === vis.snowfall && p.grain === vis.flakeSize && p.hail === vis.hail
+            && p.lightning === vis.lightning
+            && p.skyColors === skyColors) return p;
+        return {
+            shader: program, dark: isDark, wind,
+            fxSpeed,
+            cloudDensity: vis.cloudCover, cloudShade: vis.cloudShadow, cloudBase: vis.cloudThickness, cloudSize: vis.cloudScale, cloudGap: vis.clearing,
+            rainIntensity: vis.rain,
+            lightning: vis.lightning,
+            density: vis.snowfall,
+            grain: vis.flakeSize,
+            hail: vis.hail,
+            skyColors,
+        };
+    }
+    _renderShader(timestamp) {
+        const gl = this._gl;
+        if (!gl || !this._glProg) return;
+        if (gl.isContextLost()) return;
+        const canvas = this._elements.glCanvas;
+        if (!canvas || canvas.width === 0 || canvas.height === 0) return;
+        const s = this._shaderParams;
+        if (!s) return;
+
+        const targetKey = s.shader || 'sky';
+        if (targetKey !== this._activeShaderKey && this._shaderBank) {
+            if (!this._shaderBank[targetKey] && this._gl && this._vertSrc && targetKey !== 'sky') {
+                const vs = gl.createShader(gl.VERTEX_SHADER);
+                gl.shaderSource(vs, this._vertSrc); gl.compileShader(vs);
+                const fs = gl.createShader(gl.FRAGMENT_SHADER);
+                gl.shaderSource(fs, this._glslFragFor(targetKey)); gl.compileShader(fs);
+                const built = this._buildProgram(gl, targetKey, vs, fs);
+                if (built) this._shaderBank[targetKey] = built;
+            }
+            const bank = this._shaderBank[targetKey] || this._shaderBank.sky;
+            if (bank && bank.prog !== this._glProg) {
+                gl.useProgram(bank.prog);
+                gl.bindBuffer(gl.ARRAY_BUFFER, this._glBuf);
+                const loc = gl.getAttribLocation(bank.prog, 'a_pos');
+                gl.enableVertexAttribArray(loc);
+                gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+                this._glProg = bank.prog;
+                this._glUniforms = bank.uniforms;
+                this._activeShaderKey = targetKey;
+                this._prevShaderParams = null;
+                this._prevFxSpeed = null;
+                        if (this._glNoiseTex && bank.uniforms.u_noise != null) {
+                    gl.activeTexture(gl.TEXTURE0);
+                    gl.bindTexture(gl.TEXTURE_2D, this._glNoiseTex);
+                    gl.uniform1i(bank.uniforms.u_noise, 0);
+                }
+            }
         }
-        const targetInterval = 33.333, deltaTime = timestamp - this._lastFrameTime;
-        if (deltaTime < targetInterval * 0.85) {
-            this._animID = requestAnimationFrame(this._boundAnimate);
-            return;
+
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        const u = this._glUniforms;
+        const cfg = this._config || {};
+        const fxSpeed = s.fxSpeed;
+        gl.uniform1f(u.u_time, timestamp * 0.001);
+        gl.uniform2f(u.u_resolution, canvas.width, canvas.height);
+        if (u.u_ref_height != null) gl.uniform1f(u.u_ref_height, 300.0 * (this._cachedDimensions.dpr || 1));
+        if (s !== this._prevShaderParams) {
+            gl.uniform1f(u.u_dark, s.dark);
+            if (u.u_wind != null) gl.uniform1f(u.u_wind, s.wind);
+            if (u.u_cloud_density != null) gl.uniform1f(u.u_cloud_density, s.cloudDensity);
+            if (u.u_cloud_shade != null) gl.uniform1f(u.u_cloud_shade, s.cloudShade);
+            if (u.u_cloud_base != null) gl.uniform1f(u.u_cloud_base, s.cloudBase);
+            if (u.u_cloud_size != null) gl.uniform1f(u.u_cloud_size, s.cloudSize);
+            if (u.u_cloud_gap != null) gl.uniform1f(u.u_cloud_gap, s.cloudGap);
+            if (u.u_rain_intensity != null) gl.uniform1f(u.u_rain_intensity, s.rainIntensity);
+            if (u.u_lightning != null) gl.uniform1f(u.u_lightning, s.lightning);
+            if (u.u_density != null) gl.uniform1f(u.u_density, s.density);
+            if (u.u_grain != null) gl.uniform1f(u.u_grain, s.grain);
+            if (u.u_hail != null) gl.uniform1f(u.u_hail, s.hail);
+            if (s.skyColors) {
+                const sc = s.skyColors;
+                gl.uniform3f(u.u_sky_top, sc[0][0], sc[0][1], sc[0][2]);
+                gl.uniform3f(u.u_sky_mid, sc[1][0], sc[1][1], sc[1][2]);
+                gl.uniform3f(u.u_sky_low, sc[2][0], sc[2][1], sc[2][2]);
+                gl.uniform3f(u.u_sky_base, sc[3][0], sc[3][1], sc[3][2]);
+            }
+            this._prevShaderParams = s;
         }
-        this._lastFrameTime = timestamp;
-        if (!this._ctxs) {
-            this._animID = requestAnimationFrame(this._boundAnimate);
-            return;
-        }
-        const { bg, mid, fg } = this._ctxs;
-        const dpr = this._cachedDimensions.dpr || (window.devicePixelRatio || 1);
-        const w = this._elements.bg.width / dpr, h = this._elements.bg.height / dpr, p = this._params;
-        if (!p || w === 0 || h === 0) {
-            this._animID = requestAnimationFrame(this._boundAnimate);
-            return;
-        }
-        bg.clearRect(0, 0, w, h); mid.clearRect(0, 0, w, h); fg.clearRect(0, 0, w, h);
-        if (!this._stateInitialized || !this._renderGate.isRevealed) {
-            this._animID = requestAnimationFrame(this._boundAnimate);
-            return;
-        }
-        this._gustPhase += 0.012; this._microGustPhase += 0.03;
-        this._windGust = Math.sin(this._gustPhase) * 0.35 + Math.sin(this._gustPhase * 2.1) * 0.15 + Math.sin(this._microGustPhase) * 0.08;
-        const effectiveWind = ((p.wind || 0.1) + this._windGust) * (1 + this._windSpeed);
-        this._sunPulsePhase += 0.008;
-        const cloudGlobalOp = this._renderState.cloudGlobalOp, rs = this._renderState;
-        const fx = this._perfEffects, fauna = this._perfFauna;
-        if (fx >= 1 && rs.glow && rs.glow.drawPhase === 'bg') this._drawCelestialGlow(bg, w, h);
-        if (fx >= 1) this._drawAurora(mid, w, h); this._drawStars(bg, w, h, dpr); this._drawMoon(bg, w, h);
-        if (fx >= 1 && this._isNight && this._isThemeDark && this._stars.length > 0) this._drawShootingStars(bg, w, h);
-        if (fx >= 1 && this._isThemeDark) this._drawComets(bg, w, h);
-        const glowActive = rs.glow;
-            if (fx >= 1 && glowActive && glowActive.drawPhase === 'mid-pre') this._drawCelestialGlow(mid, w, h);
-            if (fx >= 1 && this._celestialClouds.length > 0) this._drawCelestialClouds(mid, w, h, effectiveWind);
-            if (fx >= 1 && this._windVapor.length > 0) this._drawWindVapor(mid, w, h, effectiveWind);
-        if (fx >= 1 && this._fogBanks.length > 0) this._drawFog(mid, w, h);
-        this._drawClouds(mid, this._clouds, w, h, effectiveWind, cloudGlobalOp);
-            if (fx >= 1 && glowActive && glowActive.drawPhase === 'mid-post') this._drawCelestialGlow(mid, w, h);
-            if (fauna >= 1) this._drawBirds(mid, w, h);
-        this._drawClouds(mid, this._fgClouds, w, h, effectiveWind, cloudGlobalOp);
-        if (fauna >= 2) this._drawPlanes(mid, w, h); this._drawLightning(fg, w, h);
-        this._drawRain(fg, w, h, effectiveWind); this._drawHail(fg, w, h, effectiveWind); this._drawSnow(fg, w, h, effectiveWind);
-        this._animID = requestAnimationFrame(this._boundAnimate);
+        if (fxSpeed !== this._prevFxSpeed) { if (u.u_fx_speed != null) gl.uniform1f(u.u_fx_speed, fxSpeed); this._prevFxSpeed = fxSpeed; }
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
+    _animate(now) {
+        if (!this.isConnected || this._animId === null || !this._isVisible) { this._stopAnimation(); return; }
+        this._animId = requestAnimationFrame(this._boundAnimate);
+        if (!this._stateInitialized) return;
+        if (now - this._lastFrameTime < this._frameInterval) return;
+        this._lastFrameTime = now;
+        this._renderStars(now);
+        this._renderShader(now);
     }
     _startAnimation() {
-        if (this._animID === null && this._isVisible) {
-            this._lastFrameTime = performance.now(); this._animID = requestAnimationFrame(this._boundAnimate);
+        if (this._animId === null && this._isVisible && !this._isEffectivelyDisabled()) {
+            this._animId = requestAnimationFrame(this._boundAnimate);
         }
     }
     _stopAnimation() {
-        if (this._animID !== null) {
-            cancelAnimationFrame(this._animID); this._animID = null;
-        }
+        if (this._animId !== null) { cancelAnimationFrame(this._animId); this._animId = null; }
+    }
+    _isEffectivelyDisabled() {
+        const cfg = this._config || {};
+        return cfg.disable_background === true;
     }
 }
 const CARD_NAME = 'atmospheric-weather-card';
 if (!customElements.get(CARD_NAME)) {
     customElements.define(CARD_NAME, AtmosphericWeatherCard); window.customCards = window.customCards || [];
-    window.customCards.push({ type: CARD_NAME, name: 'Atmospheric Weather Card', description: 'Animated weather effects with rain, snow, clouds, stars and more' });
+    window.customCards.push({ type: CARD_NAME, name: 'Atmospheric Weather Card', description: 'A detail-oriented Home Assistant Weather Card' });
 } else {
-    console.info(`%c ${CARD_NAME} already defined - skipping registration`, 'color: orange; font-weight: bold;');
+    console.info(`%c ${CARD_NAME} already defined`, 'color: orange; font-weight: bold;');
 }
+
+})();
