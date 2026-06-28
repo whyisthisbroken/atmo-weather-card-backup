@@ -7,7 +7,7 @@ A detail-oriented weather and forecast card.
 
 <img width="500" alt="Image" src="https://github.com/user-attachments/assets/9388ef57-7c32-433e-a99a-e15d49f52706" />
 
-> **Heads up:** The animated background runs on GLSL shaders. They are light, but old GPUs and wall tablets may still struggle. If yours does, there are lighter options like [weather images](#performance) and [simple backgrounds](#simple-backgrounds).
+> **Heads up:** The animated background runs on GLSL shaders. They are light, but old GPUs and wall tablets may still struggle. If yours does, there are alternatives like [weather images](#performance) and [simple backgrounds](#simple-backgrounds).
 
 <br>
 
