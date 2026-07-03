@@ -1101,22 +1101,18 @@ This explains how to create an image for your own home and use it in the card.
 
 ## Performance
 
+> **Note:** Performance handling was significantly overhauled compared to the original Atmospheric Weather Card (v4.5). 
+> The new `perf_fps` option lets you control the animation frame rate directly (previously fixed at ~30fps), 
+> all performance values (`perf_fps`, `perf_cloud_quality`, `perf_dpr`) are now automatically validated and clamped to safe ranges, 
+> and chip rendering uses incremental DOM patching instead of a full rebuild on every update — reducing unnecessary re-renders 
+> and improving overall smoothness, especially on weaker devices or setups with many chips.
+
 Fast performance and impressive animations are basically natural enemies when building a card for Home Assistant. Changing even a tiny detail, like how the clouds or stars work, can instantly slow the dashboard down. There were so many times I got an effect looking absolutely perfect, only to realize it was too heavy and had to replace it with a simpler version.
 
 The card uses every trick available to keep things running smoothly. Because of this, almost a third of the code exists purely to keep the card fast. I really dislike how much this adds to the size of the code, but that is just how it is.
 
 Even with all this effort, older setups might still struggle, and the birds may stutter. If that happens, try switching `perf_mode` to `low` — it disables the extra effects and lowers the rendering resolution. You can also fine-tune the frame rate, cloud detail, effects intensity, and canvas sharpness individually.
 
-<details>
-<summary><b>View stress test results</b></summary>
-
-<br>
-
-This screenshot shows a 30-second stress test running five weather cards in parallel in my test setup, within a dashboard with lots of other HA cards. Weather states were constantly switched and the UI was heavily interacted with to push the performance.
-
-The blue memory line shows a healthy sawtooth pattern. The browser regularly clears memory and returns to the baseline. The bottom left summary breaks down processor usage. Because the graphics are reused, less than 10 percent of the time was spent rendering and just about 5% was spent actually painting the animations. For roughly 75 percent of the test, the device processor was completely idle. It was a long and hard way to achieve this result.
-
-</details>
 
 <details>
 <summary><strong>Performance Settings</strong></summary>
