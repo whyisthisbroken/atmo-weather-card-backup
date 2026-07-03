@@ -22,7 +22,7 @@
 
 A detail-oriented weather and forecast card.
 
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/9388ef57-7c32-433e-a99a-e15d49f52706" />
+
 
 
 > [!NOTE]
@@ -103,7 +103,7 @@ The card is flexible, so these are starting points rather than fixed designs. Yo
 
 <br>
 
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/4fb829de-1026-4c2e-8dac-7c7c253a9b06" />
+
 
 <details>
 <summary><b>Default Card</b></summary>
@@ -232,7 +232,7 @@ button_areas:
 <br>
 
 
-<img width="400" alt="Image" src="https://github.com/user-attachments/assets/4d96cc3b-b6d5-497a-bd07-f12ffa70d176" />
+
 <details>
 <summary><b>Big Forecast Card</b></summary>
 
