@@ -1,0 +1,123 @@
+name: Create Releases from Tags
+
+on:
+  workflow_dispatch:
+    inputs:
+      single_tag:
+        description: 'Optional: Nur diesen einen Tag verarbeiten (z.B. v1.0.0). Leer lassen = alle Tags.'
+        required: false
+        default: ''
+      skip_existing:
+        description: 'Bereits vorhandene Releases überspringen? (true = überspringen, false = überschreiben)'
+        required: false
+        default: 'true'
+
+permissions:
+  contents: write
+
+jobs:
+  create-releases:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full history + tags
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Create/update releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SINGLE_TAG: ${{ inputs.single_tag }}
+          SKIP_EXISTING: ${{ inputs.skip_existing }}
+        run: |
+          set -uo pipefail
+
+          mapfile -t ALL_TAGS < <(git tag --sort=version:refname)
+
+          if [ -n "$SINGLE_TAG" ]; then
+            TAGS=("$SINGLE_TAG")
+          else
+            TAGS=("${ALL_TAGS[@]}")
+          fi
+
+          # Höchsten stabilen Tag ermitteln
+          HIGHEST_STABLE=""
+          for t in "${ALL_TAGS[@]}"; do
+            if [[ ! "$t" =~ - ]]; then
+              HIGHEST_STABLE="$t"
+            fi
+          done
+
+          FAILED_TAGS=()
+
+          for cur in "${TAGS[@]}"; do
+            echo "--- Processing: $cur"
+
+            # Vorgänger-Tag ermitteln
+            prev=""
+            for i in "${!ALL_TAGS[@]}"; do
+              if [ "${ALL_TAGS[$i]}" = "$cur" ] && [ "$i" -gt 0 ]; then
+                prev="${ALL_TAGS[$((i-1))]}"
+                break
+              fi
+            done
+
+            # Changelog aus Commits zwischen Tags
+            if [ -n "$prev" ]; then
+              COMMITS="$(git log --pretty=format:'- %s (%h)' "${prev}..${cur}")"
+              COMPARE_LINE="[${prev}...${cur}](https://github.com/${REPO}/compare/${prev}...${cur})"
+            else
+              COMMITS="$(git log --pretty=format:'- %s (%h)' "${cur}")"
+              COMPARE_LINE="Initial tagged release (${cur})"
+            fi
+
+            [ -z "$COMMITS" ] && COMMITS="- No commit messages found."
+
+            BODY=$(printf '## Changes\n%s\n\n## Compare\n%s' "$COMMITS" "$COMPARE_LINE")
+
+            MAKE_LATEST="false"
+            [ "$cur" = "$HIGHEST_STABLE" ] && MAKE_LATEST="true"
+
+            # Release existiert bereits?
+            if rel_id=$(gh api "/repos/${REPO}/releases/tags/${cur}" -q '.id' 2>/dev/null); then
+              if [ "$SKIP_EXISTING" = "true" ]; then
+                echo "Skipped (already exists): $cur"
+                continue
+              else
+                # Überschreiben
+                if gh api -X PATCH "/repos/${REPO}/releases/${rel_id}" \
+                  -f tag_name="$cur" -f name="$cur" -f body="$BODY" \
+                  -F draft=false -F prerelease=false \
+                  -f make_latest="$MAKE_LATEST" >/dev/null; then
+                  echo "Updated: $cur"
+                else
+                  echo "::warning::Failed to update: $cur"
+                  FAILED_TAGS+=("$cur")
+                fi
+              fi
+            else
+              # Neu anlegen
+              if gh api -X POST "/repos/${REPO}/releases" \
+                -f tag_name="$cur" \
+                -f target_commitish="$cur" \
+                -f name="$cur" -f body="$BODY" \
+                -F draft=false -F prerelease=false \
+                -f make_latest="$MAKE_LATEST" >/dev/null; then
+                echo "Created: $cur"
+              else
+                echo "::warning::Failed to create: $cur"
+                FAILED_TAGS+=("$cur")
+              fi
+            fi
+
+            sleep 1  # Rate-Limit-Puffer
+          done
+
+          if [ ${#FAILED_TAGS[@]} -gt 0 ]; then
+            echo "::error::Failed tags: ${FAILED_TAGS[*]}"
+            exit 1
+          fi
+
+          echo "Done."
