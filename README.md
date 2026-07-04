@@ -6,6 +6,11 @@
 ## Atmo Weather Card
 <img width="1774" height="887" alt="image" src="https://github.com/user-attachments/assets/69421bef-3952-4f06-bdc8-dc141be82f33" />
 
+[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Lovelace%20Card-41BDF5.svg)](https://www.home-assistant.io/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/whyisthisbroken/atmo-weather-card/blob/main/LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/whyisthisbroken/atmo-weather-card)](https://github.com/whyisthisbroken/atmo-weather-card/releases)
+[![GitHub last commit](https://img.shields.io/github/last-commit/whyisthisbroken/atmo-weather-card)](https://github.com/whyisthisbroken/atmo-weather-card/commits/main)
+
 This README combines the current card documentation with selected context from the older README, so setup, examples, and repository history stay in one place.
 
 
@@ -35,7 +40,9 @@ A detail-oriented weather and forecast card.
 
 <br>
 
-> **Note on AI:** I'm using it to speed up what would have taken years manually. I hope the card's quality speaks for itself and shows the experience behind it.
+> [!NOTE]
+> I'm using it to speed up what would have taken years manually. I hope the
+> card's quality speaks for itself and shows the experience behind it.
 
 <br>
 
@@ -59,6 +66,33 @@ A detail-oriented weather and forecast card.
 5. Hard-refresh your browser.
 
 </details>
+
+<br>
+
+## Upgrading from v4.5.x
+
+Version 6 continues directly from **v4.5** — all chip options, config
+parameters, and behavior remain the same. The only change is the card's
+internal name, renamed from `atmospheric-weather-card` to `atmo-weather-card`.
+
+**What to update in your dashboard YAML:**
+
+```
+type: custom:atmospheric-weather-card    # old (v4.5.x)
+type: custom:atmo-weather-card           # new (v6+)
+```
+
+You'll also need to update your Lovelace resource URL and local file folder
+to match the new name, as shown in the [Installation](#installation) section
+above.
+
+Everything else in your existing configuration — chips, colors, layout
+options — keeps working unchanged after this rename.
+
+**Note on v5.0–v5.x:** These versions were a from-scratch rewrite by the
+original author and are not compatible with v4.5 or v6 configurations. They
+are kept, unmaintained, under [`legacy/v5`](./legacy/v5) for anyone who
+specifically wants that version.
 
 <br>
 
@@ -1131,3 +1165,6 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 
 <br>
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
