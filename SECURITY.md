@@ -1,6 +1,6 @@
-# Security Policy
+# 🔒 Security Policy
 
-## Supported Versions
+## ✅ Supported Versions
 
 This is a personal, actively maintained fork. Security fixes are only
 provided for the current major version.
@@ -10,7 +10,7 @@ provided for the current major version.
 | 6.x     | :white_check_mark: |
 | < 6.0   | :x:                |
 
-## Reporting a Vulnerability
+## 📬 Reporting a Vulnerability
 
 Please do **not** report security vulnerabilities through public GitHub issues.
 

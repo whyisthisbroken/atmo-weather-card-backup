@@ -24,17 +24,17 @@ A detail-oriented weather and forecast card.
 
 <br>
 
-## Contents
+## 📋 Contents
 
-**Getting Started** · [Installation](#installation) · [Setup](#setup) · [Examples](#examples)
+**Getting Started** · [Installation](#-installation) · [Setup](#-setup) · [Examples](#-examples)
 
-**Project** · [History](#archive-context)
+**Project** · [History](#-archive-context)
 
-**Customization** · [Appearance](#appearance) · [CSS Variables](#css-variables)
+**Customization** · [Appearance](#-appearance) · [CSS Variables](#-css-variables)
 
-**Guides** · [Chips](#chips) · [Font](#font-family) · [Icons](#weather-icons) · [House Image](#custom-house-image)
+**Guides** · [Chips](#-chips) · [Font](#-font-family) · [Icons](#-weather-icons) · [House Image](#-custom-house-image)
 
-**Reference** · [Color Mode](#color-mode) · [Performance](#performance)
+**Reference** · [Color Mode](#-color-mode) · [Performance](#-performance)
 
 **Maintenance** · [Archive Info](MAINTENANCE.md)
 
@@ -46,7 +46,7 @@ A detail-oriented weather and forecast card.
 
 <br>
 
-## Installation
+## 📦 Installation
 
 <details>
 <summary><b>Manual Import</b></summary>
@@ -69,7 +69,7 @@ A detail-oriented weather and forecast card.
 
 <br>
 
-## Upgrading from v4.5.x
+## ⬆️ Upgrading from v4.5.x
 
 Version 6 continues directly from **v4.5** — all chip options, config
 parameters, and behavior remain the same. The only change is the card's
@@ -83,7 +83,7 @@ type: custom:atmo-weather-card           # new (v6+)
 ```
 
 You'll also need to update your Lovelace resource URL and local file folder
-to match the new name, as shown in the [Installation](#installation) section
+to match the new name, as shown in the [Installation](#-installation) section
 above.
 
 Everything else in your existing configuration — chips, colors, layout
@@ -96,13 +96,13 @@ specifically wants that version.
 
 <br>
 
-## Archive Context
+## 📜 Archive Context
 
 The older Atmospheric Weather Card README described the original repository as archived after the upstream author stepped away. This merged README keeps that context while presenting the current card documentation in one place.
 
 <br>
 
-## Setup
+## ⚙️ Setup
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -111,7 +111,7 @@ The older Atmospheric Weather Card README described the original repository as a
 | `moon_phase_entity` | `string` | — | *Recommended.* Displays the correct moon phase (e.g., `sensor.moon_phase`). |
 
 > [!IMPORTANT]
-> The `sun_entity` controls the timing of the sun and moon. Without it, the card defaults to permanent day. Additionally, card colors change based on your [configuration](#color-mode).
+> The `sun_entity` controls the timing of the sun and moon. Without it, the card defaults to permanent day. Additionally, card colors change based on your [configuration](#-color-mode).
 
 > [!IMPORTANT]
 > **ATMO test build config rules (stable):**
@@ -122,9 +122,9 @@ The older Atmospheric Weather Card README described the original repository as a
 
 <br>
 
-## Examples
+## 🧩 Examples
  
-The card is meant to be pretty flexible. You can customize these examples however you like, mix different elements, or combine them with other Home Assistant cards. If you want the exact look from the screenshots, use the guides to add the [fonts](#font-family) and [weather icons](#weather-icons).
+The card is meant to be pretty flexible. You can customize these examples however you like, mix different elements, or combine them with other Home Assistant cards. If you want the exact look from the screenshots, use the guides to add the [fonts](#-font-family) and [weather icons](#-weather-icons).
 
 <br>
 
@@ -572,7 +572,7 @@ grid_options:
 
 <br>
 
-## Appearance
+## 🎨 Appearance
 
 The card has a visual editor for setting up layouts. All YAML settings are listed below.
 
@@ -602,19 +602,19 @@ The card has a visual editor for setting up layouts. All YAML settings are liste
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
-| `card_color_mode` | `string` | `auto` | Controls the card's color scheme. By default, it follows your Home Assistant theme. Set to `entity` to follow a `theme_entity`, or `force_dark` / `force_light` to lock the look. Also accepts `night` / `day` to override the sky content. See [Colors](#color-mode). |
+| `card_color_mode` | `string` | `auto` | Controls the card's color scheme. By default, it follows your Home Assistant theme. Set to `entity` to follow a `theme_entity`, or `force_dark` / `force_light` to lock the look. Also accepts `night` / `day` to override the sky content. See [Colors](#-color-mode). |
 | `card_filter` | `string` | — | Applies a visual filter preset to the weather canvas. Options: `darken`, `vivid`, `muted`, `warm`. |
 | `celestial_moon_style` | `string` | `default` | The moon's glow color. `default` follows the theme (muted blue in light mode, white in dark mode). Other options: `blue`, `yellow`, `purple`, `grey`. |
 | `card_mask_vertical` | `boolean` | `true` | *(Immersive only)* Fades the top and bottom edges. Set to `false` to disable. |
 | `card_mask_horizontal` | `boolean` | `true` | *(Immersive only)* Fades the left and right edges. Set to `false` to disable. |
-| `theme_entity` | `string` | — | Drives the card's color scheme from any entity's state instead of your HA theme. Commonly set to `sun.sun` to sync the card with sunrise/sunset. See [Colors](#color-mode). |
+| `theme_entity` | `string` | — | Drives the card's color scheme from any entity's state instead of your HA theme. Commonly set to `sun.sun` to sync the card with sunrise/sunset. See [Colors](#-color-mode). |
 
 </details>
 
 <details>
 <summary><strong>Sun & Moon</strong></summary>
 
-The sun and moon share a single position and the card swaps them based on your `sun_entity`. See [Colors](#color-mode) for the full details. The card also automatically generates a dynamic **sunrise and sunset effect** based on the sun's elevation, and **rotates the moon** accurately based on your Home Assistant latitude setting.
+The sun and moon share a single position and the card swaps them based on your `sun_entity`. See [Colors](#-color-mode) for the full details. The card also automatically generates a dynamic **sunrise and sunset effect** based on the sun's elevation, and **rotates the moon** accurately based on your Home Assistant latitude setting.
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -629,7 +629,7 @@ The sun and moon share a single position and the card swaps them based on your `
 <details>
 <summary><strong>Chips</strong></summary>
 
-Chips are the main layout element of this card. Each chip can show live entity data or forecast data, and you can add as many as you want. For a walkthrough on how to set them up, see the [Chips guide](#chips).
+Chips are the main layout element of this card. Each chip can show live entity data or forecast data, and you can add as many as you want. For a walkthrough on how to set them up, see the [Chips guide](#-chips).
 
 <details>
 <summary><strong>Row options</strong></summary>
@@ -747,7 +747,7 @@ chips:
 <details>
 <summary><strong>Custom Images</strong></summary>
 
-You can add your own images (such as a house image) to the card. This works in both standalone and immersive modes. See the [Custom House Image](#custom-house-image) tutorial for a step-by-step guide.
+You can add your own images (such as a house image) to the card. This works in both standalone and immersive modes. See the [Custom House Image](#-custom-house-image) tutorial for a step-by-step guide.
 
 | Option | Type | Default | Description |
 | :--- | :--- | :--- | :--- |
@@ -755,7 +755,7 @@ You can add your own images (such as a house image) to the card. This works in b
 | `image_night` | `string` | — | File path for the nighttime image. Falls back to the day image if left empty. |
 | `image_scale` | `number` | `100` | Image size as a percentage of the total card height. |
 | `image_alignment` | `string` | `top-right` | Image placement. Options: `center`, `top-right`, `top-left`, `top-center`, `bottom`, `bottom-center`, `bottom-left`, `bottom-right`. |
-| `status_entity` | `string` | — | An entity to monitor (e.g., a door sensor). See [Smart Status Entity](#smart-status-entity). |
+| `status_entity` | `string` | — | An entity to monitor (e.g., a door sensor). See Smart Status Entity. |
 | `status_day` | `string` | — | The day image to display when the status entity becomes active. |
 | `status_night` | `string` | — | The night image to display when the status entity becomes active. |
 
@@ -785,7 +785,7 @@ custom_cards:
 
 </details>
 
-<a name="css-variables"></a>
+<a name="-css-variables"></a>
 <details>
 <summary><strong>CSS Variables</strong></summary>
 
@@ -895,7 +895,7 @@ These variables only apply when `chip_style` is set to `stacked` or `vertical`.
 
 <br>
 
-## Color Mode
+## 🌗 Color Mode
 
 The card's appearance depends on your **`sun_entity`** (sun or moon) and your **`card_color_mode`** (light or dark).
 
@@ -915,13 +915,13 @@ The card's appearance depends on your **`sun_entity`** (sun or moon) and your **
 
 <br>
 
-## Guides
+## 🧭 Guides
 
-<a name="chips"></a>
+<a name="-chips"></a>
 <details>
 <summary><b>Chips & Forecasts</b></summary>
 
-Chips are basically buttons you can optionally add to the card. You can add as many as you like and show live info, like current weather conditions or data from any Home Assistant entity, but also weather forecasts. You can leave them grouped in a row and make them all look the same (useful for building a daily forecast), or you can style and position each one individually. All available settings are listed in the [Appearance](#appearance) section.
+Chips are basically buttons you can optionally add to the card. You can add as many as you like and show live info, like current weather conditions or data from any Home Assistant entity, but also weather forecasts. You can leave them grouped in a row and make them all look the same (useful for building a daily forecast), or you can style and position each one individually. All available settings are listed in the [Appearance](#-appearance) section.
 
 <details>
 <summary><strong>Forecast chips</strong></summary>
@@ -993,7 +993,7 @@ chips:
 
 The first two chips follow the global `inline` style and default background. The third chip overrides everything it needs to look different.
 
-All per-chip style overrides are listed in the [Appearance](#appearance) section under "Per-chip style overrides".
+All per-chip style overrides are listed in the [Appearance](#-appearance) section under "Per-chip style overrides".
 
 </details>
 
@@ -1077,7 +1077,7 @@ chips:
 
 </details>
 
-<a name="font-family"></a>
+<a name="-font-family"></a>
 <details>
 <summary><b>Font Family</b></summary>
 
@@ -1089,7 +1089,7 @@ The screenshots throughout this README use the **Montserrat** font, which you ca
 
 </details>
 
-<a name="weather-icons"></a>
+<a name="-weather-icons"></a>
 <details>
 <summary><b>Weather Icons</b></summary>
 
@@ -1114,7 +1114,7 @@ The card then resolves the icon by the current weather state. For example, `rain
 
 </details>
 
-<a name="custom-house-image"></a>
+<a name="-custom-house-image"></a>
 <details>
 <summary><b>Custom House Image</b></summary>
 
@@ -1133,7 +1133,7 @@ This explains how to create an image for your own home and use it in the card.
 
 <br>
 
-## Performance
+## ⚡ Performance
 
 > **Note:** Performance handling was significantly overhauled compared to the original Atmospheric Weather Card (v4.5). 
 > The new `perf_fps` option lets you control the animation frame rate directly (previously fixed at ~30fps), 
@@ -1165,6 +1165,6 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 
 <br>
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.

@@ -1,4 +1,4 @@
-# Legacy: Atmospheric Weather Card v5.x
+# 📜 Legacy: Atmospheric Weather Card v5.x
 
 This folder contains the last v5.x version of the card, kept for anyone who
 prefers it over the current v6+ `atmo-weather-card`.
