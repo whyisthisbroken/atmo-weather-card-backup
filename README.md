@@ -171,7 +171,8 @@ The card is meant to be pretty flexible. You can customize these examples howeve
 
 <details>
 <summary><b>Forecast Slider</b></summary>
-<img width="498" height="162" alt="image" src="https://github.com/user-attachments/assets/0614684d-0cf6-4bc5-8c15-9c68ff010f2d" />
+<img width="481" height="181" alt="image" src="https://github.com/user-attachments/assets/6dc47298-5827-4243-a232-67532d41099e" />
+
 
 
 ```yaml
@@ -318,7 +319,8 @@ grid_options:
 
 <details>
 <summary><b>Forecast & Mini-graph</b></summary>
-<img width="511" height="132" alt="image" src="https://github.com/user-attachments/assets/2baa2417-01ae-4c5d-a18b-79ec1c3d1cf9" />
+<img width="486" height="182" alt="image" src="https://github.com/user-attachments/assets/5c7df2ef-5054-4ad8-82f5-f76342662eba" />
+
 
 
 This example embeds a mini-graph-card with a bit of card-mod styling. For extra drama, the large header text is layered behind the weather elements.
@@ -482,7 +484,8 @@ custom_cards:
 
 <details>
 <summary><b>Forecast & Ring Chip</b></summary>
-<img width="513" height="186" alt="image" src="https://github.com/user-attachments/assets/fb9589da-5cf1-4c6f-a474-606f52d63df8" />
+<img width="478" height="133" alt="image" src="https://github.com/user-attachments/assets/427bfe78-0bf4-4f40-b966-64aad1eeba81" />
+
 
 
 ```yaml
