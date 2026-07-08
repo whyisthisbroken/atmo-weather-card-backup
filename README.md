@@ -48,20 +48,62 @@ This README combines the current card documentation with selected context from t
 
 ## 📦 Installation
 
+### Method 1 — HACS (Recommended)
 
-<b>Manual Import</b>
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=whyisthisbroken&repository=atmo-weather-card&category=plugin)
 
-[Open your Home Assistant instance and navigate to your lovelace resources.](https://my.home-assistant.io/redirect/lovelace_resources/)
+Easiest way to install and manage updates. HACS handles everything for you.
 
-1. Download `atmo-weather-card.js` and `atmo-weather-card-editor.js` from the latest release.
-2. Place both files in your `config/www/atmo-weather-card/` folder:
+<details>
+<summary>Installation Steps</summary>
+
+<br>
+
+1. Open **HACS** in Home Assistant.
+2. Navigate to the **Frontend** section.
+3. Click the **Explore & Download Repositories** button (or the `+` icon).
+4. Search for **Atmo Weather Card**.
+5. Click **Download**.
+6. Reload your dashboard.
+
+</details>
+
+<br>
+
+### Method 2 — Manual Import
+
+[![Open your Home Assistant instance and navigate to your lovelace resources.](https://my.home-assistant.io/badges/lovelace_resources.svg)](https://my.home-assistant.io/redirect/lovelace_resources/)
+
+For manual installation without HACS. [Download the latest files from the releases page.](https://github.com/whyisthisbroken/atmo-weather-card/releases)
+
+<details>
+<summary>Installation Steps</summary>
+
+<br>
+
+1. **Download files** from the [latest release](https://github.com/whyisthisbroken/atmo-weather-card/releases):
    - `atmo-weather-card.js`
    - `atmo-weather-card-editor.js`
-3. Navigate to **Settings** → **Dashboards** → **⋮** → **Resources**.
-4. Add a new resource:
-    * **URL:** `/local/atmo-weather-card/atmo-weather-card.js`
-    * **Type:** JavaScript Module
-5. Hard-refresh your browser.
+
+2. **Place files** in your Home Assistant config folder:
+   ```
+   config/www/atmo-weather-card/
+   ├── atmo-weather-card.js
+   └── atmo-weather-card-editor.js
+   ```
+
+3. **Add resource** in Home Assistant:
+   - Navigate to **Settings** → **Dashboards** → **⋮** → **Resources**
+   - Add a new resource:
+     - **URL:** `/local/atmo-weather-card/atmo-weather-card.js`
+     - **Type:** JavaScript Module
+
+4. **Reload dashboard** with a hard-refresh:
+   - **Chrome/Edge:** `Ctrl+Shift+R`
+   - **Firefox:** `Ctrl+Shift+R`
+   - **Safari:** `Cmd+Shift+R`
+
+</details>
 
 <br>
 
