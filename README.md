@@ -14,10 +14,6 @@
 - Current conditions
 - Forecast support
 - Dashboard-friendly layout
-
-> [!IMPORTANT]
-> **This is a personal fork.** The original author (`shpongledsummer`) deleted their repository and account. This started as a preserved copy for reference, but as of **Version 6**, active development has resumed on a personal basis — mainly for my own use, shared here for anyone who wants it. It's now available via HACS for easy installation and updates. There is **no official support offered** and no guaranteed response to issues or requests. All previous versions (including v5) remain available in the repo for anyone who prefers them. If `shpongledsummer` ever wants to return to the project, that's entirely welcome — see [MAINTENANCE.md](MAINTENANCE.md) for details.
-
 ---
 
 This README combines the current card documentation with selected context from the older README, so setup, examples, and repository history stay in one place.
@@ -1208,3 +1204,5 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](./LICENSE) file for details.
+> [!IMPORTANT]
+> **This is a personal fork.** The original author (`shpongledsummer`) deleted their repository and account. This started as a preserved copy for reference, but as of **Version 6**, active development has resumed on a personal basis — mainly for my own use, shared here for anyone who wants it. It's now available via HACS for easy installation and updates. There is **no official support offered** and no guaranteed response to issues or requests. All previous versions (including v5) remain available in the repo for anyone who prefers them. If `shpongledsummer` ever wants to return to the project, that's entirely welcome — see [MAINTENANCE.md](MAINTENANCE.md) for details.
