@@ -928,6 +928,13 @@ class AtmosphericWeatherCard extends HTMLElement {
         this._perfEffects = (rawEffects === true) ? 2 : (rawEffects === false) ? 0 : (parseInt(rawEffects, 10) || 0);
         const rawFauna = config.perf_fauna != null ? config.perf_fauna : preset.perf_fauna;
         this._perfFauna = (rawFauna === true) ? 2 : (rawFauna === false) ? 0 : (parseInt(rawFauna, 10) || 0);
+        // Fauna density controls (Option C)
+        const rawBirdDensity = config.fauna_bird_density != null ? parseFloat(config.fauna_bird_density) : 1.0;
+        this._faunaBirdDensity = Number.isFinite(rawBirdDensity) ? Math.max(0.5, Math.min(2.0, rawBirdDensity)) : 1.0;
+        const rawPlaneDensity = config.fauna_plane_density != null ? parseFloat(config.fauna_plane_density) : 1.0;
+        this._faunaPlaneDensity = Number.isFinite(rawPlaneDensity) ? Math.max(0.5, Math.min(2.0, rawPlaneDensity)) : 1.0;
+        const rawFlockSize = config.fauna_bird_flock_size != null ? parseInt(config.fauna_bird_flock_size, 10) : 8;
+        this._faunaBirdFlockSize = Number.isFinite(rawFlockSize) ? Math.max(1, Math.min(20, rawFlockSize)) : 8;
         const rawDpr = config.perf_dpr != null ? config.perf_dpr : preset.perf_dpr;
         const parsedDpr = parseFloat(rawDpr);
         this._perfDpr = Number.isFinite(parsedDpr) ? Math.max(0.5, Math.min(PERFORMANCE_CONFIG.MAX_DPR, parsedDpr)) : preset.perf_dpr;
@@ -4035,10 +4042,10 @@ class AtmosphericWeatherCard extends HTMLElement {
             if (isOffRight || isOffLeft) this._birds.splice(i, 1);
         }
         const p = this._params, isSevereWeather = this._renderState.isSevereWeather;
-            if (!isSevereWeather && this._birds.length === 0) {
+        if (!isSevereWeather && this._birds.length === 0 && Math.random() < (1.0 / 30) * this._faunaBirdDensity) {
             const dir = Math.random() > 0.5 ? 1 : -1, startX = dir === 1 ? -60 : w + 60, depthScale = 0.9 + Math.random() * 0.5;
             const baseSpeed = (0.9 + Math.random() * 0.5), finalSpeed = baseSpeed * depthScale * dir, isSingle = Math.random() < 0.3;
-            const flockSize = isSingle ? 1 : 5 + Math.floor(Math.random() * 8), startY = h * 0.20 + Math.random() * (h * 0.47);
+            const flockSize = isSingle ? 1 : Math.max(1, Math.round(this._faunaBirdFlockSize + (Math.random() - 0.5) * 4)), startY = h * 0.20 + Math.random() * (h * 0.47);
             this._birds.push({ x: startX, y: startY, vx: finalSpeed, vy: (Math.random() - 0.5) * 0.1, flapPhase: 0, flapSpeed: 0.15 + Math.random() * 0.05, size: 2.4 * depthScale });
             if (!isSingle) {
                 const formation = Math.floor(Math.random() * 3), ySlope = Math.random() > 0.5 ? 1 : -1;
@@ -4085,7 +4092,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     }
     _drawPlanes(ctx, w, h) {
         const dpr = this._cachedDimensions.dpr;
-        if (this._planes.length === 0 && Math.random() < 0.0025) this._planes.push(this._createPlane(w, h));
+        if (this._planes.length === 0 && Math.random() < 0.0025 * this._faunaPlaneDensity) this._planes.push(this._createPlane(w, h));
         for (let i = this._planes.length - 1; i >= 0; i--) {
             const plane = this._planes[i], dir = plane.vx > 0 ? 1 : -1;
             if (plane._sinA === undefined) {

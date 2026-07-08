@@ -1533,10 +1533,10 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 </div></div>`;}
     _renderPerformancePanel() {
         const PRESETS = {
-            low:     { perf_fps: 24, perf_cloud_quality: 0.5, perf_effects: 0, perf_fauna: 0, perf_dpr: 1.0 },
-            default: { perf_fps: 30, perf_cloud_quality: 1.5, perf_effects: 1, perf_fauna: 2, perf_dpr: 2.0 },
-            ultra:   { perf_fps: 60, perf_cloud_quality: 2.0, perf_effects: 2, perf_fauna: 2, perf_dpr: 2.0 }};
-        const keys = ["perf_fps", "perf_cloud_quality", "perf_effects", "perf_fauna", "perf_dpr"];
+            low:     { perf_fps: 24, perf_cloud_quality: 0.5, perf_effects: 0, perf_fauna: 0, perf_dpr: 1.0, fauna_bird_density: 0.5, fauna_plane_density: 0.5, fauna_bird_flock_size: 4 },
+            default: { perf_fps: 30, perf_cloud_quality: 1.5, perf_effects: 1, perf_fauna: 2, perf_dpr: 2.0, fauna_bird_density: 1.0, fauna_plane_density: 1.0, fauna_bird_flock_size: 8 },
+            ultra:   { perf_fps: 60, perf_cloud_quality: 2.0, perf_effects: 2, perf_fauna: 2, perf_dpr: 2.0, fauna_bird_density: 1.5, fauna_plane_density: 1.5, fauna_bird_flock_size: 12 }};
+        const keys = ["perf_fps", "perf_cloud_quality", "perf_effects", "perf_fauna", "perf_dpr", "fauna_bird_density", "fauna_plane_density", "fauna_bird_flock_size"];
         const cfg = this._config || {};
         const presetName = (typeof cfg.perf_mode === "string" && PRESETS[cfg.perf_mode]) ? cfg.perf_mode : "default";
         const activePreset = PRESETS[presetName];
@@ -1586,7 +1586,14 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 ${perfButtons("perf_fauna", LABELS.perf_fauna, [
                     {value:0,label:"Off"},{value:1,label:"Birds"},{value:2,label:"All"}])}
                 ${perfButtons("perf_dpr", LABELS.perf_dpr, [
-                    {value:0.5,label:"Low"},{value:1,label:"Medium"},{value:1.5,label:"High"},{value:2,label:"Full"}])}`)}`;}
+                    {value:0.5,label:"Low"},{value:1,label:"Medium"},{value:1.5,label:"High"},{value:2,label:"Full"}])}
+                <div class="settings-group" style="margin-top: var(--awc-e-s4); padding-top: var(--awc-e-s4); border-top: 1px solid var(--divider-color);">
+                    <div class="settings-group-label">🦅 Fauna Customization</div>
+                    ${this._renderSlider("fauna_bird_density", "Bird spawn rate", 0.5, 2.0, 0.1)}
+                    ${this._renderSlider("fauna_plane_density", "Plane spawn rate", 0.5, 2.0, 0.1)}
+                    ${this._renderSlider("fauna_bird_flock_size", "Birds per flock", 1, 20, 1)}
+                </div>
+            `)}`;}
     render() {
         if (!this.hass || !this._config) return html``; const c = this._formData;
         return html`${this._renderForm([{ name: "weather_entity", selector: { entity: { domain: "weather" } } }])}

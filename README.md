@@ -1201,8 +1201,22 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 | `perf_effects` | `number` | `1` | Weather effects intensity. `0` disables birds, planes, shooting stars, aurora, and wind vapor. `1` enables them at default rates. `2` increases spawn rates for all effects. |
 | `perf_fauna` | `number` | `1` | Birds and planes spawn rate. `0` = no fauna, `1` = birds only, `2` = birds and planes. Separate control from weather effects. |
 | `perf_dpr` | `number` | `2` | Canvas sharpness. Controls the device pixel ratio used for rendering. `0.5` = low, `1` = medium, `1.5` = high, `2` = full retina. Lower values reduce GPU load on high-DPI screens. |
+| `fauna_bird_density` | `number` | `1.0` | Bird spawn rate multiplier. Range `0.5` to `2.0`. Scales how often bird flocks appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 1` or `2`. |
+| `fauna_plane_density` | `number` | `1.0` | Plane spawn rate multiplier. Range `0.5` to `2.0`. Scales how often planes appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 2`. |
+| `fauna_bird_flock_size` | `number` | `8` | Average birds per flock. Range `1` to `20`. Controls the formation size when bird flocks spawn. |
 
 </details>
+
+#### Example: Custom Fauna Configuration
+
+```yaml
+type: custom:atmo-weather-card
+weather_entity: weather.your_weather_entity
+perf_fauna: 2  # Enable both birds and planes
+fauna_bird_density: 1.5  # 50% more bird flocks
+fauna_plane_density: 0.7  # 30% fewer planes
+fauna_bird_flock_size: 10  # Larger flocks (default is 8)
+```
 
 <br>
 
