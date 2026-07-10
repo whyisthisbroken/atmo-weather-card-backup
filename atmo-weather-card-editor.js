@@ -250,7 +250,7 @@ const LABELS = Object.freeze({
   perf_fps: "Frame Rate",
   perf_cloud_quality: "Cloud Detail",
   perf_effects: "Weather Effects",
-  perf_fauna: "Birds & Planes",
+  perf_fauna: "Fauna",
   perf_dpr: "Sharpness",
 });
 const HELPERS = Object.freeze({
@@ -390,6 +390,11 @@ const KEY_ORDER = Object.freeze([
   "perf_effects",
   "perf_fauna",
   "perf_dpr",
+  "fauna_bird_density",
+  "fauna_plane_density",
+  "fauna_balloon_density",
+  "fauna_airship_density",
+  "fauna_bird_flock_size",
   "chips",
   "custom_cards",
 ]);
@@ -418,6 +423,11 @@ const TOP_LEVEL_NUMBER_FIELDS = Object.freeze([
   "perf_effects",
   "perf_fauna",
   "perf_dpr",
+  "fauna_bird_density",
+  "fauna_plane_density",
+  "fauna_balloon_density",
+  "fauna_airship_density",
+  "fauna_bird_flock_size",
 ]);
 const TOP_LEVEL_BOOLEAN_FIELDS = Object.freeze([
   "card_square",
@@ -4730,6 +4740,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
         perf_dpr: 1.0,
         fauna_bird_density: 0.5,
         fauna_plane_density: 0.5,
+        fauna_balloon_density: 0.5,
+        fauna_airship_density: 0.5,
         fauna_bird_flock_size: 4,
       },
       default: {
@@ -4740,6 +4752,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
         perf_dpr: 2.0,
         fauna_bird_density: 1.0,
         fauna_plane_density: 1.0,
+        fauna_balloon_density: 1.0,
+        fauna_airship_density: 1.0,
         fauna_bird_flock_size: 8,
       },
       ultra: {
@@ -4750,6 +4764,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
         perf_dpr: 2.0,
         fauna_bird_density: 1.5,
         fauna_plane_density: 1.5,
+        fauna_balloon_density: 1.4,
+        fauna_airship_density: 1.3,
         fauna_bird_flock_size: 12,
       },
     };
@@ -4761,6 +4777,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
       "perf_dpr",
       "fauna_bird_density",
       "fauna_plane_density",
+      "fauna_balloon_density",
+      "fauna_airship_density",
       "fauna_bird_flock_size",
     ];
     const cfg = this._config || {};
@@ -4804,9 +4822,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
         2: "Extra shooting stars and comets",
       },
       perf_fauna: {
-        0: "No birds or planes",
-        1: "Birds only",
-        2: "Birds and planes",
+        0: "No fauna",
+        1: "Birds + balloons",
+        2: "All fauna",
       },
       perf_dpr: {
         0.5: "Low resolution",
@@ -4877,7 +4895,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
           ])}
           ${perfButtons("perf_fauna", LABELS.perf_fauna, [
             { value: 0, label: "Off" },
-            { value: 1, label: "Birds" },
+            { value: 1, label: "Lite" },
             { value: 2, label: "All" },
           ])}
           ${perfButtons("perf_dpr", LABELS.perf_dpr, [
@@ -4904,6 +4922,22 @@ class AtmosphericWeatherCardEditor extends LitElement {
               0.5,
               2.0,
               0.1,
+            )}
+            ${this._renderSlider(
+              "fauna_balloon_density",
+              "Balloon spawn rate",
+              0.5,
+              2.0,
+              0.1,
+              "Mainly visible in calm/fair weather. Requires perf_fauna 1 or 2.",
+            )}
+            ${this._renderSlider(
+              "fauna_airship_density",
+              "Airship spawn rate",
+              0.5,
+              2.0,
+              0.1,
+              "Rare by design. Only active with perf_fauna 2.",
             )}
             ${this._renderSlider(
               "fauna_bird_flock_size",

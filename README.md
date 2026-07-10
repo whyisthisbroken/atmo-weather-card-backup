@@ -86,13 +86,17 @@ For manual installation without HACS. [Download the latest files from the releas
 1. **Download files** from the [latest release](https://github.com/whyisthisbroken/atmo-weather-card/releases):
    - `atmo-weather-card.js`
    - `atmo-weather-card-editor.js`
+  - `atmo-weather-animations.js`
+  - `atmo-weather-fauna.js`
 
 2. **Place files** in your Home Assistant config folder:
 
    ```
    config/www/atmo-weather-card/
    ├── atmo-weather-card.js
-   └── atmo-weather-card-editor.js
+  ├── atmo-weather-card-editor.js
+  ├── atmo-weather-animations.js
+  └── atmo-weather-fauna.js
    ```
 
 3. **Add resource** in Home Assistant:
@@ -1207,11 +1211,15 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 | `perf_mode`             | `string` | `default` | Performance preset. `low` disables effects and lowers resolution for weak devices. `default` is balanced. `ultra` raises the frame rate and cloud detail to maximum.                |
 | `perf_fps`              | `number` | `30`      | Animation frame rate. `30` saves battery, `60` is smoother.                                                                                                                         |
 | `perf_cloud_quality`    | `number` | `1.5`     | Cloud detail level. Controls how many puffs each cloud shape gets. `0.5` = low, `1` = medium, `1.5` = high, `2` = ultra.                                                            |
-| `perf_effects`          | `number` | `1`       | Weather effects intensity. `0` disables birds, planes, shooting stars, aurora, and wind vapor. `1` enables them at default rates. `2` increases spawn rates for all effects.        |
-| `perf_fauna`            | `number` | `1`       | Birds and planes spawn rate. `0` = no fauna, `1` = birds only, `2` = birds and planes. Separate control from weather effects.                                                       |
+| `perf_effects`          | `number` | `1`       | Weather effects intensity. `0` disables visual effects like shooting stars, comets, aurora, fog/wind visuals, and similar atmospheric extras. `1` enables default rates. `2` increases effect intensity/spawn rates where applicable. |
+| `perf_fauna`            | `number` | `2`       | Fauna activity level. `0` = no fauna, `1` = birds + balloons, `2` = full fauna (birds, balloons, planes, airships). Separate control from weather effects.                           |
+| `animation_speed`       | `number` | `1.0`     | Global animation speed multiplier. Range `0` to `3`. `0` freezes animated motion, `1.0` is default speed, `2.0` is double speed.                                                   |
+| `bird_animation_speed`  | `number` | `1.0`     | Bird-only speed multiplier. Range `0` to `3`. Applied on top of `animation_speed` for bird movement and wing flapping.                                                              |
 | `perf_dpr`              | `number` | `2`       | Canvas sharpness. Controls the device pixel ratio used for rendering. `0.5` = low, `1` = medium, `1.5` = high, `2` = full retina. Lower values reduce GPU load on high-DPI screens. |
 | `fauna_bird_density`    | `number` | `1.0`     | Bird spawn rate multiplier. Range `0.5` to `2.0`. Scales how often bird flocks appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 1` or `2`.   |
 | `fauna_plane_density`   | `number` | `1.0`     | Plane spawn rate multiplier. Range `0.5` to `2.0`. Scales how often planes appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 2`.              |
+| `fauna_balloon_density` | `number` | `1.0`     | Balloon spawn rate multiplier. Range `0.5` to `2.0`. Balloons appear mainly in calm/fair weather. Only works with `perf_fauna: 1` or `2`.                                          |
+| `fauna_airship_density` | `number` | `1.0`     | Airship spawn rate multiplier. Range `0.5` to `2.0`. Airships are rare by design and only spawn with `perf_fauna: 2`.                                                             |
 | `fauna_bird_flock_size` | `number` | `8`       | Target average birds per flock. Range `1` to `20`. Actual flock size is randomized around this value (about ±2) and occasional single-bird passes can still occur.                  |
 
 </details>
@@ -1221,10 +1229,21 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 ```yaml
 type: custom:atmo-weather-card
 weather_entity: weather.your_weather_entity
-perf_fauna: 2 # Enable both birds and planes
+perf_fauna: 2 # Enable full fauna set (birds, balloons, planes, airships)
 fauna_bird_density: 1.5 # 50% more bird flocks
 fauna_plane_density: 0.7 # 30% fewer planes
+fauna_balloon_density: 1.2 # Slightly more hot-air balloons
+fauna_airship_density: 0.8 # Keep airships extra rare
 fauna_bird_flock_size: 10 # Higher average flock size (actual spawn count still varies)
+```
+
+#### Example: Animation Speed Control
+
+```yaml
+type: custom:atmo-weather-card
+weather_entity: weather.your_weather_entity
+animation_speed: 1.0 # Global animation speed (0.0-3.0)
+bird_animation_speed: 1.4 # Birds only; multiplied on top of animation_speed
 ```
 
 <br>

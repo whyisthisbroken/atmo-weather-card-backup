@@ -1,7 +1,34 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.0.4
+ * Version: 6.1.0-test-new-code-structure
  */
+import {
+  advanceWindAndPulse,
+  CloudShapeGenerator,
+  drawAirships,
+  drawAurora,
+  drawBalloons,
+  drawBirds,
+  drawCelestialClouds,
+  drawComets,
+  drawClouds,
+  drawFog,
+  drawHail,
+  drawLightning,
+  drawMoon,
+  drawPlanes,
+  drawRain,
+  drawShootingStars,
+  drawStars,
+  drawSnow,
+  drawWindVapor,
+  renderAnimationFrame,
+  shouldSkipFrame,
+  TWO_PI,
+  fillCircle,
+  hslToRgb,
+} from "./atmo-weather-animations.js";
+
 console.info(
   "%c ATMO WEATHER CARD ",
   "color: white; font-weight: 700; background: linear-gradient(90deg, #355C7D 0%, #6C5B7B 50%, #C06C84 100%); padding: 6px 12px; border-radius: 6px; font-family: sans-serif; letter-spacing: 0.5px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);",
@@ -15,7 +42,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.0.4";
+const EDITOR_IMPORT_VERSION = "6.1.0-test-new-code-structure";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
@@ -578,6 +605,8 @@ const PARTICLE_ARRAYS = Object.freeze([
   "_shootingStars",
   "_planes",
   "_birds",
+  "_balloons",
+  "_airships",
   "_comets",
   "_celestialClouds",
 ]);
@@ -792,12 +821,6 @@ const PLANE_PATH = Object.freeze([
   [-5, 0, -8, -4],
   [1, 0, -2, 2],
 ]);
-const TWO_PI = Math.PI * 2;
-function fillCircle(ctx, x, y, r) {
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, TWO_PI);
-  ctx.fill();
-}
 function parseCSSVal(v) {
   const s = String(v).trim();
   if (!s || s === "0") return "0px";
@@ -946,30 +969,6 @@ const STAR_PALETTE_GLOW = Object.freeze([
   [0.85, 200, 5, 95],
   [1, 35, 35, 85],
 ]);
-function hslToRgb(h, s, l) {
-  h /= 360;
-  s /= 100;
-  l /= 100;
-  let r, g, b;
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const hue2rgb = (p, q, t) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s,
-      p = 2 * l - q;
-    r = hue2rgb(p, q, h + 1 / 3);
-    g = hue2rgb(p, q, h);
-    b = hue2rgb(p, q, h - 1 / 3);
-  }
-  return [(r * 255 + 0.5) | 0, (g * 255 + 0.5) | 0, (b * 255 + 0.5) | 0];
-}
 const CONTRAIL_OFFSETS = Object.freeze([3, -3]);
 const BAD_WEATHER_TYPES = Object.freeze(
   new Set([
@@ -1198,442 +1197,6 @@ const ATMOSPHERE_CSS = Object.freeze({
   snow: "weather-snow",
   exceptional: "weather-exceptional",
 });
-// CLOUD SHAPE GENERATOR
-class CloudShapeGenerator {
-  static generateOrganicPuffs(isStorm, seed, baseUnit = 100, quality = 1.0) {
-    const puffs = [],
-      seededRandom = this._seededRandom(seed),
-      s = baseUnit / 100,
-      puffCount = Math.max(4, Math.round((isStorm ? 14 : 12) * quality));
-    const baseWidth = (isStorm ? 110 : 105) * s,
-      baseHeight = (isStorm ? 60 : 42) * s;
-    for (let i = 0; i < puffCount; i++) {
-      const angle = (i / puffCount) * TWO_PI + seededRandom() * 0.5,
-        distFromCenter = seededRandom() * 0.6 + 0.2;
-      let dx = Math.cos(angle) * (baseWidth / 2) * distFromCenter,
-        dy = Math.sin(angle) * (baseHeight / 2) * distFromCenter * 0.6;
-      if (isStorm) {
-        if (dy > 0) {
-          dy *= 0.4;
-        } else if (Math.abs(dx) < baseWidth * 0.4) {
-          dy -= seededRandom() * 28 * s;
-        }
-      }
-      const centerDist = Math.sqrt(dx * dx + dy * dy) / (baseWidth / 2),
-        baseRad = (isStorm ? 62 : 50) * s,
-        radVariation = (isStorm ? 22 : 16) * s;
-      const rad = baseRad + seededRandom() * radVariation - centerDist * 12 * s;
-      const verticalShade =
-        0.4 + (1 - (dy + baseHeight / 2) / baseHeight) * 0.4;
-      const shade = verticalShade + seededRandom() * 0.05,
-        softness = 0.3 + seededRandom() * 0.4,
-        squash = 0.75 + seededRandom() * 0.25;
-      const rotation = (seededRandom() - 0.5) * 0.6;
-      puffs.push({
-        offsetX: dx,
-        offsetY: dy,
-        rad: Math.max(15 * s, rad),
-        shade: Math.min(1, shade),
-        softness,
-        squash,
-        rotation,
-        depth: seededRandom(),
-      });
-    }
-    const detailCount = Math.max(1, Math.round((isStorm ? 8 : 6) * quality));
-    for (let i = 0; i < detailCount; i++) {
-      const angle = seededRandom() * TWO_PI,
-        dist = 0.3 + seededRandom() * 0.45;
-      puffs.push({
-        offsetX: Math.cos(angle) * (baseWidth / 2) * dist,
-        offsetY: Math.sin(angle) * (baseHeight / 2) * dist * 0.5 - 10 * s,
-        rad: (14 + seededRandom() * 16) * s,
-        shade: 0.5 + seededRandom() * 0.3,
-        softness: 0.5 + seededRandom() * 0.3,
-        squash: 0.6 + seededRandom() * 0.3,
-        rotation: (seededRandom() - 0.5) * 0.8,
-        depth: 0.8 + seededRandom() * 0.2,
-      });
-    }
-    puffs.sort((a, b) => a.depth - b.depth);
-    return puffs;
-  }
-  static generateWispyPuffs(seed, baseUnit = 100, quality = 1.0) {
-    const puffs = [],
-      seededRandom = this._seededRandom(seed),
-      s = baseUnit / 100,
-      puffCount = Math.max(
-        3,
-        Math.round((8 + Math.floor(seededRandom() * 4)) * quality),
-      );
-    // Per-cloud aspect variance: 1.3x-1.8x horizontal. Real clouds vary in shape;
-    // fixed aspect produces uniform blobs that read as fake.
-    const aspectH = 30 + seededRandom() * 10,
-      aspectV = 20 + seededRandom() * 6;
-    for (let i = 0; i < puffCount; i++) {
-      const angle = (i / puffCount) * TWO_PI + seededRandom() * 0.8,
-        dist = 0.05 + seededRandom() * 0.85;
-      puffs.push({
-        offsetX: Math.cos(angle) * aspectH * s * dist,
-        offsetY: Math.sin(angle) * aspectV * s * dist,
-        rad: (15 + seededRandom() * 18) * s,
-        shade: 0.5 + seededRandom() * 0.4,
-        softness: 0.4 + seededRandom() * 0.4,
-        squash: 0.85 + seededRandom() * 0.18,
-        rotation: seededRandom() * 0.5,
-        depth: seededRandom(),
-      });
-    }
-    puffs.sort((a, b) => a.depth - b.depth);
-    return puffs;
-  }
-  static generateSunDecorationPuffs(seed, baseUnit = 100, quality = 1.0) {
-    const puffs = [],
-      seededRandom = this._seededRandom(seed),
-      s = baseUnit / 100,
-      halfWidth = (54 + seededRandom() * 16) * s;
-    const baselineY = (10 + seededRandom() * 4) * s,
-      totalSpan = halfWidth * 2,
-      bottomCount = Math.max(
-        2,
-        Math.round((6 + Math.floor(seededRandom() * 2)) * quality),
-      );
-    for (let i = 0; i < bottomCount; i++) {
-      const t = bottomCount === 1 ? 0.5 : i / (bottomCount - 1);
-      const x = -halfWidth + totalSpan * t + (seededRandom() - 0.5) * 22 * s;
-      const edge = Math.abs(x) / (halfWidth + 1),
-        taper = 1 - Math.pow(edge, 1.6) * 0.3,
-        rad = (20 + seededRandom() * 14) * s * taper;
-      const y =
-        baselineY -
-        rad * (0.7 + seededRandom() * 0.25) +
-        (seededRandom() - 0.5) * 10 * s;
-      puffs.push({
-        offsetX: x,
-        offsetY: y,
-        rad,
-        shade: 0.42 + seededRandom() * 0.14,
-        softness: 0.38 + seededRandom() * 0.14,
-        squash: 0.62 + seededRandom() * 0.18,
-        rotation: (seededRandom() - 0.5) * 0.55,
-        depth: seededRandom() * 0.28,
-      });
-    }
-    const bodyCount = Math.max(
-      2,
-      Math.round((6 + Math.floor(seededRandom() * 3)) * quality),
-    );
-    for (let i = 0; i < bodyCount; i++) {
-      const t = bodyCount === 1 ? 0.5 : i / (bodyCount - 1);
-      const x =
-        -halfWidth * 0.85 +
-        totalSpan * 0.85 * t +
-        (seededRandom() - 0.5) * 26 * s;
-      const edge = Math.abs(x) / (halfWidth + 1),
-        taper = 1 - Math.pow(edge, 1.6) * 0.35,
-        rad = (16 + seededRandom() * 18) * s * taper;
-      const y =
-        baselineY -
-        rad -
-        (6 + seededRandom() * 14) * s +
-        (seededRandom() - 0.5) * 12 * s;
-      puffs.push({
-        offsetX: x,
-        offsetY: y,
-        rad,
-        shade: 0.58 + seededRandom() * 0.18,
-        softness: 0.32 + seededRandom() * 0.14,
-        squash: 0.68 + seededRandom() * 0.18,
-        rotation: (seededRandom() - 0.5) * 0.45,
-        depth: 0.32 + seededRandom() * 0.3,
-      });
-    }
-    const crownCount = Math.max(
-      1,
-      Math.round((3 + Math.floor(seededRandom() * 3)) * quality),
-    );
-    for (let i = 0; i < crownCount; i++) {
-      const t = crownCount === 1 ? 0.5 : i / (crownCount - 1);
-      const x =
-        -halfWidth * 0.55 +
-        totalSpan * 0.55 * t +
-        (seededRandom() - 0.5) * 24 * s;
-      const edge = Math.abs(x) / (halfWidth + 1),
-        taper = 1 - Math.pow(edge, 1.8) * 0.35,
-        rad = (12 + seededRandom() * 14) * s * taper;
-      const y =
-        baselineY -
-        (26 + seededRandom() * 16) * s -
-        rad * 0.5 +
-        (seededRandom() - 0.5) * 10 * s;
-      puffs.push({
-        offsetX: x,
-        offsetY: y,
-        rad,
-        shade: 0.74 + seededRandom() * 0.18,
-        softness: 0.28 + seededRandom() * 0.14,
-        squash: 0.7 + seededRandom() * 0.18,
-        rotation: (seededRandom() - 0.5) * 0.5,
-        depth: 0.7 + seededRandom() * 0.3,
-      });
-    }
-    puffs.sort((a, b) => a.depth - b.depth);
-    return puffs;
-  }
-  static generateCirrusLayeredPuffs(seed, baseUnit = 100, quality = 1.0) {
-    const puffs = [],
-      seededRandom = this._seededRandom(seed),
-      s = baseUnit / 100,
-      layerCount = 2 + Math.floor(seededRandom() * 2);
-    const layerSpan = 90 * s;
-    for (let L = 0; L < layerCount; L++) {
-      const layerY = (seededRandom() - 0.5) * 14 * s,
-        layerOpacity = 0.65 + seededRandom() * 0.35,
-        puffsInLayer = Math.max(
-          3,
-          Math.round((7 + Math.floor(seededRandom() * 3)) * quality),
-        );
-      const spacing = layerSpan / (puffsInLayer - 1);
-      for (let i = 0; i < puffsInLayer; i++) {
-        const x =
-          -layerSpan / 2 +
-          i * spacing +
-          (seededRandom() - 0.5) * spacing * 0.45;
-        const yJitter = (seededRandom() - 0.5) * 8 * s;
-        const taper = Math.max(
-          0.6,
-          1 - Math.pow(Math.abs(x) / (layerSpan / 2 + 1), 1.6) * 0.4,
-        );
-        puffs.push({
-          offsetX: x,
-          offsetY: layerY + yJitter,
-          rad: (14 + seededRandom() * 10) * s * taper,
-          shade: (0.55 + seededRandom() * 0.3) * layerOpacity,
-          softness: 0.45 + seededRandom() * 0.3,
-          squash: 0.7 + seededRandom() * 0.2,
-          rotation: (seededRandom() - 0.5) * 0.25,
-          depth: L * 0.3 + seededRandom() * 0.3,
-        });
-      }
-    }
-    puffs.sort((a, b) => a.depth - b.depth);
-    return puffs;
-  }
-  static generateCirrusUncinusPuffs(seed, baseUnit = 100, quality = 1.0) {
-    const puffs = [],
-      seededRandom = this._seededRandom(seed),
-      s = baseUnit / 100,
-      length = (170 + seededRandom() * 80) * s;
-    const waveAmp = (14 + seededRandom() * 10) * s,
-      waveFreq = 0.7 + seededRandom() * 0.5,
-      hookStart = 0.7 + seededRandom() * 0.1;
-    const hookDir = seededRandom() < 0.5 ? -1 : 1,
-      hookAmp = (24 + seededRandom() * 18) * s,
-      strokeCount = seededRandom() < 0.55 ? 2 : 1;
-    const sampleCurve = (t) => {
-      const x = -length / 2 + t * length;
-      let y = Math.sin(t * waveFreq * TWO_PI) * waveAmp;
-      if (t > hookStart) {
-        const h = (t - hookStart) / (1 - hookStart);
-        y += hookDir * hookAmp * h * h;
-      }
-      return { x, y };
-    };
-    for (let stroke = 0; stroke < strokeCount; stroke++) {
-      const echoOffsetY = stroke === 0 ? 0 : (9 + seededRandom() * 9) * s,
-        echoOpacity = stroke === 0 ? 1.0 : 0.55 + seededRandom() * 0.2;
-      const startT = stroke === 0 ? 0 : 0.15 + seededRandom() * 0.2,
-        endT = stroke === 0 ? 1 : 0.7 + seededRandom() * 0.2;
-      const puffCount = Math.max(
-        4,
-        Math.round((13 + Math.floor(seededRandom() * 5)) * quality),
-      );
-      for (let i = 0; i < puffCount; i++) {
-        const tNorm = i / (puffCount - 1),
-          t = startT + (endT - startT) * tNorm,
-          p = sampleCurve(t),
-          pNext = sampleCurve(Math.min(1, t + 0.004));
-        const rawTangent = Math.atan2(pNext.y - p.y, pNext.x - p.x),
-          tangent = Math.max(-0.38, Math.min(0.38, rawTangent));
-        const edge = Math.min(tNorm, 1 - tNorm) * 2,
-          taper = 0.65 + edge * 0.35;
-        puffs.push({
-          offsetX: p.x + (seededRandom() - 0.5) * 4 * s,
-          offsetY: p.y + echoOffsetY + (seededRandom() - 0.5) * 3 * s,
-          rad: (12 + seededRandom() * 7) * s * taper,
-          shade: (0.5 + seededRandom() * 0.28) * echoOpacity,
-          softness: 0.45 + seededRandom() * 0.22,
-          squash: 0.55 + seededRandom() * 0.15,
-          rotation: tangent + (seededRandom() - 0.5) * 0.12,
-          depth: stroke * 0.35 + seededRandom() * 0.55,
-        });
-      }
-    }
-    puffs.sort((a, b) => a.depth - b.depth);
-    return puffs;
-  }
-  static generateMixedPuffs(
-    seed,
-    variety = "cumulus",
-    baseUnit = 100,
-    quality = 1.0,
-  ) {
-    const puffs = [],
-      seededRandom = this._seededRandom(seed),
-      s = baseUnit / 100;
-    if (variety === "cumulus") {
-      const baseWidth = 110 * s,
-        towerFactor = 0.5 + seededRandom() * 0.9,
-        asymShift = (seededRandom() - 0.5) * 22 * s;
-      const baseCount = Math.max(
-        2,
-        Math.round((4 + Math.floor(seededRandom() * 2)) * quality),
-      );
-      for (let i = 0; i < baseCount; i++) {
-        const t = baseCount > 1 ? i / (baseCount - 1) - 0.5 : 0;
-        puffs.push({
-          offsetX: t * baseWidth * 0.88 + (seededRandom() - 0.5) * 15 * s,
-          offsetY: (6 + seededRandom() * 10) * s,
-          rad: (26 + seededRandom() * 18) * s,
-          shade: 0.38 + seededRandom() * 0.05,
-          softness: 0.35,
-          squash: 1.0,
-          rotation: 0,
-          depth: seededRandom() * 0.25,
-        });
-      }
-      const bodyCount = Math.max(
-        2,
-        Math.round((8 + Math.floor(seededRandom() * 4)) * quality),
-      );
-      for (let i = 0; i < bodyCount; i++) {
-        puffs.push({
-          offsetX:
-            (seededRandom() - 0.5) * baseWidth * (0.4 + seededRandom() * 0.25) +
-            asymShift * 0.35,
-          offsetY: -(20 + seededRandom() * 58) * s,
-          rad: (22 + seededRandom() * 20) * s,
-          shade: 0.62 + seededRandom() * 0.08,
-          softness: 0.28,
-          squash: 1.0,
-          rotation: 0,
-          depth: 0.22 + seededRandom() * 0.48,
-        });
-      }
-      const crownCount = Math.max(
-        1,
-        Math.round(
-          (4 + Math.floor(seededRandom() * 2 + towerFactor * 1.5)) * quality,
-        ),
-      );
-      for (let i = 0; i < crownCount; i++) {
-        puffs.push({
-          offsetX: (seededRandom() - 0.5) * baseWidth * 0.42 + asymShift * 0.6,
-          offsetY: -(82 + towerFactor * 54 + seededRandom() * 52) * s,
-          rad: (16 + seededRandom() * 18) * s,
-          shade: 0.8 + seededRandom() * 0.05,
-          softness: 0.22,
-          squash: 1.0,
-          rotation: 0,
-          depth: 0.68 + seededRandom() * 0.32,
-        });
-      }
-      const detailMixed = Math.max(0, Math.round(3 * quality));
-      for (let i = 0; i < detailMixed; i++) {
-        const a = seededRandom() * TWO_PI;
-        puffs.push({
-          offsetX: Math.cos(a) * (baseWidth * 0.35 + seededRandom() * 10 * s),
-          offsetY: -(28 + seededRandom() * 48) * s,
-          rad: (14 + seededRandom() * 15) * s,
-          shade: 0.6 + seededRandom() * 0.1,
-          softness: 0.38,
-          squash: 1.0,
-          rotation: 0,
-          depth: seededRandom(),
-        });
-      }
-    } else if (variety === "stratus") {
-      const puffCount = Math.max(
-        4,
-        Math.round((14 + Math.floor(seededRandom() * 6)) * quality),
-      );
-      for (let i = 0; i < puffCount; i++) {
-        const spreadX =
-          (i - puffCount / 2) * 18 * s + (seededRandom() - 0.5) * 10 * s;
-        const spreadY = (seededRandom() - 0.5) * 14 * s,
-          normalY = (spreadY + 7 * s) / (14 * s);
-        puffs.push({
-          offsetX: spreadX,
-          offsetY: spreadY,
-          rad: (16 + seededRandom() * 14) * s,
-          shade: 0.48 + (1 - normalY) * 0.3 + seededRandom() * 0.06,
-          softness: 0.2 + seededRandom() * 0.3,
-          squash: 0.55,
-          rotation: 0,
-          depth: seededRandom(),
-        });
-      }
-      const coreCount = Math.max(
-        1,
-        Math.round((4 + Math.floor(seededRandom() * 3)) * quality),
-      );
-      for (let i = 0; i < coreCount; i++) {
-        const spreadX =
-          (i - coreCount / 2) * 26 * s + (seededRandom() - 0.5) * 12 * s;
-        puffs.push({
-          offsetX: spreadX,
-          offsetY: (seededRandom() - 0.5) * 6 * s,
-          rad: (18 + seededRandom() * 12) * s,
-          shade: 0.6 + seededRandom() * 0.15,
-          softness: 0.25 + seededRandom() * 0.2,
-          squash: 0.6,
-          rotation: 0,
-          depth: 0.4 + seededRandom() * 0.3,
-        });
-      }
-    } else if (variety === "cirrus") {
-      const layerCount = 2 + Math.floor(seededRandom() * 2),
-        layerGap = 11 * s,
-        layerSpan = 95 * s,
-        baseY = -((layerCount - 1) * layerGap) / 2;
-      for (let L = 0; L < layerCount; L++) {
-        const layerY = baseY + L * layerGap + (seededRandom() - 0.5) * 5 * s,
-          layerOpacity = 0.65 + seededRandom() * 0.35;
-        const puffsInLayer = Math.max(
-            3,
-            Math.round((13 + Math.floor(seededRandom() * 4)) * quality),
-          ),
-          stepX = layerSpan / (puffsInLayer - 1);
-        for (let i = 0; i < puffsInLayer; i++) {
-          const x =
-            -layerSpan / 2 + i * stepX + (seededRandom() - 0.5) * stepX * 0.4;
-          const taper =
-            1 - Math.pow(Math.abs(x) / (layerSpan / 2 + 1), 1.6) * 0.45;
-          const rad = (15 + seededRandom() * 9) * s * taper;
-          puffs.push({
-            offsetX: x,
-            offsetY: layerY + (seededRandom() - 0.5) * 4 * s,
-            rad,
-            shade: (0.5 + seededRandom() * 0.3) * layerOpacity,
-            softness: 0.5 + seededRandom() * 0.25,
-            squash: 0.5 + seededRandom() * 0.2,
-            rotation: (seededRandom() - 0.5) * 0.2,
-            depth: seededRandom(),
-          });
-        }
-      }
-    }
-    puffs.sort((a, b) => a.depth - b.depth);
-    return puffs;
-  }
-  static _seededRandom(seed) {
-    let s = seed;
-    return () => {
-      s = (s * 9301 + 49297) % 233280;
-      return s / 233280;
-    };
-  }
-}
 // ── MIGRATION BLOCK ─────────────────────────
 function _migrateConfig(raw) {
   const c = { ...raw };
@@ -1822,6 +1385,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     this.attachShadow({ mode: "open" });
     this._animID = null;
     this._lastFrameTime = 0;
+    this._frameScale = 1;
     this._boundAnimate = this._animate.bind(this);
     for (const key of PARTICLE_ARRAYS) this[key] = [];
     this._aurora = null;
@@ -1840,6 +1404,8 @@ class AtmosphericWeatherCard extends HTMLElement {
     this._windGust = 0;
     this._gustPhase = 0;
     this._windSpeed = 0.1;
+    this._animationSpeed = 1.0;
+    this._birdAnimationSpeed = 1.0;
     this._windKmh = 0;
     this._microGustPhase = 0;
     this._layerFadeProgress = {
@@ -2178,6 +1744,18 @@ class AtmosphericWeatherCard extends HTMLElement {
         : rawFauna === false
           ? 0
           : parseInt(rawFauna, 10) || 0;
+    const rawAnimSpeed =
+      config.animation_speed != null ? parseFloat(config.animation_speed) : 1.0;
+    this._animationSpeed = Number.isFinite(rawAnimSpeed)
+      ? Math.max(0, Math.min(3.0, rawAnimSpeed))
+      : 1.0;
+    const rawBirdAnimSpeed =
+      config.bird_animation_speed != null
+        ? parseFloat(config.bird_animation_speed)
+        : 1.0;
+    this._birdAnimationSpeed = Number.isFinite(rawBirdAnimSpeed)
+      ? Math.max(0, Math.min(3.0, rawBirdAnimSpeed))
+      : 1.0;
     // Fauna density controls (Option C)
     const rawBirdDensity =
       config.fauna_bird_density != null
@@ -2200,6 +1778,20 @@ class AtmosphericWeatherCard extends HTMLElement {
     this._faunaBirdFlockSize = Number.isFinite(rawFlockSize)
       ? Math.max(1, Math.min(20, rawFlockSize))
       : 8;
+    const rawBalloonDensity =
+      config.fauna_balloon_density != null
+        ? parseFloat(config.fauna_balloon_density)
+        : 1.0;
+    this._faunaBalloonDensity = Number.isFinite(rawBalloonDensity)
+      ? Math.max(0.5, Math.min(2.0, rawBalloonDensity))
+      : 1.0;
+    const rawAirshipDensity =
+      config.fauna_airship_density != null
+        ? parseFloat(config.fauna_airship_density)
+        : 1.0;
+    this._faunaAirshipDensity = Number.isFinite(rawAirshipDensity)
+      ? Math.max(0.5, Math.min(2.0, rawAirshipDensity))
+      : 1.0;
     const rawDpr = config.perf_dpr != null ? config.perf_dpr : preset.perf_dpr;
     const parsedDpr = parseFloat(rawDpr);
     this._perfDpr = Number.isFinite(parsedDpr)
@@ -6833,1314 +6425,55 @@ class AtmosphericWeatherCard extends HTMLElement {
     ctx.restore();
   }
   _drawCelestialClouds(ctx, w, h, effectiveWind) {
-    const fadeOpacity = this._layerFadeProgress.clouds;
-    if (fadeOpacity <= 0) return;
-    const len = this._celestialClouds.length;
-    ctx.globalAlpha = fadeOpacity;
-    for (let i = 0; i < len; i++) {
-      const cloud = this._celestialClouds[i];
-      if (!cloud._bakedCanvas) continue;
-      const sunUnit = cloud._sunUnit !== undefined ? cloud._sunUnit : 1.0;
-      cloud.driftPhase += 0.008;
-      cloud.breathPhase += cloud.breathSpeed;
-      const driftX = Math.sin(cloud.driftPhase) * 12 * sunUnit;
-      const driftY = Math.cos(cloud.driftPhase * 0.7) * 4 * sunUnit;
-      cloud.x = cloud.baseX + driftX + effectiveWind * 0.3;
-      cloud.y = cloud.baseY + driftY;
-      const driftClamp = 60 * sunUnit;
-      if (cloud.x > cloud.baseX + driftClamp)
-        cloud.x = cloud.baseX + driftClamp;
-      if (cloud.x < cloud.baseX - driftClamp)
-        cloud.x = cloud.baseX - driftClamp;
-      const breathScale = 1 + Math.sin(cloud.breathPhase) * 0.02,
-        vSquash = cloud._vSquash !== undefined ? cloud._vSquash : 0.55;
-      const scaleX = cloud.scale * breathScale,
-        scaleY = cloud.scale * vSquash * breathScale,
-        drawX = cloud.x + cloud._bakeOffX * scaleX;
-      const drawY = cloud.y + cloud._bakeOffY * scaleY,
-        drawW = cloud._bakeW * scaleX,
-        drawH = cloud._bakeH * scaleY;
-      if (drawX + drawW < 0 || drawX > w || drawY + drawH < 0 || drawY > h)
-        continue;
-      ctx.drawImage(cloud._bakedCanvas, drawX, drawY, drawW, drawH);
-    }
-    ctx.globalAlpha = 1;
+    drawCelestialClouds(this, ctx, w, h, effectiveWind);
   }
   _drawClouds(ctx, cloudList, w, h, effectiveWind) {
-    if (cloudList.length === 0) return;
-    const fadeOpacity = this._layerFadeProgress.clouds;
-    if (fadeOpacity <= 0) return;
-    if (!this._renderState) return;
-    const yLift = h * 0.06;
-    ctx.globalAlpha = fadeOpacity;
-    for (let i = 0; i < cloudList.length; i++) {
-      const cloud = cloudList[i],
-        depthFactor = 1 + cloud.layer * 0.2;
-      cloud.x += cloud.speed * effectiveWind * depthFactor;
-      if (cloud.x > w + 280) cloud.x = -280;
-      if (cloud.x < -280) cloud.x = w + 280;
-      cloud.breathPhase += cloud.breathSpeed;
-      if (!cloud._bakedCanvas) continue;
-      const breathScale = 1 + Math.sin(cloud.breathPhase) * 0.022;
-      const drawScale = cloud.scale * breathScale,
-        yDrift = Math.sin(cloud.breathPhase * 2.4) * 3.5,
-        destX = cloud.x + cloud._bakeOffX * drawScale;
-      const destY = cloud.y - yLift + yDrift + cloud._bakeOffY * drawScale;
-      const destW = cloud._bakeLogicalW * drawScale,
-        destH = cloud._bakeLogicalH * drawScale;
-      if (destX + destW < 0 || destX > w || destY + destH < 0 || destY > h)
-        continue;
-      ctx.drawImage(
-        cloud._bakedCanvas,
-        cloud._atlasX,
-        cloud._atlasY,
-        cloud._atlasW,
-        cloud._atlasH,
-        destX,
-        destY,
-        destW,
-        destH,
-      );
-    }
-    ctx.globalAlpha = 1;
+    drawClouds(this, ctx, cloudList, w, h, effectiveWind);
   }
   _drawStars(ctx, w, h, dpr) {
-    const starFade = this._layerFadeProgress.stars,
-      starMode = this._renderState.starMode;
-    if (starFade <= 0.01 || starMode === "hidden") return;
-    const len = this._stars.length;
-    const isGolden = starMode === "golden";
-    const immH = this._isImmersive ? h * 0.95 : 0,
-      dotR = isGolden ? 0.55 : 0.5,
-      batches = new Map();
-    if (this._milkyWay) {
-      ctx.globalAlpha = starFade;
-      ctx.drawImage(this._milkyWay, 0, 0);
-      ctx.globalAlpha = 1;
-    }
-    for (let i = 0; i < len; i++) {
-      const s = this._stars[i];
-      s.phase += s.rate;
-      const twinkle =
-        Math.sin(s.phase) +
-        Math.sin(s.phase * 3) * 0.5 +
-        Math.sin(s.phase * 0.3) * 0.25;
-      const size = s.baseSize * (1 + twinkle * 0.3),
-        horizFade = immH > 0 ? 1 - Math.pow(s.y / immH, 3) : 1.0;
-      const op = Math.min(
-        1,
-        Math.max(0, s.brightness * (1 + twinkle * 0.22) * starFade * horizFade),
-      );
-      if (op <= 0.05) continue;
-      if (s.tier === "hero") {
-        ctx.globalCompositeOperation = isGolden ? "source-over" : "lighter";
-        ctx.globalAlpha = isGolden ? op * s._bodyAlphaRatio : op;
-        ctx.fillStyle = s._fill;
-        fillCircle(ctx, s.x, s.y, size * s._bodyR);
-        if (s._haloTex) {
-          ctx.globalAlpha = op;
-          const scale = size / s._haloRefSize;
-          const drawSize = s._haloTexSize * scale;
-          ctx.drawImage(
-            s._haloTex,
-            s.x - drawSize * 0.5,
-            s.y - drawSize * 0.5,
-            drawSize,
-            drawSize,
-          );
-        }
-        const spike = size * s._spikeLen;
-        ctx.globalAlpha = op * s._spikeRatio;
-        ctx.strokeStyle = s._stroke;
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(s.x - spike, s.y);
-        ctx.lineTo(s.x + spike, s.y);
-        ctx.moveTo(s.x, s.y - spike);
-        ctx.lineTo(s.x, s.y + spike);
-        ctx.stroke();
-        if (!isGolden && s._crownLen) {
-          const crown = size * s._crownLen;
-          ctx.globalAlpha = op * s._crownRatio;
-          ctx.translate(s.x, s.y);
-          ctx.rotate(s.phase * 0.18);
-          ctx.strokeStyle = s._stroke;
-          ctx.lineWidth = 0.8;
-          ctx.beginPath();
-          for (let r = 0; r < 4; r++) {
-            const a = (r / 4) * TWO_PI + Math.PI / 4;
-            ctx.moveTo(0, 0);
-            ctx.lineTo(Math.cos(a) * crown, Math.sin(a) * crown);
-          }
-          ctx.stroke();
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        ctx.globalCompositeOperation = "source-over";
-      } else {
-        const qOp = ((op * 20 + 0.5) | 0) / 20;
-        const key = s._fill + "|" + qOp;
-        let batch = batches.get(key);
-        if (!batch) {
-          batch = { fill: s._fill, op: qOp, items: [] };
-          batches.set(key, batch);
-        }
-        batch.items.push(s.x, s.y, size * dotR);
-      }
-    }
-    for (const batch of batches.values()) {
-      if (isGolden) ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = batch.op;
-      ctx.fillStyle = batch.fill;
-      ctx.beginPath();
-      const items = batch.items;
-      for (let j = 0; j < items.length; j += 3) {
-        ctx.moveTo(items[j] + items[j + 2], items[j + 1]);
-        ctx.arc(items[j], items[j + 1], items[j + 2], 0, TWO_PI);
-      }
-      ctx.fill();
-      if (isGolden) ctx.globalCompositeOperation = "source-over";
-    }
-    ctx.globalAlpha = 1;
+    drawStars(this, ctx, w, h, dpr);
   }
   _drawShootingStars(ctx, w, h) {
-    const fadeOpacity = this._layerFadeProgress.stars,
-      dpr = this._cachedDimensions.dpr;
-    const isUltra = this._perfEffects >= 2;
-    const trailCap = isUltra ? 36 : TRAIL_CAP_SHOOTING_STAR;
-    if (
-      Math.random() < 0.002145 &&
-      this._shootingStars.length < LIMITS.MAX_SHOOTING_STARS
-    ) {
-      let spawnX;
-      if (Math.random() < 0.7) {
-        spawnX = Math.random() * (w * 0.6);
-      } else {
-        spawnX = w * 0.6 + Math.random() * (w * 0.4);
-      }
-      const dirX = Math.random() < 0.3 ? -1 : 1,
-        bolide = Math.random() < 0.18;
-      const speed = bolide
-        ? 3.5 + Math.random() * 2.0
-        : 5.0 + Math.random() * 5.0;
-      const isInk = !this._isThemeDark,
-        colorRoll = Math.random();
-      let headRgb, tailRgb;
-      if (isInk) {
-        headRgb = "rgb(50,55,65)";
-        tailRgb = "rgb(60,65,80)";
-      } else if (colorRoll < 0.55) {
-        headRgb = "rgb(255,255,255)";
-        tailRgb = "rgb(255,255,240)";
-      } else if (colorRoll < 0.75) {
-        headRgb = "rgb(255,245,210)";
-        tailRgb = "rgb(255,230,180)";
-      } else if (colorRoll < 0.92) {
-        headRgb = "rgb(210,255,225)";
-        tailRgb = "rgb(180,240,200)";
-      } else {
-        headRgb = "rgb(255,210,160)";
-        tailRgb = "rgb(255,185,130)";
-      }
-      this._shootingStars.push({
-        x: spawnX,
-        y: Math.random() * (h * 0.5),
-        vx: speed * dirX,
-        vy: 2.0 + Math.random() * 2.0,
-        life: 1.0,
-        decay: bolide ? 0.032 : 0.045,
-        size: bolide ? 2.5 + Math.random() * 1.5 : 1.5 + Math.random() * 1.5,
-        _bolide: bolide,
-        _headRgb: headRgb,
-        _tailRgb: tailRgb,
-        tailBuf: new Float32Array(trailCap * 2),
-        tailHead: 0,
-        tailLen: 0,
-        _trailCap: trailCap,
-      });
-    }
-    ctx.lineCap = "round";
-    for (let i = this._shootingStars.length - 1; i >= 0; i--) {
-      const s = this._shootingStars[i];
-      s.x += s.vx;
-      s.vy += 0.045;
-      s.y += s.vy;
-      s.life -= s.decay;
-      const sCap = s._trailCap || TRAIL_CAP_SHOOTING_STAR;
-      s.tailBuf[s.tailHead * 2] = s.x;
-      s.tailBuf[s.tailHead * 2 + 1] = s.y;
-      s.tailHead = (s.tailHead + 1) % sCap;
-      if (s.tailLen < sCap) s.tailLen++;
-      if (s.life <= 0) {
-        this._shootingStars.splice(i, 1);
-        continue;
-      }
-      const opacity = s.life * fadeOpacity;
-      ctx.globalAlpha = opacity;
-      ctx.fillStyle = s._headRgb;
-      const flare = s._bolide && s.life < 0.15 ? 1 + (0.15 - s.life) * 8 : 1;
-      const headSize = s.size * (0.3 + s.life * 0.7) * flare;
-      fillCircle(ctx, s.x, s.y, headSize);
-      ctx.lineWidth = headSize * 0.8;
-      ctx.strokeStyle = s._tailRgb;
-      // Alpha-banded shooting star tail: 4 bands (22 segments → 4 strokes).
-      // Linear alpha fade approximated at band midpoints.
-      const tailSegs = s.tailLen - 1;
-      const tailBands = isUltra ? 8 : 4;
-      for (let band = 0; band < tailBands; band++) {
-        const jStart = ((band * tailSegs) / tailBands) | 0,
-          jEnd = (((band + 1) * tailSegs) / tailBands) | 0;
-        if (jStart >= jEnd) continue;
-        const midJ = (jStart + jEnd) * 0.5;
-        ctx.globalAlpha = opacity * (1 - midJ / s.tailLen);
-        ctx.beginPath();
-        for (let j = jStart; j <= jEnd; j++) {
-          const idx = (((s.tailHead - 1 - j) % sCap) + sCap) % sCap;
-          const px = s.tailBuf[idx * 2],
-            py = s.tailBuf[idx * 2 + 1];
-          if (j === jStart) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-      }
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.globalAlpha = 1;
+    drawShootingStars(this, ctx, w, h, LIMITS, TRAIL_CAP_SHOOTING_STAR);
   }
   _drawComets(ctx, w, h) {
-    const badWeather = this._renderState.isBadWeatherForComets,
-      dpr = this._cachedDimensions.dpr;
-    if (
-      this._isNight &&
-      !badWeather &&
-      this._comets.length === 0 &&
-      Math.random() < (this._perfEffects >= 2 ? 0.0005 : 0.0002728)
-    ) {
-      const startX = Math.random() < 0.5 ? -60 : w + 60,
-        dir = startX < 0 ? 1 : -1,
-        speed = 2.2 + Math.random() * 1.3,
-        isInk = !this._isThemeDark;
-      const colorRoll = Math.random();
-      let coreRgb, glowRgb, tailRgb;
-      if (isInk) {
-        coreRgb = "50,60,75";
-        glowRgb = "70,85,105";
-        tailRgb = "rgb(65,80,100)";
-      } else if (colorRoll < 0.5) {
-        coreRgb = "220,240,255";
-        glowRgb = "100,200,255";
-        tailRgb = "rgb(160,210,255)";
-      } else if (colorRoll < 0.78) {
-        coreRgb = "200,255,220";
-        glowRgb = "120,220,160";
-        tailRgb = "rgb(150,230,180)";
-      } else {
-        coreRgb = "255,240,200";
-        glowRgb = "230,190,100";
-        tailRgb = "rgb(240,210,150)";
-      }
-      this._comets.push({
-        x: startX,
-        y: Math.random() * (h * 0.4),
-        vx: speed * dir,
-        vy: speed * 0.15,
-        size: 1.5 + Math.random(),
-        life: 1.2,
-        _coreRgb: coreRgb,
-        _glowRgb: glowRgb,
-        _tailRgb: tailRgb,
-        tailBuf: new Float32Array(TRAIL_CAP_COMET * 2),
-        tailHead: 0,
-        tailLen: 0,
-      });
-    }
-    const fadeOpacity = this._layerFadeProgress.stars;
-    if (fadeOpacity <= 0) return;
-    for (let i = this._comets.length - 1; i >= 0; i--) {
-      const c = this._comets[i];
-      c.x += c.vx;
-      c.y += c.vy;
-      c.life -= 0.005;
-      if (c.life <= 0) {
-        this._comets.splice(i, 1);
-        continue;
-      }
-      c.tailBuf[c.tailHead * 2] = c.x;
-      c.tailBuf[c.tailHead * 2 + 1] = c.y;
-      c.tailHead = (c.tailHead + 1) % TRAIL_CAP_COMET;
-      if (c.tailLen < TRAIL_CAP_COMET) c.tailLen++;
-      if (c.tailLen > 2) {
-        const newestIdx =
-          (((c.tailHead - 1) % TRAIL_CAP_COMET) + TRAIL_CAP_COMET) %
-          TRAIL_CAP_COMET;
-        const oldestIdx =
-          (((c.tailHead - c.tailLen) % TRAIL_CAP_COMET) + TRAIL_CAP_COMET) %
-          TRAIL_CAP_COMET;
-        const hx = c.tailBuf[newestIdx * 2],
-          hy = c.tailBuf[newestIdx * 2 + 1];
-        const tx = c.tailBuf[oldestIdx * 2],
-          ty = c.tailBuf[oldestIdx * 2 + 1];
-        const currentDist = Math.sqrt((hx - tx) ** 2 + (hy - ty) ** 2);
-        if (currentDist > 170) c.tailLen--;
-      }
-      const opacity = Math.min(1, c.life) * fadeOpacity;
-      if (!c._g) {
-        const r = c.size * 4,
-          g = ctx.createRadialGradient(0, 0, 0, 0, 0, r);
-        g.addColorStop(0, `rgba(${c._coreRgb},1)`);
-        g.addColorStop(0.4, `rgba(${c._glowRgb},0.4)`);
-        g.addColorStop(1, `rgba(${c._glowRgb},0)`);
-        c._g = g;
-      }
-      ctx.globalAlpha = opacity;
-      ctx.translate(c.x, c.y);
-      ctx.fillStyle = c._g;
-      fillCircle(ctx, 0, 0, c.size * 4);
-      ctx.translate(-c.x, -c.y);
-      ctx.lineCap = "butt";
-      ctx.lineJoin = "round";
-      ctx.strokeStyle = c._tailRgb;
-      const tailSegs = c.tailLen - 1;
-      for (let band = 0; band < 8; band++) {
-        const jStart = ((band * tailSegs) / 8) | 0,
-          jEnd = (((band + 1) * tailSegs) / 8) | 0;
-        if (jStart >= jEnd) continue;
-        const midP = ((jStart + jEnd) * 0.5) / c.tailLen;
-        ctx.lineWidth = c.size * (1 - midP * 0.8);
-        ctx.globalAlpha = opacity * (1 - midP) * 0.6;
-        ctx.beginPath();
-        for (let j = jStart; j <= jEnd; j++) {
-          const idx =
-            (((c.tailHead - 1 - j) % TRAIL_CAP_COMET) + TRAIL_CAP_COMET) %
-            TRAIL_CAP_COMET;
-          const px = c.tailBuf[idx * 2],
-            py = c.tailBuf[idx * 2 + 1];
-          if (j === jStart) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-      }
-    }
-    ctx.globalAlpha = 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawComets(this, ctx, w, h, TRAIL_CAP_COMET);
   }
   _drawMoon(ctx, w, h) {
-    if (!this._isTimeNight) return;
-    if (!this._stateInitialized || !this._renderGate.isRevealed) return;
-    const fadeOpacity = this._layerFadeProgress.stars;
-    if (fadeOpacity <= 0.05) return;
-    const celestial = this._getCelestialPosition(w, h);
-    const moonX = celestial.x,
-      moonY = celestial.y;
-    const sunBaseR = this._celestialSize ? this._celestialSize / 2 : 31;
-    const moonRadius = sunBaseR * 0.85;
-    const moonScale = moonRadius / 18; // crater geometry authored at r=18
-    const useLightColors = !this._isThemeDark;
-    const rawMoonStyle = (
-      this._config.celestial_moon_style || ""
-    ).toLowerCase();
-    const isColoredStyle =
-      rawMoonStyle === "yellow" ||
-      rawMoonStyle === "blue" ||
-      rawMoonStyle === "purple" ||
-      rawMoonStyle === "grey";
-    const mStyleKey = isColoredStyle
-      ? rawMoonStyle
-      : useLightColors
-        ? "blue"
-        : "dark";
-    ctx.save();
-    if (this._moonRotationRad) {
-      ctx.translate(moonX, moonY);
-      ctx.rotate(this._moonRotationRad);
-      ctx.translate(-moonX, -moonY);
-    }
-    const cloudCover = (this._params && this._params.cloud) || 0;
-    const glowWeatherScale =
-      cloudCover > 30 ? 0.4 : cloudCover > 20 ? 0.6 : cloudCover > 10 ? 0.8 : 1;
-    const glowIntensity = 0.23 + this._moonPhaseConfig.illumination * 0.18;
-    const atmScale =
-      !useLightColors && (this._params && this._params.atmosphere) === "fair"
-        ? 0.79
-        : 1.0;
-    let effectiveGlow =
-      glowIntensity * fadeOpacity * glowWeatherScale * atmScale;
-    if (useLightColors) effectiveGlow *= 0.85;
-    const cacheKey = mStyleKey + (useLightColors ? "L" : "D");
-    if (
-      !this._moonCache ||
-      this._moonCache.key !== cacheKey ||
-      this._moonCache.mr !== moonRadius
-    ) {
-      this._moonCache = this._buildMoonCache(
-        ctx,
-        moonRadius,
-        moonScale,
-        w,
-        h,
-        useLightColors,
-        mStyleKey,
-      );
-      this._moonCache.key = cacheKey;
-      this._moonCache.mr = moonRadius;
-    }
-    const mc = this._moonCache;
-    if (useLightColors) {
-      ctx.globalCompositeOperation = "source-over";
-      const lightGlowR = mc.glowR;
-      ctx.save();
-      ctx.translate(moonX, moonY);
-      ctx.globalAlpha = effectiveGlow * mc.glowPeak;
-      ctx.fillStyle = mc.glow;
-      fillCircle(ctx, 0, 0, lightGlowR);
-      ctx.restore();
-      ctx.beginPath();
-      ctx.arc(moonX, moonY, moonRadius + 1.5, 0, TWO_PI);
-      const rsKey = MOON_STYLE_COLORS.ringStroke[mStyleKey]
-        ? mStyleKey
-        : "yellow";
-      const ringCfg = MOON_STYLE_COLORS.ringStroke[rsKey];
-      ctx.globalAlpha = ringCfg.op * fadeOpacity;
-      ctx.strokeStyle = ringCfg._rgb || (ringCfg._rgb = `rgb(${ringCfg.rgb})`);
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    } else {
-      const maxR = Math.min(
-        Math.min(h, w) * 0.28 * moonScale,
-        moonX,
-        w - moonX,
-        moonY,
-        h - moonY,
-      );
-      if (!mc.darkGlow || mc.darkGlowR !== maxR) {
-        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, maxR);
-        g.addColorStop(0, "rgba(180, 200, 255, 1)");
-        g.addColorStop(0.5, "rgba(165, 195, 245, 0.4)");
-        g.addColorStop(1, "rgba(150, 180, 220, 0)");
-        mc.darkGlow = g;
-        mc.darkGlowR = maxR;
-      }
-      ctx.globalCompositeOperation = "screen";
-      ctx.save();
-      ctx.translate(moonX, moonY);
-      ctx.globalAlpha = effectiveGlow;
-      ctx.fillStyle = mc.darkGlow;
-      fillCircle(ctx, 0, 0, maxR);
-      ctx.restore();
-    }
-    ctx.globalCompositeOperation = "source-over";
-    if (!useLightColors) {
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.fillStyle = "rgba(0, 0, 0, 1)";
-      fillCircle(ctx, moonX, moonY, moonRadius - 0.5);
-      ctx.restore();
-    } else {
-      ctx.save();
-      ctx.globalAlpha = fadeOpacity;
-      ctx.fillStyle =
-        MOON_STYLE_COLORS.lightDisc[mStyleKey] || "rgb(228,234,248)";
-      fillCircle(ctx, moonX, moonY, moonRadius - 0.5);
-      ctx.restore();
-    }
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(moonX, moonY, moonRadius, 0, TWO_PI);
-    ctx.clip();
-    const illumination = this._moonPhaseConfig.illumination;
-    const direction = this._moonPhaseConfig.direction;
-    if (illumination <= 0) {
-      const nmKey = mStyleKey,
-        nmFills = MOON_STYLE_COLORS.newMoon[nmKey];
-      for (let fi = 0; fi < nmFills.length; fi++) {
-        const fill = nmFills[fi];
-        ctx.globalAlpha = fill.op * fadeOpacity;
-        ctx.fillStyle = fill._rgb || (fill._rgb = `rgb(${fill.rgb})`);
-        fillCircle(ctx, moonX, moonY, moonRadius);
-      }
-      ctx.globalAlpha = 1;
-    } else if (illumination >= 1) {
-      ctx.save();
-      ctx.translate(moonX, moonY);
-      ctx.globalAlpha = fadeOpacity * mc.fullDiscPeak;
-      ctx.fillStyle = mc.fullDisc;
-      fillCircle(ctx, 0, 0, moonRadius);
-      ctx.restore();
-    } else {
-      const dsKey = mStyleKey;
-      const ds = MOON_STYLE_COLORS.darkSide[dsKey];
-      ctx.globalAlpha = ds.op * fadeOpacity;
-      ctx.fillStyle = ds._rgb || (ds._rgb = `rgb(${ds.rgb})`);
-      fillCircle(ctx, moonX, moonY, moonRadius);
-      ctx.globalAlpha = 1;
-      if (!useLightColors) {
-        const earthshineOp = (1 - illumination) * 0.08 * fadeOpacity;
-        ctx.globalAlpha = earthshineOp;
-        ctx.fillStyle = "rgb(100, 115, 145)";
-        fillCircle(ctx, moonX, moonY, moonRadius);
-        ctx.globalAlpha = 1;
-      }
-      const terminatorWidth = Math.abs(1 - illumination * 2) * moonRadius,
-        isGibbous = illumination > 0.5;
-      ctx.beginPath();
-      if (direction === "right") {
-        ctx.arc(moonX, moonY, moonRadius, -Math.PI / 2, Math.PI / 2, false);
-        ctx.ellipse(
-          moonX,
-          moonY,
-          terminatorWidth,
-          moonRadius,
-          0,
-          Math.PI / 2,
-          -Math.PI / 2,
-          !isGibbous,
-        );
-      } else {
-        ctx.arc(moonX, moonY, moonRadius, Math.PI / 2, -Math.PI / 2, false);
-        ctx.ellipse(
-          moonX,
-          moonY,
-          terminatorWidth,
-          moonRadius,
-          0,
-          -Math.PI / 2,
-          Math.PI / 2,
-          !isGibbous,
-        );
-      }
-      ctx.closePath();
-      ctx.save();
-      ctx.translate(moonX, moonY);
-      ctx.globalAlpha = fadeOpacity * mc.partDiscPeak;
-      ctx.fillStyle = mc.partDisc;
-      ctx.fill();
-      ctx.restore();
-    }
-    ctx.save();
-    ctx.translate(moonX, moonY);
-    ctx.globalAlpha = fadeOpacity;
-    ctx.fillStyle = mc.limbDark;
-    fillCircle(ctx, 0, 0, moonRadius);
-    ctx.restore();
-    ctx.restore();
-    // Craters — drawn from MOON_CRATERS geometry table, scaled with moon size.
-    // Unrolled: avoids per-frame array allocation in hot path.
-    if (illumination > 0.05) {
-      const op = fadeOpacity * Math.min(1, illumination * 4.0),
-        ms = moonScale,
-        lc = useLightColors;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(moonX, moonY, moonRadius, 0, TWO_PI);
-      ctx.clip();
-      ctx.shadowOffsetX = 0.8 * ms;
-      ctx.shadowOffsetY = 0.8 * ms;
-      ctx.shadowBlur = 2.0 * ms;
-      ctx.shadowColor = lc ? "rgba(100,110,140,0.25)" : "rgba(0,0,0,0.45)";
-      ctx.globalAlpha = op * (lc ? 0.12 : 0.13);
-      ctx.fillStyle = lc ? "rgb(180,190,210)" : "rgb(30,35,50)";
-      for (let m = 0; m < MOON_CRATERS.maria.length; m++) {
-        const c = MOON_CRATERS.maria[m];
-        ctx.beginPath();
-        ctx.ellipse(
-          moonX + c.dx * ms,
-          moonY + c.dy * ms,
-          c.rx * ms,
-          c.ry * ms,
-          c.rot,
-          0,
-          TWO_PI,
-        );
-        ctx.fill();
-      }
-      ctx.globalAlpha = op * (lc ? 0.16 : 0.22);
-      ctx.fillStyle = lc ? "rgb(170,180,200)" : "rgb(25,30,45)";
-      for (let m = 0; m < MOON_CRATERS.mariaInner.length; m++) {
-        const c = MOON_CRATERS.mariaInner[m];
-        ctx.beginPath();
-        ctx.ellipse(
-          moonX + c.dx * ms,
-          moonY + c.dy * ms,
-          c.rx * ms,
-          c.ry * ms,
-          c.rot,
-          0,
-          TWO_PI,
-        );
-        ctx.fill();
-      }
-      ctx.shadowColor = "transparent";
-      ctx.globalAlpha = op * (lc ? 0.1 : 0.13);
-      ctx.fillStyle = lc ? "rgb(175,185,205)" : "rgb(25,30,45)";
-      for (let m = 0; m < MOON_CRATERS.detail.length; m++) {
-        const c = MOON_CRATERS.detail[m];
-        fillCircle(ctx, moonX + c.dx * ms, moonY + c.dy * ms, c.r * ms);
-      }
-      ctx.globalAlpha = op * (lc ? 0.1 : 0.12);
-      ctx.fillStyle = lc ? "rgb(255,255,255)" : "rgb(200,210,230)";
-      for (let m = 0; m < MOON_CRATERS.rimHighlights.length; m++) {
-        const c = MOON_CRATERS.rimHighlights[m];
-        fillCircle(ctx, moonX + c.dx * ms, moonY + c.dy * ms, c.r * ms);
-      }
-      ctx.globalAlpha = 1;
-      ctx.restore();
-    }
-    ctx.restore();
+    drawMoon(this, ctx, w, h, MOON_STYLE_COLORS, MOON_CRATERS);
   }
   _drawRain(ctx, w, h, effectiveWind) {
-    const fadeOpacity = this._layerFadeProgress.precipitation;
-    if (fadeOpacity <= 0) return;
-    const isDay = this._isLightBackground;
-    const len = this._rain.length,
-      dpr = this._cachedDimensions.dpr;
-    if (!this._rainTex) return;
-    for (let i = 0; i < len; i++) {
-      const pt = this._rain[i];
-      pt.turbulence += 0.025;
-      const turbX = Math.sin(pt.turbulence) * 0.4;
-      const speedFactor = (1 + this._windSpeed * 0.25) * (pt.z * 0.8 + 0.2),
-        moveX = (effectiveWind * 1.8 + turbX) * (pt.z * 0.65 + 0.35);
-      const moveY = pt.speedY * speedFactor;
-      pt.x += moveX;
-      pt.y += moveY;
-      if (pt.y > h + 10) {
-        pt.y = -40 - Math.random() * 20;
-        pt.x = Math.random() * w;
-      }
-      if (pt.x > w + 20) pt.x = -20;
-      else if (pt.x < -20) pt.x = w + 20;
-      const baseOp = isDay ? 0.75 : 0.6,
-        finalOp = pt.z * baseOp * fadeOpacity * pt.op;
-      if (finalOp < 0.02) continue;
-      const dropLen = pt.len * (1.0 + this._windSpeed * 0.3);
-      const width = Math.max(0.6, pt.z * 1.2);
-      ctx.translate(pt.x, pt.y);
-      ctx.rotate(Math.atan2(moveY, moveX));
-      ctx.globalAlpha = finalOp;
-      ctx.drawImage(this._rainTex, -dropLen, -width / 2, dropLen, width);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    ctx.globalAlpha = 1;
+    drawRain(this, ctx, w, h, effectiveWind);
   }
   _drawSnow(ctx, w, h, effectiveWind) {
-    const fadeOpacity = this._layerFadeProgress.precipitation;
-    if (fadeOpacity <= 0) return;
-    const len = this._snow.length;
-    const isLight = this._isLightBackground;
-    if (!this._snowTexFg) return;
-    for (let i = 0; i < len; i++) {
-      const pt = this._snow[i];
-      pt.wobblePhase += pt.wobbleSpeed;
-      const wobble = Math.sin(pt.wobblePhase) * 1.5;
-      pt.turbulence += 0.01;
-      const turbX = Math.sin(pt.turbulence) * 0.5;
-      pt.y += pt.speedY;
-      pt.x += (wobble + turbX + effectiveWind * 0.8) * (pt.z * 0.65 + 0.35);
-      if (pt.y > h + 5) {
-        pt.y = -5;
-        pt.x = Math.random() * w;
-      }
-      if (pt.x > w + 10) pt.x = -10;
-      else if (pt.x < -10) pt.x = w + 10;
-      const shimmer = 0.92 + Math.sin(pt.wobblePhase * 2.5) * 0.08,
-        glimmer = 0.8 + Math.sin(pt.wobblePhase * 3) * 0.2;
-      const finalOpacity = pt.op * fadeOpacity * glimmer,
-        drawSize = pt.size * shimmer;
-      if (pt.z > 0.7) {
-        const gMul = isLight ? 1.4 : 1.0;
-        const gRad = isLight ? 0.9 : 1.5,
-          r = drawSize * gRad;
-        ctx.globalAlpha = Math.min(1, finalOpacity * gMul);
-        ctx.drawImage(this._snowTexFg, pt.x - r, pt.y - r, r * 2, r * 2);
-      } else {
-        const smallR = drawSize * 0.75;
-        const alphaOp = isLight ? 1.3 : 0.8;
-        ctx.globalAlpha = Math.min(1, finalOpacity * alphaOp);
-        ctx.drawImage(
-          this._snowTexBg,
-          pt.x - smallR,
-          pt.y - smallR,
-          smallR * 2,
-          smallR * 2,
-        );
-      }
-    }
-    ctx.globalAlpha = 1;
+    drawSnow(this, ctx, w, h, effectiveWind);
   }
   _drawHail(ctx, w, h, effectiveWind) {
-    const fadeOpacity = this._layerFadeProgress.precipitation;
-    if (fadeOpacity <= 0) return;
-    const len = this._hail.length;
-    const dpr = this._cachedDimensions.dpr;
-    if (!this._hailTex) return;
-    for (let i = 0; i < len; i++) {
-      const pt = this._hail[i];
-      pt.turbulence += 0.035;
-      const turbX = Math.sin(pt.turbulence) * 1.2;
-      pt.y += pt.speedY * (1 + this._windSpeed * 0.35);
-      pt.x += (effectiveWind * 2.5 + turbX) * (pt.z * 0.65 + 0.35);
-      pt.rotation += pt.rotationSpeed;
-      if (pt.y > h + 10) {
-        pt.y = -15 - Math.random() * 20;
-        pt.x = Math.random() * w;
-      }
-      const baseOp = pt.z > 1.1 ? pt.op * 1.1 : pt.op * 0.75;
-      ctx.globalAlpha = baseOp * fadeOpacity;
-      ctx.translate(pt.x, pt.y);
-      ctx.rotate(pt.rotation);
-      ctx.drawImage(
-        this._hailTex,
-        -pt.size,
-        -pt.size,
-        pt.size * 2,
-        pt.size * 2,
-      );
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    ctx.globalAlpha = 1;
+    drawHail(this, ctx, w, h, effectiveWind);
   }
   _drawLightning(ctx, w, h) {
-    if (!(this._params && this._params.thunder)) return;
-    const fadeOpacity = this._layerFadeProgress.effects;
-    const isStandalone = this._config.card_style === "standalone";
-    if (Math.random() < 0.0072 && this._bolts.length < LIMITS.MAX_BOLTS) {
-      this._flashOpacity = 0.92;
-      this._flashHold = this._isLightBackground ? 7 : 6;
-      this._bolts.push(this._createBolt(w, h));
-      if (Math.random() < 0.25 && this._bolts.length < LIMITS.MAX_BOLTS) {
-        this._bolts.push(this._createBolt(w, h));
-      }
-    }
-    if (!this._isLightBackground && isStandalone) {
-      ctx.save();
-      ctx.globalCompositeOperation = "source-over";
-      ctx.globalAlpha = 0.18 * fadeOpacity;
-      ctx.fillStyle = "rgb(0, 0, 10)";
-      ctx.fillRect(0, 0, w, h);
-      ctx.restore();
-    }
-    if (this._flashOpacity > 0) {
-      if (this._flashHold > 0) {
-        this._flashHold--;
-      } else {
-        this._flashOpacity *= this._isLightBackground ? 0.72 : 0.62;
-        if (
-          this._flashOpacity > 0.08 &&
-          this._flashOpacity < 0.45 &&
-          Math.random() < 0.12
-        ) {
-          this._flashOpacity = 0.5 + Math.random() * 0.25;
-          this._flashHold = 2;
-        }
-      }
-      if (isStandalone) {
-        ctx.save();
-        ctx.globalCompositeOperation = this._isThemeDark
-          ? "screen"
-          : "source-over";
-        ctx.globalAlpha =
-          this._flashOpacity *
-          fadeOpacity *
-          (this._isLightBackground ? 0.8 : 0.5);
-        ctx.fillStyle = this._isLightBackground
-          ? "rgb(255, 255, 255)"
-          : "rgb(220, 235, 255)";
-        ctx.fillRect(0, 0, w, h);
-        ctx.restore();
-      }
-      if (this._flashOpacity < 0.005) this._flashOpacity = 0;
-    }
-    if (this._bolts.length > 0) {
-      ctx.save();
-      ctx.globalCompositeOperation = this._isThemeDark
-        ? "lighter"
-        : "source-over";
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      for (let i = this._bolts.length - 1; i >= 0; i--) {
-        const bolt = this._bolts[i],
-          segs = bolt.segments,
-          segLen = segs.length;
-        // Build trunk path once, stroke multiple times for glow layers
-        ctx.beginPath();
-        for (let j = 0; j < segLen; j++) {
-          const seg = segs[j];
-          if (!seg.branch) {
-            if (seg.y === 0) ctx.moveTo(seg.x, seg.y);
-            ctx.lineTo(seg.nx, seg.ny);
-          }
-        }
-        // Glow passes (skip when glow has decayed to zero)
-        if (bolt.glow > 0) {
-          // Pass 1: Wide diffuse glow (replaces shadowBlur = 20)
-          ctx.globalAlpha = bolt.glow * fadeOpacity * 0.15;
-          ctx.strokeStyle = bolt._glowStroke;
-          ctx.lineWidth = 24;
-          ctx.stroke();
-          // Pass 2: Medium glow halo
-          ctx.globalAlpha = bolt.glow * fadeOpacity * 0.3;
-          ctx.lineWidth = 14;
-          ctx.stroke();
-        }
-        // Pass 3: Outer visible stroke (always active while bolt lives)
-        ctx.globalAlpha = bolt.alpha * 0.35 * fadeOpacity;
-        ctx.strokeStyle = bolt._outerStroke;
-        ctx.lineWidth = 8;
-        ctx.stroke();
-        // Pass 4: Hot white core (re-strokes same trunk path)
-        ctx.globalAlpha = bolt.alpha * fadeOpacity;
-        ctx.strokeStyle = bolt._coreStroke;
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-        // Branches — thin secondary forks
-        ctx.globalAlpha = bolt.alpha * 0.6 * fadeOpacity;
-        ctx.strokeStyle = bolt._branchStroke;
-        ctx.lineWidth = 1.5;
-        for (let j = 0; j < segLen; j++) {
-          const seg = segs[j];
-          if (seg.branch) {
-            ctx.beginPath();
-            ctx.moveTo(seg.x, seg.y);
-            ctx.lineTo(seg.nx, seg.ny);
-            ctx.stroke();
-          }
-        }
-        bolt.alpha -= 0.05;
-        if (bolt.glow > 0) bolt.glow -= 0.075;
-        if (bolt.alpha <= 0) this._bolts.splice(i, 1);
-      }
-      ctx.restore();
-    }
+    drawLightning(this, ctx, w, h, LIMITS);
   }
   _drawAurora(ctx, w) {
-    if (!this._aurora) return;
-    const fadeOpacity = this._layerFadeProgress.effects;
-    this._aurora.phase += 0.006;
-    ctx.save();
-    ctx.globalCompositeOperation = this._isThemeDark
-      ? "lighter"
-      : "source-over";
-    ctx.globalAlpha = fadeOpacity;
-    const waves = this._aurora.waves;
-    const waveLen = waves.length;
-    for (let wi = 0; wi < waveLen; wi++) {
-      const wave = waves[wi];
-      if (!wave._g) {
-        const g = ctx.createLinearGradient(0, wave.y - 20, 0, wave.y + 50);
-        g.addColorStop(0, "rgba(0, 0, 0, 0)");
-        g.addColorStop(0.3, wave.color);
-        g.addColorStop(0.6, wave.color.replace(/[\d.]+\)$/, "0.1)"));
-        g.addColorStop(1, "rgba(0, 0, 0, 0)");
-        wave._g = g;
-      }
-      ctx.fillStyle = wave._g;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x += 6) {
-        const y =
-          wave.y +
-          Math.sin(
-            x * wave.wavelength +
-              this._aurora.phase * wave.speed * 100 +
-              wave.offset,
-          ) *
-            wave.amplitude;
-        if (x === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      }
-      ctx.lineTo(w, wave.y + 60);
-      ctx.lineTo(0, wave.y + 60);
-      ctx.closePath();
-      ctx.fill();
-    }
-    ctx.restore();
+    drawAurora(this, ctx, w);
   }
   _drawFog(ctx, w) {
-    const fadeOpacity = this._layerFadeProgress.effects,
-      len = this._fogBanks.length,
-      dpr = this._cachedDimensions.dpr;
-    if (fadeOpacity <= 0) return;
-    for (let i = 0; i < len; i++) {
-      const f = this._fogBanks[i];
-      f.x += f.speed;
-      f.phase += 0.008;
-      if (f.x > w + f.w / 2) f.x = -f.w / 2;
-      if (f.x < -f.w / 2) f.x = w + f.w / 2;
-      const undulation = Math.sin(f.phase) * 5;
-      if (!f._g) {
-        const color = this._isLightBackground
-          ? "190,200,215"
-          : this._isTimeNight
-            ? "85,90,105"
-            : "72,81,95";
-        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, f.w / 2);
-        g.addColorStop(0, `rgba(${color},1)`);
-        g.addColorStop(0.5, `rgba(${color},0.6)`);
-        g.addColorStop(1, `rgba(${color},0)`);
-        f._g = g;
-        f._baseOp =
-          f.opacity *
-          (1 + f.layer * 0.2) *
-          (this._isLightBackground ? 0.6 : 1.0);
-      }
-      const vSquash = 0.1 + f.layer * 0.18;
-      ctx.scale(1, vSquash);
-      const drawY = (f.y + undulation) / vSquash;
-      ctx.globalAlpha = f._baseOp * fadeOpacity;
-      ctx.translate(f.x, drawY);
-      ctx.fillStyle = f._g;
-      ctx.beginPath();
-      ctx.ellipse(0, 0, f.w / 2, f.h, 0, 0, TWO_PI);
-      ctx.fill();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    ctx.globalAlpha = 1;
+    drawFog(this, ctx, w);
   }
   _drawWindVapor(ctx, w, h, effectiveWind) {
-    const fadeOpacity = this._layerFadeProgress.effects;
-    if (fadeOpacity <= 0) return;
-    if (!this._vaporTex) return;
-    const p = this._params,
-      windKmh = this._windKmh || 0,
-      dpr = this._cachedDimensions.dpr,
-      windNorm = Math.min(1.0, Math.max(0, windKmh / 50));
-    const windIntensity = windNorm * windNorm,
-      isWindy = p.windVapor === true,
-      pool = this._windVapor.length;
-    let activeCount, vaporOp, baseHStretch, speedMul;
-    if (isWindy) {
-      activeCount = pool;
-      vaporOp = 1.0;
-      baseHStretch = 1.2 + 0.8 * windIntensity;
-      speedMul = 0.12 + 0.35 * windIntensity;
-    } else if (windKmh >= 15) {
-      activeCount = Math.round(pool * 0.75);
-      vaporOp = 0.9;
-      baseHStretch = 1.0 + 0.4 * windIntensity;
-      speedMul = 0.06 + 0.18 * windIntensity;
-    } else {
-      activeCount = Math.round(pool * 0.58);
-      vaporOp = 0.92;
-      baseHStretch = 1.0;
-      speedMul = 0.03;
-    }
-    if (this._isDarkDayImmersive) {
-      activeCount = Math.max(activeCount, Math.round(pool * 0.58));
-      vaporOp = Math.max(vaporOp, 1.05);
-    }
-    const len = Math.min(pool, activeCount);
-    if (len <= 0) return;
-    const gustVal = this._windGust * windIntensity;
-    const isDark = this._isThemeDark;
-    const rotFade = isWindy
-      ? 0
-      : windKmh >= 15
-        ? Math.max(0, 1 - windIntensity * 2.0)
-        : 1.0;
-    const windThin = 1.0 - windIntensity * 0.25,
-      shear = windIntensity * 0.12;
-    ctx.globalCompositeOperation = isDark ? "screen" : "source-over";
-    for (let i = 0; i < len; i++) {
-      const v = this._windVapor[i];
-      v.phase += v.phaseSpeed * Math.max(speedMul, 0.04);
-      const gustBoost = Math.max(0, gustVal) * v.gustWeight * 1.2;
-      const baseVelocity = v.speed * speedMul + effectiveWind * speedMul;
-      v.x += (baseVelocity + gustBoost) * (1 + this._windSpeed * 0.15);
-      const undulation = Math.sin(v.phase) * v.drift;
-      if (v.x > w + v.w) v.x = -v.w;
-      if (v.x < -v.w * 1.5) v.x = w + v.w;
-      const tierOp = isDark ? 0.28 + v.tier * 0.24 : 0.45 + v.tier * 0.28;
-      const depthFade = 0.4 + (v.depthNorm || 0.5) * 0.6,
-        gustOpBump = Math.max(0, gustVal) * 0.15;
-      const hStretch = baseHStretch + Math.max(0, gustVal) * 0.25,
-        drawW = v.w * hStretch,
-        drawH = Math.min(10, v.w * v.squash * windThin);
-      ctx.globalAlpha = Math.min(
-        1.0,
-        (tierOp + gustOpBump) *
-          depthFade *
-          fadeOpacity *
-          vaporOp *
-          (isDark ? 0.85 : 1),
-      );
-      const rot = v.baseRotation * rotFade + Math.sin(v.phase * 0.7) * 0.02,
-        curve = v.curvature || 0,
-        sh = shear * (v.tier * 0.5 + 0.5) + curve;
-      ctx.setTransform(
-        dpr,
-        sh * dpr,
-        0,
-        dpr,
-        v.x * dpr,
-        (v.y + undulation) * dpr,
-      );
-      ctx.rotate(rot);
-      if (v.taperDir < 0) ctx.scale(-1, 1);
-      ctx.drawImage(this._vaporTex, -drawW * 0.5, -drawH * 0.5, drawW, drawH);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = "source-over";
+    drawWindVapor(this, ctx, w, h, effectiveWind);
   }
   _drawBirds(ctx, w, h) {
-    for (let i = this._birds.length - 1; i >= 0; i--) {
-      const b = this._birds[i];
-      b.x += b.vx;
-      b.flapPhase += b.flapSpeed;
-      b.y += b.vy - Math.sin(b.flapPhase) * b.size * 0.04;
-      const isOffRight = b.vx > 0 && b.x > w + 100;
-      const isOffLeft = b.vx < 0 && b.x < -100;
-      if (isOffRight || isOffLeft) this._birds.splice(i, 1);
-    }
-    const p = this._params,
-      isSevereWeather = this._renderState.isSevereWeather;
-    if (
-      !isSevereWeather &&
-      this._birds.length === 0 &&
-      Math.random() < (1.0 / 30) * this._faunaBirdDensity
-    ) {
-      const dir = Math.random() > 0.5 ? 1 : -1,
-        startX = dir === 1 ? -60 : w + 60,
-        depthScale = 0.9 + Math.random() * 0.5;
-      const baseSpeed = 0.9 + Math.random() * 0.5,
-        finalSpeed = baseSpeed * depthScale * dir,
-        isSingle = Math.random() < 0.3;
-      const flockSize = isSingle
-          ? 1
-          : Math.max(
-              1,
-              Math.round(this._faunaBirdFlockSize + (Math.random() - 0.5) * 4),
-            ),
-        startY = h * 0.2 + Math.random() * (h * 0.47);
-      this._birds.push({
-        x: startX,
-        y: startY,
-        vx: finalSpeed,
-        vy: (Math.random() - 0.5) * 0.1,
-        flapPhase: 0,
-        flapSpeed: 0.15 + Math.random() * 0.05,
-        size: 2.4 * depthScale,
-      });
-      if (!isSingle) {
-        const formation = Math.floor(Math.random() * 3),
-          ySlope = Math.random() > 0.5 ? 1 : -1;
-        for (let i = 1; i < flockSize; i++) {
-          let offX = 0,
-            offY = 0;
-          if (formation === 0) {
-            const row = Math.floor((i + 1) / 2),
-              side = i % 2 === 0 ? 1 : -1;
-            offX = -15 * row;
-            offY = 8 * row * side;
-          } else if (formation === 1) {
-            offX = -18 * i;
-            offY = 10 * i * ySlope;
-          } else {
-            offX = -15 * i + (Math.random() - 0.5) * 20;
-            offY = (Math.random() - 0.5) * 40;
-          }
-          const scaledOffX = offX * depthScale,
-            scaledOffY = offY * depthScale;
-          this._birds.push({
-            x: startX + scaledOffX * dir,
-            y: startY + scaledOffY,
-            vx: finalSpeed,
-            vy: (Math.random() - 0.5) * 0.05,
-            flapPhase: i + Math.random(),
-            flapSpeed: 0.15 + Math.random() * 0.05,
-            size: (1.8 + Math.random() * 0.6) * depthScale,
-          });
-        }
-      }
-    }
-    if (this._birds.length === 0) return;
-    const birdColor = this._isLightBackground
-      ? "rgba(40, 45, 50, 0.8)"
-      : "rgba(195, 203, 212, 0.55)";
-    ctx.save();
-    ctx.strokeStyle = birdColor;
-    ctx.lineJoin = "round";
-    ctx.lineCap = "round";
-    const widthBuckets = new Map();
-    const len = this._birds.length;
-    for (let i = 0; i < len; i++) {
-      const b = this._birds[i],
-        envelope = Math.sin(b.flapPhase * 0.35);
-      const wingOffset = Math.sin(b.flapPhase) * b.size * Math.max(0, envelope);
-      const dir = b.vx > 0 ? 1 : -1,
-        lw = Math.max(0.8, b.size * 0.5),
-        qw = Math.round(lw * 4) / 4;
-      let bucket = widthBuckets.get(qw);
-      if (!bucket) {
-        bucket = [];
-        widthBuckets.set(qw, bucket);
-      }
-      const halfSpan = b.size / 2.4;
-      bucket.push(
-        b.x - b.size * dir,
-        b.y + wingOffset - halfSpan,
-        b.x,
-        b.y,
-        b.x - b.size * dir,
-        b.y + wingOffset + halfSpan,
-      );
-    }
-    for (const [lw, pts] of widthBuckets) {
-      ctx.lineWidth = lw;
-      ctx.beginPath();
-      for (let j = 0; j < pts.length; j += 6) {
-        ctx.moveTo(pts[j], pts[j + 1]);
-        ctx.lineTo(pts[j + 2], pts[j + 3]);
-        ctx.lineTo(pts[j + 4], pts[j + 5]);
-      }
-      ctx.stroke();
-    }
-    ctx.restore();
+    drawBirds(this, ctx, w, h);
+  }
+  _drawBalloons(ctx, w, h) {
+    drawBalloons(this, ctx, w, h);
   }
   _drawPlanes(ctx, w, h) {
-    const dpr = this._cachedDimensions.dpr;
-    if (
-      this._planes.length === 0 &&
-      Math.random() < 0.0025 * this._faunaPlaneDensity
-    )
-      this._planes.push(this._createPlane(w, h));
-    for (let i = this._planes.length - 1; i >= 0; i--) {
-      const plane = this._planes[i],
-        dir = plane.vx > 0 ? 1 : -1;
-      if (plane._sinA === undefined) {
-        plane._sinA = Math.sin(plane.climbAngle);
-        plane._cosA = Math.cos(plane.climbAngle);
-      }
-      const sinA = plane._sinA,
-        cosA = plane._cosA;
-      plane.x += plane.vx;
-      plane.y += plane.vy;
-      if (plane.gapTimer > 0) {
-        plane.gapTimer -= 1;
-      } else if (Math.random() < 0.005) {
-        plane.gapTimer = 8 + Math.random() * 14;
-      }
-      const wi = plane.histHead;
-      const dxR = plane.x - plane._lastRecX,
-        dyR = plane.y - plane._lastRecY;
-      if (dxR * dxR + dyR * dyR >= 1.0) {
-        plane.histBuf[wi * 3] = plane.x;
-        plane.histBuf[wi * 3 + 1] = plane.y + (Math.random() - 0.5) * 1.5;
-        plane.histBuf[wi * 3 + 2] = plane.gapTimer > 0 ? 1 : 0;
-        plane.histHead = (wi + 1) % TRAIL_CAP_PLANE;
-        if (plane.histLen < TRAIL_CAP_PLANE) plane.histLen++;
-        plane._lastRecX = plane.x;
-        plane._lastRecY = plane.y;
-      }
-      const windShift = (this._windSpeed || 0) * 0.15;
-      for (let j = 1; j < plane.histLen; j++) {
-        const ridx =
-          (((plane.histHead - 1 - j) % TRAIL_CAP_PLANE) + TRAIL_CAP_PLANE) %
-          TRAIL_CAP_PLANE;
-        plane.histBuf[ridx * 3] += windShift;
-        plane.histBuf[ridx * 3 + 1] += 0.02;
-      }
-      if (plane.histLen > 2) {
-        const baseOp = this._isThemeDark ? 0.12 : 0.23;
-        const trailColor = this._isThemeDark
-          ? "rgb(210,220,240)"
-          : "rgb(255,255,255)";
-        const histLen = plane.histLen;
-        ctx.strokeStyle = trailColor;
-        ctx.lineCap = "butt";
-        ctx.lineJoin = "round";
-        const trailBaseW = 2.5 * plane.scale;
-        // Draw contrail as alpha-banded polylines
-        const trailSegs = histLen - 1;
-        for (let oi = 0; oi < 2; oi++) {
-          const offset = CONTRAIL_OFFSETS[oi],
-            oX = sinA * offset * plane.scale * dir,
-            oY = cosA * offset * plane.scale;
-          for (let band = 0; band < 5; band++) {
-            const kStart = ((band * trailSegs) / 5) | 0,
-              kEnd = (((band + 1) * trailSegs) / 5) | 0;
-            if (kStart >= kEnd) continue;
-            // Alpha from the original 3-piece curve at band midpoint
-            const midP = ((kStart + kEnd) * 0.5) / histLen;
-            let bandAlpha;
-            if (midP < 0.05) bandAlpha = (midP / 0.05) * baseOp;
-            else if (midP < 0.6)
-              bandAlpha = baseOp * (1 - (midP - 0.05) * 0.727);
-            else bandAlpha = baseOp * 0.6 * (1 - (midP - 0.6) / 0.4);
-            if (bandAlpha < 0.005) continue;
-            ctx.globalAlpha = bandAlpha;
-            ctx.lineWidth = trailBaseW * (1 + midP * 1.2);
-            ctx.beginPath();
-            let drawing = false,
-              segPts = 0;
-            for (let k = kStart; k <= kEnd; k++) {
-              const ridx =
-                (((plane.histHead - 1 - k) % TRAIL_CAP_PLANE) +
-                  TRAIL_CAP_PLANE) %
-                TRAIL_CAP_PLANE;
-              const gap = plane.histBuf[ridx * 3 + 2];
-              if (gap > 0.5) {
-                if (drawing && segPts < 2) {
-                  ctx.beginPath();
-                }
-                drawing = false;
-                segPts = 0;
-              } else {
-                const px = plane.histBuf[ridx * 3] + oX,
-                  py = plane.histBuf[ridx * 3 + 1] + oY;
-                if (!drawing) {
-                  ctx.moveTo(px, py);
-                  drawing = true;
-                  segPts = 0;
-                } else {
-                  ctx.lineTo(px, py);
-                  segPts++;
-                }
-              }
-            }
-            ctx.stroke();
-          }
-        }
-        ctx.globalAlpha = 1;
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      ctx.translate(plane.x, plane.y);
-      ctx.scale(plane.scale, plane.scale);
-      if (plane.climbAngle > 0) ctx.rotate(-plane.climbAngle * dir);
-      ctx.globalAlpha = 0.9;
-      ctx.strokeStyle = this._isThemeDark
-        ? "rgb(125, 135, 145)"
-        : "rgb(105, 110, 120)";
-      ctx.lineWidth = 1.5;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      for (let seg = 0; seg < PLANE_PATH.length; seg++) {
-        const s = PLANE_PATH[seg];
-        ctx.moveTo(s[0] * dir, s[1]);
-        ctx.lineTo(s[2] * dir, s[3]);
-      }
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-      plane.blinkPhase += 0.12;
-      if (Math.sin(plane.blinkPhase) > 0.75) {
-        ctx.globalAlpha = 1.0;
-        ctx.fillStyle =
-          plane.vx > 0
-            ? this._isThemeDark
-              ? "rgb(90, 255, 130)"
-              : "rgb(50, 255, 80)"
-            : this._isThemeDark
-              ? "rgb(255, 100, 100)"
-              : "rgb(255, 50, 50)";
-        fillCircle(ctx, 0, 1, this._isThemeDark ? 1.5 : 1.8);
-        ctx.globalAlpha = 1;
-      }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (plane.x < -450 || plane.x > w + 450) this._planes.splice(i, 1);
-    }
-    ctx.globalAlpha = 1;
-    ctx.lineCap = "butt";
-    ctx.lineJoin = "miter";
+    drawPlanes(this, ctx, w, h, CONTRAIL_OFFSETS, PLANE_PATH, TRAIL_CAP_PLANE);
+  }
+  _drawAirships(ctx, w, h) {
+    drawAirships(this, ctx, w, h);
   }
   // ANIMATION LOOP
   _animate(timestamp) {
@@ -8148,14 +6481,10 @@ class AtmosphericWeatherCard extends HTMLElement {
       this._stopAnimation();
       return;
     }
-    const targetFps = Math.max(15, this._perfFps || 30);
-    const targetInterval = 1000 / targetFps,
-      deltaTime = timestamp - this._lastFrameTime;
-    if (deltaTime < targetInterval * 0.85) {
+    if (shouldSkipFrame(this, timestamp)) {
       this._animID = requestAnimationFrame(this._boundAnimate);
       return;
     }
-    this._lastFrameTime = timestamp;
     if (!this._ctxs) {
       this._animID = requestAnimationFrame(this._boundAnimate);
       return;
@@ -8176,50 +6505,14 @@ class AtmosphericWeatherCard extends HTMLElement {
       this._animID = requestAnimationFrame(this._boundAnimate);
       return;
     }
-    this._gustPhase += 0.012;
-    this._microGustPhase += 0.03;
-    this._windGust =
-      Math.sin(this._gustPhase) * 0.35 +
-      Math.sin(this._gustPhase * 2.1) * 0.15 +
-      Math.sin(this._microGustPhase) * 0.08;
-    const effectiveWind =
-      ((p.wind || 0.1) + this._windGust) * (1 + this._windSpeed);
-    this._sunPulsePhase += 0.008;
-    const cloudGlobalOp = this._renderState.cloudGlobalOp,
-      rs = this._renderState;
-    const fx = this._perfEffects,
-      fauna = this._perfFauna;
-    if (fx >= 1 && rs.glow && rs.glow.drawPhase === "bg")
-      this._drawCelestialGlow(bg, w, h);
-    if (fx >= 1) this._drawAurora(mid, w);
-    this._drawStars(bg, w, h, dpr);
-    this._drawMoon(bg, w, h);
-    if (fx >= 1 && this._isNight && this._isThemeDark && this._stars.length > 0)
-      this._drawShootingStars(bg, w, h);
-    if (fx >= 1 && this._isThemeDark) this._drawComets(bg, w, h);
-    const glowActive = rs.glow;
-    if (fx >= 1 && glowActive && glowActive.drawPhase === "mid-pre")
-      this._drawCelestialGlow(mid, w, h);
-    if (fx >= 1 && this._celestialClouds.length > 0)
-      this._drawCelestialClouds(mid, w, h, effectiveWind);
-    if (fx >= 1 && this._windVapor.length > 0)
-      this._drawWindVapor(mid, w, h, effectiveWind);
-    if (fx >= 1 && this._fogBanks.length > 0) this._drawFog(mid, w);
-    this._drawClouds(mid, this._clouds, w, h, effectiveWind);
-    if (fx >= 1 && glowActive && glowActive.drawPhase === "mid-post")
-      this._drawCelestialGlow(mid, w, h);
-    if (fauna >= 1) this._drawBirds(mid, w, h);
-    this._drawClouds(mid, this._fgClouds, w, h, effectiveWind);
-    if (fauna >= 2) this._drawPlanes(mid, w, h);
-    this._drawLightning(fg, w, h);
-    this._drawRain(fg, w, h, effectiveWind);
-    this._drawHail(fg, w, h, effectiveWind);
-    this._drawSnow(fg, w, h, effectiveWind);
+    const effectiveWind = advanceWindAndPulse(this);
+    renderAnimationFrame(this, bg, mid, fg, w, h, dpr, effectiveWind);
     this._animID = requestAnimationFrame(this._boundAnimate);
   }
   _startAnimation() {
     if (this._animID === null && this._isVisible) {
       this._lastFrameTime = performance.now();
+      this._frameScale = 1;
       this._animID = requestAnimationFrame(this._boundAnimate);
     }
   }
