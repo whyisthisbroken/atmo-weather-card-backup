@@ -1,9 +1,6 @@
 export const TWO_PI = Math.PI * 2;
 
-export {
-  drawBirds,
-  drawPlanes,
-} from "./atmo-weather-fauna.js";
+export { drawBirds, drawPlanes } from "./atmo-weather-fauna.js";
 
 export function fillCircle(ctx, x, y, r) {
   ctx.beginPath();
@@ -583,7 +580,8 @@ export function drawWindVapor(card, ctx, w, h, effectiveWind) {
     v.phase += v.phaseSpeed * Math.max(speedMul, 0.04) * animSpeed;
     const gustBoost = Math.max(0, gustVal) * v.gustWeight * 1.2;
     const baseVelocity = v.speed * speedMul + effectiveWind * speedMul;
-    v.x += (baseVelocity + gustBoost) * (1 + card._windSpeed * 0.15) * animSpeed;
+    v.x +=
+      (baseVelocity + gustBoost) * (1 + card._windSpeed * 0.15) * animSpeed;
     const undulation = Math.sin(v.phase) * v.drift;
     if (v.x > w + v.w) v.x = -v.w;
     if (v.x < -v.w * 1.5) v.x = w + v.w;
@@ -595,12 +593,23 @@ export function drawWindVapor(card, ctx, w, h, effectiveWind) {
     const drawH = Math.min(10, v.w * v.squash * windThin);
     ctx.globalAlpha = Math.min(
       1.0,
-      (tierOp + gustOpBump) * depthFade * fadeOpacity * vaporOp * (isDark ? 0.85 : 1),
+      (tierOp + gustOpBump) *
+        depthFade *
+        fadeOpacity *
+        vaporOp *
+        (isDark ? 0.85 : 1),
     );
     const rot = v.baseRotation * rotFade + Math.sin(v.phase * 0.7) * 0.02;
     const curve = v.curvature || 0;
     const sh = shear * (v.tier * 0.5 + 0.5) + curve;
-    ctx.setTransform(dpr, sh * dpr, 0, dpr, v.x * dpr, (v.y + undulation) * dpr);
+    ctx.setTransform(
+      dpr,
+      sh * dpr,
+      0,
+      dpr,
+      v.x * dpr,
+      (v.y + undulation) * dpr,
+    );
     ctx.rotate(rot);
     if (v.taperDir < 0) ctx.scale(-1, 1);
     ctx.drawImage(card._vaporTex, -drawW * 0.5, -drawH * 0.5, drawW, drawH);
@@ -635,7 +644,9 @@ export function drawAurora(card, ctx, w) {
       const y =
         wave.y +
         Math.sin(
-          x * wave.wavelength + card._aurora.phase * wave.speed * 100 + wave.offset,
+          x * wave.wavelength +
+            card._aurora.phase * wave.speed * 100 +
+            wave.offset,
         ) *
           wave.amplitude;
       if (x === 0) ctx.moveTo(x, y);
@@ -673,7 +684,8 @@ export function drawFog(card, ctx, w) {
       g.addColorStop(0.5, `rgba(${color},0.6)`);
       g.addColorStop(1, `rgba(${color},0)`);
       f._g = g;
-      f._baseOp = f.opacity * (1 + f.layer * 0.2) * (card._isLightBackground ? 0.6 : 1.0);
+      f._baseOp =
+        f.opacity * (1 + f.layer * 0.2) * (card._isLightBackground ? 0.6 : 1.0);
     }
     const vSquash = 0.1 + f.layer * 0.18;
     ctx.scale(1, vSquash);
@@ -802,7 +814,16 @@ export function drawHail(card, ctx, w, h, effectiveWind) {
   ctx.globalAlpha = 1;
 }
 
-export function renderAnimationFrame(card, bg, mid, fg, w, h, dpr, effectiveWind) {
+export function renderAnimationFrame(
+  card,
+  bg,
+  mid,
+  fg,
+  w,
+  h,
+  dpr,
+  effectiveWind,
+) {
   const rs = card._renderState;
   const fx = card._perfEffects;
   const fauna = card._perfFauna;
@@ -889,7 +910,9 @@ export function drawStars(card, ctx, w, h, dpr) {
     const s = card._stars[i];
     s.phase += s.rate * card._animationSpeed * (card._frameScale || 1);
     const twinkle =
-      Math.sin(s.phase) + Math.sin(s.phase * 3) * 0.5 + Math.sin(s.phase * 0.3) * 0.25;
+      Math.sin(s.phase) +
+      Math.sin(s.phase * 3) * 0.5 +
+      Math.sin(s.phase * 0.3) * 0.25;
     const size = s.baseSize * (1 + twinkle * 0.3);
     const horizFade = immH > 0 ? 1 - Math.pow(s.y / immH, 3) : 1.0;
     const op = Math.min(
@@ -906,7 +929,13 @@ export function drawStars(card, ctx, w, h, dpr) {
         ctx.globalAlpha = op;
         const scale = size / s._haloRefSize;
         const drawSize = s._haloTexSize * scale;
-        ctx.drawImage(s._haloTex, s.x - drawSize * 0.5, s.y - drawSize * 0.5, drawSize, drawSize);
+        ctx.drawImage(
+          s._haloTex,
+          s.x - drawSize * 0.5,
+          s.y - drawSize * 0.5,
+          drawSize,
+          drawSize,
+        );
       }
       const spike = size * s._spikeLen;
       ctx.globalAlpha = op * s._spikeRatio;
@@ -962,7 +991,14 @@ export function drawStars(card, ctx, w, h, dpr) {
   ctx.globalAlpha = 1;
 }
 
-export function drawShootingStars(card, ctx, w, h, limits, trailCapShootingStar) {
+export function drawShootingStars(
+  card,
+  ctx,
+  w,
+  h,
+  limits,
+  trailCapShootingStar,
+) {
   const fadeOpacity = card._layerFadeProgress.stars;
   const dpr = card._cachedDimensions.dpr;
   const isUltra = card._perfEffects >= 2;
@@ -977,7 +1013,9 @@ export function drawShootingStars(card, ctx, w, h, limits, trailCapShootingStar)
     else spawnX = w * 0.6 + Math.random() * (w * 0.4);
     const dirX = Math.random() < 0.3 ? -1 : 1;
     const bolide = Math.random() < 0.18;
-    const speed = bolide ? 3.5 + Math.random() * 2.0 : 5.0 + Math.random() * 5.0;
+    const speed = bolide
+      ? 3.5 + Math.random() * 2.0
+      : 5.0 + Math.random() * 5.0;
     const isInk = !card._isThemeDark;
     const colorRoll = Math.random();
     let headRgb, tailRgb;
@@ -1127,8 +1165,11 @@ export function drawComets(card, ctx, w, h, trailCapComet) {
     c.tailHead = (c.tailHead + 1) % trailCapComet;
     if (c.tailLen < trailCapComet) c.tailLen++;
     if (c.tailLen > 2) {
-      const newestIdx = (((c.tailHead - 1) % trailCapComet) + trailCapComet) % trailCapComet;
-      const oldestIdx = (((c.tailHead - c.tailLen) % trailCapComet) + trailCapComet) % trailCapComet;
+      const newestIdx =
+        (((c.tailHead - 1) % trailCapComet) + trailCapComet) % trailCapComet;
+      const oldestIdx =
+        (((c.tailHead - c.tailLen) % trailCapComet) + trailCapComet) %
+        trailCapComet;
       const hx = c.tailBuf[newestIdx * 2];
       const hy = c.tailBuf[newestIdx * 2 + 1];
       const tx = c.tailBuf[oldestIdx * 2];
@@ -1163,7 +1204,9 @@ export function drawComets(card, ctx, w, h, trailCapComet) {
       ctx.globalAlpha = opacity * (1 - midP) * 0.6;
       ctx.beginPath();
       for (let j = jStart; j <= jEnd; j++) {
-        const idx = (((c.tailHead - 1 - j) % trailCapComet) + trailCapComet) % trailCapComet;
+        const idx =
+          (((c.tailHead - 1 - j) % trailCapComet) + trailCapComet) %
+          trailCapComet;
         const px = c.tailBuf[idx * 2];
         const py = c.tailBuf[idx * 2 + 1];
         if (j === jStart) ctx.moveTo(px, py);
@@ -1194,7 +1237,11 @@ export function drawMoon(card, ctx, w, h, moonStyleColors, moonCraters) {
     rawMoonStyle === "blue" ||
     rawMoonStyle === "purple" ||
     rawMoonStyle === "grey";
-  const mStyleKey = isColoredStyle ? rawMoonStyle : useLightColors ? "blue" : "dark";
+  const mStyleKey = isColoredStyle
+    ? rawMoonStyle
+    : useLightColors
+      ? "blue"
+      : "dark";
   ctx.save();
   if (card._moonRotationRad) {
     ctx.translate(moonX, moonY);
@@ -1202,14 +1249,21 @@ export function drawMoon(card, ctx, w, h, moonStyleColors, moonCraters) {
     ctx.translate(-moonX, -moonY);
   }
   const cloudCover = (card._params && card._params.cloud) || 0;
-  const glowWeatherScale = cloudCover > 30 ? 0.4 : cloudCover > 20 ? 0.6 : cloudCover > 10 ? 0.8 : 1;
+  const glowWeatherScale =
+    cloudCover > 30 ? 0.4 : cloudCover > 20 ? 0.6 : cloudCover > 10 ? 0.8 : 1;
   const glowIntensity = 0.23 + card._moonPhaseConfig.illumination * 0.18;
   const atmScale =
-    !useLightColors && (card._params && card._params.atmosphere) === "fair" ? 0.79 : 1.0;
+    !useLightColors && (card._params && card._params.atmosphere) === "fair"
+      ? 0.79
+      : 1.0;
   let effectiveGlow = glowIntensity * fadeOpacity * glowWeatherScale * atmScale;
   if (useLightColors) effectiveGlow *= 0.85;
   const cacheKey = mStyleKey + (useLightColors ? "L" : "D");
-  if (!card._moonCache || card._moonCache.key !== cacheKey || card._moonCache.mr !== moonRadius) {
+  if (
+    !card._moonCache ||
+    card._moonCache.key !== cacheKey ||
+    card._moonCache.mr !== moonRadius
+  ) {
     card._moonCache = card._buildMoonCache(
       ctx,
       moonRadius,
@@ -1425,7 +1479,10 @@ export function drawLightning(card, ctx, w, h, limits) {
   const frameScale = card._frameScale || 1;
   const fadeOpacity = card._layerFadeProgress.effects;
   const isStandalone = card._config.card_style === "standalone";
-  if (Math.random() < Math.min(1, 0.0072 * frameScale) && card._bolts.length < limits.MAX_BOLTS) {
+  if (
+    Math.random() < Math.min(1, 0.0072 * frameScale) &&
+    card._bolts.length < limits.MAX_BOLTS
+  ) {
     card._flashOpacity = 0.92;
     card._flashHold = card._isLightBackground ? 7 : 6;
     card._bolts.push(card._createBolt(w, h));
@@ -1443,7 +1500,10 @@ export function drawLightning(card, ctx, w, h, limits) {
   if (card._flashOpacity > 0) {
     if (card._flashHold > 0) card._flashHold -= frameScale;
     else {
-      card._flashOpacity *= Math.pow(card._isLightBackground ? 0.72 : 0.62, frameScale);
+      card._flashOpacity *= Math.pow(
+        card._isLightBackground ? 0.72 : 0.62,
+        frameScale,
+      );
       if (
         card._flashOpacity > 0.08 &&
         card._flashOpacity < 0.45 &&
@@ -1455,9 +1515,16 @@ export function drawLightning(card, ctx, w, h, limits) {
     }
     if (isStandalone) {
       ctx.save();
-      ctx.globalCompositeOperation = card._isThemeDark ? "screen" : "source-over";
-      ctx.globalAlpha = card._flashOpacity * fadeOpacity * (card._isLightBackground ? 0.8 : 0.5);
-      ctx.fillStyle = card._isLightBackground ? "rgb(255, 255, 255)" : "rgb(220, 235, 255)";
+      ctx.globalCompositeOperation = card._isThemeDark
+        ? "screen"
+        : "source-over";
+      ctx.globalAlpha =
+        card._flashOpacity *
+        fadeOpacity *
+        (card._isLightBackground ? 0.8 : 0.5);
+      ctx.fillStyle = card._isLightBackground
+        ? "rgb(255, 255, 255)"
+        : "rgb(220, 235, 255)";
       ctx.fillRect(0, 0, w, h);
       ctx.restore();
     }
@@ -1465,7 +1532,9 @@ export function drawLightning(card, ctx, w, h, limits) {
   }
   if (card._bolts.length > 0) {
     ctx.save();
-    ctx.globalCompositeOperation = card._isThemeDark ? "lighter" : "source-over";
+    ctx.globalCompositeOperation = card._isThemeDark
+      ? "lighter"
+      : "source-over";
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
     for (let i = card._bolts.length - 1; i >= 0; i--) {
@@ -1516,4 +1585,3 @@ export function drawLightning(card, ctx, w, h, limits) {
     ctx.restore();
   }
 }
-

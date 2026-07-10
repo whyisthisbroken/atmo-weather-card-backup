@@ -86,17 +86,17 @@ For manual installation without HACS. [Download the latest files from the releas
 1. **Download files** from the [latest release](https://github.com/whyisthisbroken/atmo-weather-card/releases):
    - `atmo-weather-card.js`
    - `atmo-weather-card-editor.js`
-  - `atmo-weather-animations.js`
-  - `atmo-weather-fauna.js`
+   - `atmo-weather-animations.js`
+   - `atmo-weather-fauna.js`
 
 2. **Place files** in your Home Assistant config folder:
 
    ```
    config/www/atmo-weather-card/
    ├── atmo-weather-card.js
-  ├── atmo-weather-card-editor.js
-  ├── atmo-weather-animations.js
-  └── atmo-weather-fauna.js
+    ├── atmo-weather-card-editor.js
+    ├── atmo-weather-animations.js
+    └── atmo-weather-fauna.js
    ```
 
 3. **Add resource** in Home Assistant:
@@ -109,6 +109,8 @@ For manual installation without HACS. [Download the latest files from the releas
    - **Chrome/Edge:** `Ctrl+Shift+R`
    - **Firefox:** `Ctrl+Shift+R`
    - **Safari:** `Cmd+Shift+R`
+
+> Note: If you run into preview/FPS/load issues after install or update, see the [Troubleshooting](#-troubleshooting) section below.
 
 </details>
 
@@ -149,11 +151,11 @@ The older Atmospheric Weather Card README described the original repository as a
 
 ## ⚙️ Setup
 
-| Option               | Type     | Default | Description                                                                                                              |
-| :------------------- | :------- | :------ | :----------------------------------------------------------------------------------------------------------------------- |
-| **`weather_entity`** | `string` | —       | **Required.** Your weather integration entity (e.g., `weather.your_weather_entity`).                                     |
-| **`sun_entity`**     | `string` | —       | **Required.** Tracks the sun to auto-switch between day and night. Without this, the card will default to permanent day. |
-| `moon_phase_entity`  | `string` | —       | _Recommended._ Displays the correct moon phase (e.g., `sensor.moon_phase`).                                              |
+| Option               | Type     | Default | Description                                                                                                                                                                                                                             |
+| :------------------- | :------- | :------ | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`weather_entity`** | `string` | —       | **Required.** Your weather integration entity (e.g., `weather.your_weather_entity`). See [Troubleshooting: Weather entity is unavailable or values look wrong](#weather-entity-is-unavailable-or-values-look-wrong).                    |
+| **`sun_entity`**     | `string` | —       | **Required.** Tracks the sun to auto-switch between day and night. Without this, the card will default to permanent day. See [Troubleshooting: No night effects (stars/comets) are visible](#no-night-effects-starscomets-are-visible). |
+| `moon_phase_entity`  | `string` | —       | _Recommended._ Displays the correct moon phase (e.g., `sensor.moon_phase`).                                                                                                                                                             |
 
 > [!IMPORTANT]
 > The `sun_entity` controls the timing of the sun and moon. Without it, the card defaults to permanent day. Additionally, card colors change based on your [configuration](#-color-mode).
@@ -631,16 +633,16 @@ The card has a visual editor for setting up layouts. All YAML settings are liste
 <details>
 <summary><strong>Card Style & Layout</strong></summary>
 
-| Option             | Type                | Default     | Description                                                                                                                                                             |
-| :----------------- | :------------------ | :---------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `card_style`       | `string`            | `immersive` | Set to `standalone` for a solid background with dynamic weather visuals, or `immersive` for a transparent background.                                                   |
-| `card_height`      | `number` · `string` | `200`       | Height in pixels. Numbers are automatically treated as px (e.g., `110` becomes `110px`). **Set to `auto`** to dynamically fill the available height (for grid layouts). |
-| `card_padding`     | `string`            | `16px`      | Inner padding around the text. Accepts any CSS padding value (e.g., `8px`, `12px 20px`).                                                                                |
-| `card_square`      | `boolean`           | `false`     | Forces the card into a perfect square. Highly useful for grid layouts.                                                                                                  |
-| `card_full_width`  | `boolean`           | `false`     | Stretches the card edge-to-edge by removing side margins.                                                                                                               |
-| `card_offset`      | `string`            | `0px`       | Shifts the card using CSS margin (e.g., `"-50px 0px 0px 0px"`). Useful when layering cards.                                                                             |
-| `card_stack_order` | `number`            | _auto_      | Manually sets the z-index (e.g., `1`, `0`, `-1`). Useful for forcing an immersive card to display in front of cards with solid backgrounds.                             |
-| `card_tap_action`  | `object`            | —           | A standard Home Assistant [tap action](https://www.home-assistant.io/dashboards/actions/).                                                                              |
+| Option             | Type                | Default     | Description                                                                                                                                                                                                                                                                                                                                                                     |
+| :----------------- | :------------------ | :---------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `card_style`       | `string`            | `immersive` | Set to `standalone` for a solid background with dynamic weather visuals, or `immersive` for a transparent background.                                                                                                                                                                                                                                                           |
+| `card_height`      | `number` · `string` | `200`       | Height in pixels. Numbers are automatically treated as px (e.g., `110` becomes `110px`). **Set to `auto`** to dynamically fill the available height (for grid layouts).                                                                                                                                                                                                         |
+| `card_padding`     | `string`            | `16px`      | Inner padding around the text. Accepts any CSS padding value (e.g., `8px`, `12px 20px`).                                                                                                                                                                                                                                                                                        |
+| `card_square`      | `boolean`           | `false`     | Forces the card into a perfect square. Highly useful for grid layouts.                                                                                                                                                                                                                                                                                                          |
+| `card_full_width`  | `boolean`           | `false`     | Stretches the card edge-to-edge by removing side margins.                                                                                                                                                                                                                                                                                                                       |
+| `card_offset`      | `string`            | `0px`       | Shifts the card using CSS margin (e.g., `"-50px 0px 0px 0px"`). Useful when layering cards.                                                                                                                                                                                                                                                                                     |
+| `card_stack_order` | `number`            | _auto_      | Manually sets the z-index (e.g., `1`, `0`, `-1`). Useful for forcing an immersive card to display in front of cards with solid backgrounds. See [Troubleshooting: Card always stays in front of other cards](#card-always-stays-in-front-of-other-cards) and [Card appears behind other cards or becomes hard to see](#card-appears-behind-other-cards-or-becomes-hard-to-see). |
+| `card_tap_action`  | `object`            | —           | A standard Home Assistant [tap action](https://www.home-assistant.io/dashboards/actions/).                                                                                                                                                                                                                                                                                      |
 
 </details>
 
@@ -1206,19 +1208,19 @@ Even with all this effort, older setups might still struggle, and the birds may 
 
 The card has three performance presets — `low`, `default`, and `ultra` — which cover most setups. If you need more control, each setting can be changed individually. Any value set manually overrides the preset.
 
-| Option                  | Type     | Default   | Description                                                                                                                                                                         |
-| :---------------------- | :------- | :-------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `perf_mode`             | `string` | `default` | Performance preset. `low` disables effects and lowers resolution for weak devices. `default` is balanced. `ultra` raises the frame rate and cloud detail to maximum.                |
-| `perf_fps`              | `number` | `30`      | Animation frame rate. `30` saves battery, `60` is smoother.                                                                                                                         |
-| `perf_cloud_quality`    | `number` | `1.5`     | Cloud detail level. Controls how many puffs each cloud shape gets. `0.5` = low, `1` = medium, `1.5` = high, `2` = ultra.                                                            |
-| `perf_effects`          | `number` | `1`       | Weather effects intensity. `0` disables visual effects like shooting stars, comets, aurora, fog/wind visuals, and similar atmospheric extras. `1` enables default rates. `2` increases effect intensity/spawn rates where applicable. |
-| `perf_fauna`            | `number` | `2`       | Birds and planes spawn rate. `0` = no fauna, `1` = birds only, `2` = birds and planes. Separate control from weather effects.                                                       |
-| `animation_speed`       | `number` | `1.0`     | Global animation speed multiplier. Range `0` to `3`. `0` freezes animated motion, `1.0` is default speed, `2.0` is double speed.                                                   |
-| `bird_animation_speed`  | `number` | `1.0`     | Bird-only speed multiplier. Range `0` to `3`. Applied on top of `animation_speed` for bird movement and wing flapping.                                                              |
-| `perf_dpr`              | `number` | `2`       | Canvas sharpness. Controls the device pixel ratio used for rendering. `0.5` = low, `1` = medium, `1.5` = high, `2` = full retina. Lower values reduce GPU load on high-DPI screens. |
-| `fauna_bird_density`    | `number` | `1.0`     | Bird spawn rate multiplier. Range `0.5` to `2.0`. Scales how often bird flocks appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 1` or `2`.   |
-| `fauna_plane_density`   | `number` | `1.0`     | Plane spawn rate multiplier. Range `0.5` to `2.0`. Scales how often planes appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 2`.              |
-| `fauna_bird_flock_size` | `number` | `6`       | Target average birds per flock. Range `1` to `20`. Runtime fallback is `6`. If `perf_mode: default` is active and no explicit value is set, the editor preset applies `8`. Actual flock size is randomized around this value (about ±2) and occasional single-bird passes can still occur. |
+| Option                  | Type     | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| :---------------------- | :------- | :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `perf_mode`             | `string` | `default` | Performance preset. `low` disables effects and lowers resolution for weak devices. `default` is balanced. `ultra` raises the frame rate and cloud detail to maximum.                                                                                                                                                                                                                                                                   |
+| `perf_fps`              | `number` | `30`      | Animation frame rate. `30` saves battery, `60` is smoother. See [Troubleshooting: Editor preview stutters or FPS looks wrong after install/update](#editor-preview-stutters-or-fps-looks-wrong-after-installupdate) and [Performance is weak on older devices](#performance-is-weak-on-older-devices).                                                                                                                                 |
+| `perf_cloud_quality`    | `number` | `1.5`     | Cloud detail level. Controls how many puffs each cloud shape gets. `0.5` = low, `1` = medium, `1.5` = high, `2` = ultra.                                                                                                                                                                                                                                                                                                               |
+| `perf_effects`          | `number` | `1`       | Weather effects intensity. `0` disables visual effects like shooting stars, comets, aurora, fog/wind visuals, and similar atmospheric extras. `1` enables default rates. `2` increases effect intensity/spawn rates where applicable. See [Troubleshooting: No night effects (stars/comets) are visible](#no-night-effects-starscomets-are-visible) and [Performance is weak on older devices](#performance-is-weak-on-older-devices). |
+| `perf_fauna`            | `number` | `2`       | Birds and planes spawn rate. `0` = no fauna, `1` = birds only, `2` = birds and planes. Separate control from weather effects. See [Troubleshooting: No birds or planes are visible](#no-birds-or-planes-are-visible).                                                                                                                                                                                                                  |
+| `animation_speed`       | `number` | `1.0`     | Global animation speed multiplier. Range `0` to `3`. `0` freezes animated motion, `1.0` is default speed, `2.0` is double speed.                                                                                                                                                                                                                                                                                                       |
+| `bird_animation_speed`  | `number` | `1.0`     | Bird-only speed multiplier. Range `0` to `3`. Applied on top of `animation_speed` for bird movement and wing flapping.                                                                                                                                                                                                                                                                                                                 |
+| `perf_dpr`              | `number` | `2`       | Canvas sharpness. Controls the device pixel ratio used for rendering. `0.5` = low, `1` = medium, `1.5` = high, `2` = full retina. Lower values reduce GPU load on high-DPI screens. See [Troubleshooting: Performance is weak on older devices](#performance-is-weak-on-older-devices).                                                                                                                                                |
+| `fauna_bird_density`    | `number` | `1.0`     | Bird spawn rate multiplier. Range `0.5` to `2.0`. Scales how often bird flocks appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 1` or `2`. See [Troubleshooting: No birds or planes are visible](#no-birds-or-planes-are-visible).                                                                                                                                                              |
+| `fauna_plane_density`   | `number` | `1.0`     | Plane spawn rate multiplier. Range `0.5` to `2.0`. Scales how often planes appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 2`. See [Troubleshooting: No birds or planes are visible](#no-birds-or-planes-are-visible).                                                                                                                                                                         |
+| `fauna_bird_flock_size` | `number` | `6`       | Target average birds per flock. Range `1` to `20`. Runtime fallback is `6`. If `perf_mode: default` is active and no explicit value is set, the editor preset applies `8`. Actual flock size is randomized around this value (about ±2) and occasional single-bird passes can still occur. See [Troubleshooting: Editor values differ from runtime defaults](#editor-values-differ-from-runtime-defaults).                             |
 
 </details>
 
@@ -1241,6 +1243,74 @@ weather_entity: weather.your_weather_entity
 animation_speed: 1.0 # Global animation speed (0.0-3.0)
 bird_animation_speed: 1.4 # Birds only; multiplied on top of animation_speed
 ```
+
+<br>
+
+## 🛠️ Troubleshooting
+
+### Editor preview stutters or FPS looks wrong after install/update
+
+1. Clear your browser cache completely (cached images and files) right after installation or update.
+2. If it still stutters, close the editor and open it again.
+
+### Card shows red error card or module not found
+
+1. Verify the resource URL is correct: `/local/atmo-weather-card/atmo-weather-card.js`.
+2. Verify all files exist in `config/www/atmo-weather-card/`:
+   - `atmo-weather-card.js`
+   - `atmo-weather-card-editor.js`
+   - `atmo-weather-animations.js`
+   - `atmo-weather-fauna.js`
+
+### Changes are not visible after update
+
+1. Clear browser cache completely (cached images and files).
+2. Hard-refresh the dashboard.
+3. Verify the Lovelace resource still points to `/local/atmo-weather-card/atmo-weather-card.js`.
+4. If needed, reload Home Assistant frontend once.
+
+### Editor values differ from runtime defaults
+
+1. The editor can show preset values when `perf_mode` is active.
+2. Example: `fauna_bird_flock_size` runtime fallback is `6`, but the `default` preset applies `8` if no explicit value is set.
+3. Set your value explicitly if you want to override preset behavior.
+
+### Card always stays in front of other cards
+
+1. Set `Layer Order` (`card_stack_order`) to `1`.
+2. Higher values place the card further in front of other cards.
+
+### Card appears behind other cards or becomes hard to see
+
+1. Increase `card_stack_order` step by step (for example `1`, then `2`).
+2. Check `card_offset` and card placement if cards visually overlap.
+
+### No birds or planes are visible
+
+1. Check `perf_fauna`:
+   - `0` = no fauna
+   - `1` = birds only
+   - `2` = birds and planes
+2. Check your density settings (`fauna_bird_density`, `fauna_plane_density`) and wait a short time for spawns.
+
+### Weather entity is unavailable or values look wrong
+
+1. Verify `weather_entity` exists and is currently available in Home Assistant.
+2. Confirm the entity has valid state/attributes (temperature, wind, etc.).
+3. If unavailable, fix entity availability first, then reload the dashboard.
+
+### No night effects (stars/comets) are visible
+
+1. Verify day/night detection is correct (`sun_entity`, card color mode, and weather conditions).
+2. Ensure `perf_effects` is `1` or `2`.
+3. Wait briefly after state transitions for particle initialization.
+
+### Performance is weak on older devices
+
+1. Set `perf_mode: low`.
+2. Lower `perf_fps` and/or `perf_dpr`.
+3. Reduce fauna/effects intensity if needed.
+4. On high-DPI displays, reducing `perf_dpr` usually helps the most.
 
 <br>
 

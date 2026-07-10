@@ -20,7 +20,8 @@ export function drawBirds(card, ctx, w, h) {
   if (
     !isSevereWeather &&
     card._birds.length === 0 &&
-    Math.random() < (1.0 / 30) * card._faunaBirdDensity * (card._frameScale || 1)
+    Math.random() <
+      (1.0 / 30) * card._faunaBirdDensity * (card._frameScale || 1)
   ) {
     const dir = Math.random() > 0.5 ? 1 : -1;
     const startX = dir === 1 ? -60 : w + 60;
@@ -30,7 +31,10 @@ export function drawBirds(card, ctx, w, h) {
     const isSingle = Math.random() < 0.3;
     const flockSize = isSingle
       ? 1
-      : Math.max(1, Math.round(card._faunaBirdFlockSize + (Math.random() - 0.5) * 4));
+      : Math.max(
+          1,
+          Math.round(card._faunaBirdFlockSize + (Math.random() - 0.5) * 4),
+        );
     const startY = h * 0.2 + Math.random() * (h * 0.47);
     card._birds.push({
       x: startX,
@@ -118,7 +122,15 @@ export function drawBirds(card, ctx, w, h) {
   ctx.restore();
 }
 
-export function drawPlanes(card, ctx, w, h, contrailOffsets, planePath, trailCapPlane) {
+export function drawPlanes(
+  card,
+  ctx,
+  w,
+  h,
+  contrailOffsets,
+  planePath,
+  trailCapPlane,
+) {
   const dpr = card._cachedDimensions.dpr;
   const frameScale = card._frameScale || 1;
   const animSpeed = card._animationSpeed * frameScale;
@@ -155,13 +167,17 @@ export function drawPlanes(card, ctx, w, h, contrailOffsets, planePath, trailCap
     }
     const windShift = (card._windSpeed || 0) * 0.15;
     for (let j = 1; j < plane.histLen; j++) {
-      const ridx = (((plane.histHead - 1 - j) % trailCapPlane) + trailCapPlane) % trailCapPlane;
+      const ridx =
+        (((plane.histHead - 1 - j) % trailCapPlane) + trailCapPlane) %
+        trailCapPlane;
       plane.histBuf[ridx * 3] += windShift;
       plane.histBuf[ridx * 3 + 1] += 0.02;
     }
     if (plane.histLen > 2) {
       const baseOp = card._isThemeDark ? 0.12 : 0.23;
-      const trailColor = card._isThemeDark ? "rgb(210,220,240)" : "rgb(255,255,255)";
+      const trailColor = card._isThemeDark
+        ? "rgb(210,220,240)"
+        : "rgb(255,255,255)";
       const histLen = plane.histLen;
       ctx.strokeStyle = trailColor;
       ctx.lineCap = "butt";
@@ -188,7 +204,9 @@ export function drawPlanes(card, ctx, w, h, contrailOffsets, planePath, trailCap
           let drawing = false;
           let segPts = 0;
           for (let k = kStart; k <= kEnd; k++) {
-            const ridx = (((plane.histHead - 1 - k) % trailCapPlane) + trailCapPlane) % trailCapPlane;
+            const ridx =
+              (((plane.histHead - 1 - k) % trailCapPlane) + trailCapPlane) %
+              trailCapPlane;
             const gap = plane.histBuf[ridx * 3 + 2];
             if (gap > 0.5) {
               if (drawing && segPts < 2) ctx.beginPath();
@@ -217,7 +235,9 @@ export function drawPlanes(card, ctx, w, h, contrailOffsets, planePath, trailCap
     ctx.scale(plane.scale, plane.scale);
     if (plane.climbAngle > 0) ctx.rotate(-plane.climbAngle * dir);
     ctx.globalAlpha = 0.9;
-    ctx.strokeStyle = card._isThemeDark ? "rgb(125, 135, 145)" : "rgb(105, 110, 120)";
+    ctx.strokeStyle = card._isThemeDark
+      ? "rgb(125, 135, 145)"
+      : "rgb(105, 110, 120)";
     ctx.lineWidth = 1.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
