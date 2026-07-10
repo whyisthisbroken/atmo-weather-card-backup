@@ -46,6 +46,19 @@ This README combines the current card documentation with selected context from t
 
 <br>
 
+## 📝 Changelog
+
+### v6.0.4
+
+- **Version bump:** Updated card version marker to `6.0.4` in `atmo-weather-card.js`.
+- **Editor cache-bust sync:** Updated `EDITOR_IMPORT_VERSION` to `6.0.4` so the editor import URL version stays aligned with the release.
+- **Cloud render cleanup:** Removed a redundant local variable in the cloud render path (`_drawClouds`) without behavior change.
+- **Fog render optimization:** Added an early return in `_drawFog` when layer opacity is `<= 0`, avoiding unnecessary per-frame processing.
+- **Documentation updates since v6.0.3:** README content was expanded and refined across multiple commits (examples/images, badges, and general wording/structure improvements).
+- **Code style pass since v6.0.3:** Formatting updates were applied in the main card and editor files to keep style consistency.
+
+<br>
+
 ## 📦 Installation
 
 ### Method 1 — HACS (Recommended)

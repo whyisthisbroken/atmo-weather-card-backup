@@ -1,6 +1,6 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.0.1
+ * Version: 6.0.4
  */
 console.info(
   "%c ATMO WEATHER CARD ",
@@ -15,7 +15,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.0.1";
+const EDITOR_IMPORT_VERSION = "6.0.4";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
@@ -6870,8 +6870,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     if (cloudList.length === 0) return;
     const fadeOpacity = this._layerFadeProgress.clouds;
     if (fadeOpacity <= 0) return;
-    const rs = this._renderState;
-    if (!rs) return;
+    if (!this._renderState) return;
     const yLift = h * 0.06;
     ctx.globalAlpha = fadeOpacity;
     for (let i = 0; i < cloudList.length; i++) {
@@ -7759,6 +7758,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     const fadeOpacity = this._layerFadeProgress.effects,
       len = this._fogBanks.length,
       dpr = this._cachedDimensions.dpr;
+    if (fadeOpacity <= 0) return;
     for (let i = 0; i < len; i++) {
       const f = this._fogBanks[i];
       f.x += f.speed;
