@@ -848,7 +848,10 @@ export function renderAnimationFrame(
   drawClouds(card, mid, card._clouds, w, h, effectiveWind);
   if (fx >= 1 && glowActive && glowActive.drawPhase === "mid-post")
     card._drawCelestialGlow(mid, w, h);
-  if (fauna >= 1) card._drawBirds(mid, w, h);
+  const birdsAtNightEnabled = card._faunaBirdsAtNight !== false;
+  const canDrawBirds = fauna >= 1 && (!card._isNight || birdsAtNightEnabled);
+  if (canDrawBirds) card._drawBirds(mid, w, h);
+  else if (card._isNight && card._birds.length > 0) card._birds.length = 0;
   drawClouds(card, mid, card._fgClouds, w, h, effectiveWind);
   if (fauna >= 2) card._drawPlanes(mid, w, h);
 

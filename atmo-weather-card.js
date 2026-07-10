@@ -1429,6 +1429,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     this._perfCloudQuality = 1.5;
     this._perfEffects = 1;
     this._perfFauna = 2;
+    this._faunaBirdsAtNight = true;
     this._perfDpr = PERFORMANCE_CONFIG.MAX_DPR;
     this._lastInitWidth = 0;
     this._lastLocStr = null;
@@ -1774,6 +1775,20 @@ class AtmosphericWeatherCard extends HTMLElement {
     this._faunaBirdFlockSize = Number.isFinite(rawFlockSize)
       ? Math.max(1, Math.min(20, rawFlockSize))
       : 6;
+    const rawBirdsAtNight = config.fauna_birds_at_night;
+    if (rawBirdsAtNight === undefined || rawBirdsAtNight === null) {
+      this._faunaBirdsAtNight = true;
+    } else if (typeof rawBirdsAtNight === "string") {
+      const normalizedBirdsAtNight = rawBirdsAtNight.trim().toLowerCase();
+      this._faunaBirdsAtNight = ![
+        "false",
+        "0",
+        "off",
+        "no",
+      ].includes(normalizedBirdsAtNight);
+    } else {
+      this._faunaBirdsAtNight = rawBirdsAtNight !== false;
+    }
     const rawDpr = config.perf_dpr != null ? config.perf_dpr : preset.perf_dpr;
     const parsedDpr = parseFloat(rawDpr);
     this._perfDpr = Number.isFinite(parsedDpr)

@@ -252,6 +252,7 @@ const LABELS = Object.freeze({
   perf_effects: "Weather Effects",
   perf_fauna: "Fauna",
   perf_dpr: "Sharpness",
+  fauna_birds_at_night: "Birds At Night",
 });
 const HELPERS = Object.freeze({
   weather_entity: "",
@@ -286,6 +287,8 @@ const HELPERS = Object.freeze({
   card_background_style:
     "Frosted: translucent glass effect. Contrast: solid and readable. Theme: follows your HA theme colours.",
   perf_mode: "Choose a preset or fine-tune each setting below.",
+  fauna_birds_at_night:
+    "Disable this to let birds fly only during daytime.",
 });
 const CHIP_LABELS = Object.freeze({
   entity: "Entity",
@@ -393,6 +396,7 @@ const KEY_ORDER = Object.freeze([
   "fauna_bird_density",
   "fauna_plane_density",
   "fauna_bird_flock_size",
+  "fauna_birds_at_night",
   "chips",
   "custom_cards",
 ]);
@@ -407,6 +411,7 @@ const DISPLAY_DEFAULTS = Object.freeze({
   chip_style: "inline",
   chip_area_align: "start",
   perf_mode: "default",
+  fauna_birds_at_night: true,
 });
 const TOP_LEVEL_NUMBER_FIELDS = Object.freeze([
   "card_stack_order",
@@ -437,6 +442,7 @@ const TOP_LEVEL_BOOLEAN_FIELDS = Object.freeze([
   "card_mask_vertical",
   "card_mask_horizontal",
   "chip_icon_background",
+  "fauna_birds_at_night",
 ]);
 const CHIP_NUMBER_FIELDS = Object.freeze([
   "forecast_offset",
@@ -4737,6 +4743,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
         fauna_bird_density: 0.5,
         fauna_plane_density: 0.5,
         fauna_bird_flock_size: 4,
+        fauna_birds_at_night: true,
       },
       default: {
         perf_fps: 30,
@@ -4747,6 +4754,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
         fauna_bird_density: 1.0,
         fauna_plane_density: 1.0,
         fauna_bird_flock_size: 8,
+        fauna_birds_at_night: true,
       },
       ultra: {
         perf_fps: 60,
@@ -4757,6 +4765,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
         fauna_bird_density: 1.5,
         fauna_plane_density: 1.5,
         fauna_bird_flock_size: 12,
+        fauna_birds_at_night: true,
       },
     };
     const keys = [
@@ -4768,6 +4777,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
       "fauna_bird_density",
       "fauna_plane_density",
       "fauna_bird_flock_size",
+      "fauna_birds_at_night",
     ];
     const cfg = this._config || {};
     const presetName =
@@ -4918,6 +4928,12 @@ class AtmosphericWeatherCardEditor extends LitElement {
               20,
               1,
             )}
+            ${this._renderToggleGroup([
+              {
+                key: "fauna_birds_at_night",
+                label: "Birds at night",
+              },
+            ])}
           </div>
         `,
       )}`;

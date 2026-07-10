@@ -1221,6 +1221,7 @@ The card has three performance presets — `low`, `default`, and `ultra` — whi
 | `fauna_bird_density`    | `number` | `1.0`     | Bird spawn rate multiplier. Range `0.5` to `2.0`. Scales how often bird flocks appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 1` or `2`. See [Troubleshooting: No birds or planes are visible](#no-birds-or-planes-are-visible).                                                                                                                                                              |
 | `fauna_plane_density`   | `number` | `1.0`     | Plane spawn rate multiplier. Range `0.5` to `2.0`. Scales how often planes appear. `0.5` = sparse, `1.0` = default, `2.0` = frequent. Only works with `perf_fauna: 2`. See [Troubleshooting: No birds or planes are visible](#no-birds-or-planes-are-visible).                                                                                                                                                                         |
 | `fauna_bird_flock_size` | `number` | `6`       | Target average birds per flock. Range `1` to `20`. Runtime fallback is `6`. If `perf_mode: default` is active and no explicit value is set, the editor preset applies `8`. Actual flock size is randomized around this value (about ±2) and occasional single-bird passes can still occur. See [Troubleshooting: Editor values differ from runtime defaults](#editor-values-differ-from-runtime-defaults).                             |
+| `fauna_birds_at_night`  | `boolean` | `true`    | Controls whether birds can appear at night. Set to `false` for daytime-only birds. Planes are unaffected. See [Troubleshooting: No birds or planes are visible](#no-birds-or-planes-are-visible). |
 
 </details>
 
@@ -1233,6 +1234,7 @@ perf_fauna: 2 # Enable both birds and planes
 fauna_bird_density: 1.5 # 50% more bird flocks
 fauna_plane_density: 0.7 # 30% fewer planes
 fauna_bird_flock_size: 10 # Higher average flock size (actual spawn count still varies)
+fauna_birds_at_night: false # Disable birds during night
 ```
 
 #### Example: Animation Speed Control
