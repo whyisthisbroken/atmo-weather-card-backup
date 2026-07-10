@@ -45,7 +45,7 @@ function _migrateConfig(raw) {
         xVal = xIsCenter ? 0 : parseInt(xStr, 10) || 0,
         yVal = yIsCenter ? 0 : parseInt(yStr, 10) || 0;
       const hSide = xIsCenter ? "center" : xVal < 0 ? "right" : "left",
-        vSide = yIsCenter ? "center" : "top";
+        vSide = yIsCenter ? "center" : yVal < 0 ? "bottom" : "top";
       if (hSide === "center" && vSide === "center") {
         c.celestial_alignment = "center";
       } else if (vSide === "center") {
@@ -4350,7 +4350,6 @@ class AtmosphericWeatherCardEditor extends LitElement {
   }
   _renderGlobalColorPicker(key, label) {
     const raw = (this._config[key] || "").toString().trim();
-    const { hex, opacity } = this._parseColor(raw);
     return this._renderColorPicker(label, raw, (h, o) => {
       this._updateField(key, h ? this._serializeColor(h, o) : "");
     });

@@ -1674,7 +1674,7 @@ function _migrateConfig(raw) {
         xVal = xIsCenter ? 0 : parseInt(xStr, 10) || 0,
         yVal = yIsCenter ? 0 : parseInt(yStr, 10) || 0;
       const hSide = xIsCenter ? "center" : xVal < 0 ? "right" : "left",
-        vSide = yIsCenter ? "center" : "top";
+        vSide = yIsCenter ? "center" : yVal < 0 ? "bottom" : "top";
       if (hSide === "center" && vSide === "center") {
         c.celestial_alignment = "center";
       } else if (vSide === "center") {
@@ -2411,7 +2411,7 @@ class AtmosphericWeatherCard extends HTMLElement {
           : 1;
     this._windKmh = windSpeed * toKmh;
     const imageNight = axes.isImageNight;
-    this._updateImage(hass, imageNight, weatherState);
+    this._updateImage(hass, imageNight);
     // Golden hour: warm glow + ambient wash (after base styles are set)
     this._applyGoldenHour(sunEntity || hass.states["sun.sun"], newParams);
     if (!this._hasReceivedFirstHass) {
@@ -2693,6 +2693,14 @@ class AtmosphericWeatherCard extends HTMLElement {
     const [entity, type] = key.split("|"),
       hass = this._hass;
     if (!(hass && hass.connection)) return;
+    const isStillNeeded = () =>
+      this.isConnected &&
+      this._chips.some(
+        (c) =>
+          c.forecast &&
+          c.entity === entity &&
+          (c.forecast === "hourly" ? "hourly" : "daily") === type,
+      );
     hass.connection
       .subscribeMessage(
         (msg) =>
@@ -2708,20 +2716,27 @@ class AtmosphericWeatherCard extends HTMLElement {
         },
       )
       .then((unsub) => {
-        if (
-          !this.isConnected ||
-          (!this._fcSubs.has(key) &&
-            !this._chips.some((c) => c.forecast && c.entity === entity))
-        ) {
+        if (!this._fcSubs.has(key) && !isStillNeeded()) {
           unsub();
           return;
         }
         this._fcSubs.set(key, unsub);
       })
       .catch(() => {
+        if (!isStillNeeded()) return;
         const poll = async () => {
+          if (!isStillNeeded()) {
+            const cleanup = this._fcSubs.get(key);
+            if (cleanup) {
+              cleanup();
+              this._fcSubs.delete(key);
+            }
+            return;
+          }
+          const currentHass = this._hass;
+          if (!(currentHass && currentHass.callWS)) return;
           try {
-            const res = await this._hass.callWS({
+            const res = await currentHass.callWS({
               type: "call_service",
               domain: "weather",
               service: "get_forecasts",
@@ -2739,6 +2754,7 @@ class AtmosphericWeatherCard extends HTMLElement {
           } catch (_) {}
         };
         poll();
+        if (!isStillNeeded()) return;
         const timer = setInterval(poll, 30 * 60_000);
         this._fcSubs.set(key, () => clearInterval(timer));
       });
@@ -2884,8 +2900,8 @@ class AtmosphericWeatherCard extends HTMLElement {
       type === "hail" ||
       type === "lightning" ||
       type === "pouring" ||
-      type === "snowy" ||
-      type === "snowy-rainy";
+      type === "snow" ||
+      type === "mix";
     const isSevereWeather =
       !!(p && p.thunder) || type === "hail" || type === "pouring";
     const goodWeather =
@@ -4690,7 +4706,7 @@ class AtmosphericWeatherCard extends HTMLElement {
       width,
     };
   }
-  _updateImage(hass, isNight, weatherState = "default") {
+  _updateImage(hass, isNight) {
     if (!this._elements || !this._elements.img || !this._elements.imageSlot)
       return;
     const img = this._elements.img;
@@ -6850,7 +6866,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     }
     ctx.globalAlpha = 1;
   }
-  _drawClouds(ctx, cloudList, w, h, effectiveWind, globalOpacity) {
+  _drawClouds(ctx, cloudList, w, h, effectiveWind) {
     if (cloudList.length === 0) return;
     const fadeOpacity = this._layerFadeProgress.clouds;
     if (fadeOpacity <= 0) return;
@@ -7476,8 +7492,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     const fadeOpacity = this._layerFadeProgress.precipitation;
     if (fadeOpacity <= 0) return;
     const isDay = this._isLightBackground;
-    const rgbBase = this._renderState.rainRgb,
-      len = this._rain.length,
+    const len = this._rain.length,
       dpr = this._cachedDimensions.dpr;
     if (!this._rainTex) return;
     for (let i = 0; i < len; i++) {
@@ -7557,8 +7572,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     const fadeOpacity = this._layerFadeProgress.precipitation;
     if (fadeOpacity <= 0) return;
     const len = this._hail.length;
-    const isLight = this._isLightBackground,
-      dpr = this._cachedDimensions.dpr;
+    const dpr = this._cachedDimensions.dpr;
     if (!this._hailTex) return;
     for (let i = 0; i < len; i++) {
       const pt = this._hail[i];
@@ -7699,7 +7713,7 @@ class AtmosphericWeatherCard extends HTMLElement {
       ctx.restore();
     }
   }
-  _drawAurora(ctx, w, h) {
+  _drawAurora(ctx, w) {
     if (!this._aurora) return;
     const fadeOpacity = this._layerFadeProgress.effects;
     this._aurora.phase += 0.006;
@@ -7741,7 +7755,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     }
     ctx.restore();
   }
-  _drawFog(ctx, w, h) {
+  _drawFog(ctx, w) {
     const fadeOpacity = this._layerFadeProgress.effects,
       len = this._fogBanks.length,
       dpr = this._cachedDimensions.dpr;
@@ -8177,7 +8191,7 @@ class AtmosphericWeatherCard extends HTMLElement {
       fauna = this._perfFauna;
     if (fx >= 1 && rs.glow && rs.glow.drawPhase === "bg")
       this._drawCelestialGlow(bg, w, h);
-    if (fx >= 1) this._drawAurora(mid, w, h);
+    if (fx >= 1) this._drawAurora(mid, w);
     this._drawStars(bg, w, h, dpr);
     this._drawMoon(bg, w, h);
     if (fx >= 1 && this._isNight && this._isThemeDark && this._stars.length > 0)
@@ -8190,12 +8204,12 @@ class AtmosphericWeatherCard extends HTMLElement {
       this._drawCelestialClouds(mid, w, h, effectiveWind);
     if (fx >= 1 && this._windVapor.length > 0)
       this._drawWindVapor(mid, w, h, effectiveWind);
-    if (fx >= 1 && this._fogBanks.length > 0) this._drawFog(mid, w, h);
-    this._drawClouds(mid, this._clouds, w, h, effectiveWind, cloudGlobalOp);
+    if (fx >= 1 && this._fogBanks.length > 0) this._drawFog(mid, w);
+    this._drawClouds(mid, this._clouds, w, h, effectiveWind);
     if (fx >= 1 && glowActive && glowActive.drawPhase === "mid-post")
       this._drawCelestialGlow(mid, w, h);
     if (fauna >= 1) this._drawBirds(mid, w, h);
-    this._drawClouds(mid, this._fgClouds, w, h, effectiveWind, cloudGlobalOp);
+    this._drawClouds(mid, this._fgClouds, w, h, effectiveWind);
     if (fauna >= 2) this._drawPlanes(mid, w, h);
     this._drawLightning(fg, w, h);
     this._drawRain(fg, w, h, effectiveWind);
