@@ -1,6 +1,6 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.5
+ * Version: 6.5.3
  */
 import {
   advanceWindAndPulse,
@@ -40,7 +40,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.5";
+const EDITOR_IMPORT_VERSION = "6.5.3";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
@@ -1780,12 +1780,9 @@ class AtmosphericWeatherCard extends HTMLElement {
       this._faunaBirdsAtNight = true;
     } else if (typeof rawBirdsAtNight === "string") {
       const normalizedBirdsAtNight = rawBirdsAtNight.trim().toLowerCase();
-      this._faunaBirdsAtNight = ![
-        "false",
-        "0",
-        "off",
-        "no",
-      ].includes(normalizedBirdsAtNight);
+      this._faunaBirdsAtNight = !["false", "0", "off", "no"].includes(
+        normalizedBirdsAtNight,
+      );
     } else {
       this._faunaBirdsAtNight = rawBirdsAtNight !== false;
     }

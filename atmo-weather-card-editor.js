@@ -245,6 +245,7 @@ const LABELS = Object.freeze({
   chip_icon_background: "Icon background",
   chip_icon_padding: "Padding around icon",
   custom_cards_position: "Embedded Cards Position",
+  custom_cards_css_class: "Embedded Cards CSS Class",
   chip_area_background_color: "Container Background Color",
   perf_mode: "Performance Preset",
   perf_fps: "Frame Rate",
@@ -252,6 +253,8 @@ const LABELS = Object.freeze({
   perf_effects: "Weather Effects",
   perf_fauna: "Fauna",
   perf_dpr: "Sharpness",
+  animation_speed: "Animation Speed",
+  bird_animation_speed: "Bird Animation Speed",
   fauna_birds_at_night: "Birds At Night",
 });
 const HELPERS = Object.freeze({
@@ -286,9 +289,13 @@ const HELPERS = Object.freeze({
   chip_area_align: "Horizontal alignment of chips within the container.",
   card_background_style:
     "Frosted: translucent glass effect. Contrast: solid and readable. Theme: follows your HA theme colours.",
+  custom_cards_css_class:
+    "Adds a CSS class to the embedded cards container (useful with card_mod).",
   perf_mode: "Choose a preset or fine-tune each setting below.",
-  fauna_birds_at_night:
-    "Disable this to let birds fly only during daytime.",
+  animation_speed: "Global animation speed multiplier for all motion.",
+  bird_animation_speed:
+    "Bird-only speed multiplier applied on top of animation speed.",
+  fauna_birds_at_night: "Disable this to let birds fly only during daytime.",
 });
 const CHIP_LABELS = Object.freeze({
   entity: "Entity",
@@ -387,8 +394,11 @@ const KEY_ORDER = Object.freeze([
   "card_filter",
   "chip_icon_background",
   "custom_cards_position",
+  "custom_cards_css_class",
   "perf_mode",
   "perf_fps",
+  "animation_speed",
+  "bird_animation_speed",
   "perf_cloud_quality",
   "perf_effects",
   "perf_fauna",
@@ -422,6 +432,8 @@ const TOP_LEVEL_NUMBER_FIELDS = Object.freeze([
   "chip_area_columns",
   "chip_area_scroll_count",
   "perf_fps",
+  "animation_speed",
+  "bird_animation_speed",
   "perf_cloud_quality",
   "perf_effects",
   "perf_fauna",
@@ -4740,6 +4752,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
         perf_effects: 0,
         perf_fauna: 0,
         perf_dpr: 1.0,
+        animation_speed: 1.0,
+        bird_animation_speed: 1.0,
         fauna_bird_density: 0.5,
         fauna_plane_density: 0.5,
         fauna_bird_flock_size: 4,
@@ -4751,6 +4765,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
         perf_effects: 1,
         perf_fauna: 2,
         perf_dpr: 2.0,
+        animation_speed: 1.0,
+        bird_animation_speed: 1.0,
         fauna_bird_density: 1.0,
         fauna_plane_density: 1.0,
         fauna_bird_flock_size: 8,
@@ -4762,6 +4778,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
         perf_effects: 2,
         perf_fauna: 2,
         perf_dpr: 2.0,
+        animation_speed: 1.0,
+        bird_animation_speed: 1.0,
         fauna_bird_density: 1.5,
         fauna_plane_density: 1.5,
         fauna_bird_flock_size: 12,
@@ -4770,6 +4788,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
     };
     const keys = [
       "perf_fps",
+      "animation_speed",
+      "bird_animation_speed",
       "perf_cloud_quality",
       "perf_effects",
       "perf_fauna",
@@ -4880,6 +4900,20 @@ class AtmosphericWeatherCardEditor extends LitElement {
             { value: 45, label: "45" },
             { value: 60, label: "60" },
           ])}
+          ${this._renderSlider(
+            "animation_speed",
+            LABELS.animation_speed,
+            0.0,
+            3.0,
+            0.1,
+          )}
+          ${this._renderSlider(
+            "bird_animation_speed",
+            LABELS.bird_animation_speed,
+            0.0,
+            3.0,
+            0.1,
+          )}
           ${perfButtons("perf_cloud_quality", LABELS.perf_cloud_quality, [
             { value: 0.5, label: "Low" },
             { value: 1, label: "Medium" },
@@ -5139,6 +5173,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
               "custom_cards_position",
               POSITION_GRIDS.custom_cards_position,
             )}
+            ${this._renderClearableText("custom_cards_css_class")}
             ${this._renderCustomCardsEditor()}`,
         )}</ha-expansion-panel
       >
