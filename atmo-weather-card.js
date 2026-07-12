@@ -1,6 +1,6 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.5.4
+ * Version: 6.5.5
  */
 import {
   advanceWindAndPulse,
@@ -40,7 +40,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.5.4";
+const EDITOR_IMPORT_VERSION = "6.5.5";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
@@ -485,9 +485,9 @@ const WEATHER_MAP = Object.freeze({
   sunny: Object.freeze({
     type: "sun",
     count: 0,
-    cloud: 18,
+    cloud: 0,
     wind: 0.1,
-    sunCloudWarm: true,
+    sunCloudWarm: false,
     atmosphere: "clear",
     stars: 0,
     vapor: 26,
@@ -4740,7 +4740,8 @@ class AtmosphericWeatherCard extends HTMLElement {
     if ((p.count || 0) > 0 && p.type !== "stars" && p.type !== "fog")
       this._initPrecipitation(w, h, p);
     if ((p.cloud || 0) > 0) this._initClouds(w, h, p);
-    if (this._isNight && (p.cloud || 0) < 5) this._initNightClouds(w, h);
+    if (this._isNight && (p.cloud || 0) < 5 && p.atmosphere !== "night")
+      this._initNightClouds(w, h);
     const celestialDecor = !this._isNight ? p.celestial : null;
     const wantsCelestialClouds =
       fx >= 1 &&
