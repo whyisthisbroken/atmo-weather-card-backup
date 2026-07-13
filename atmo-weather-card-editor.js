@@ -426,6 +426,28 @@ const DISPLAY_DEFAULTS = Object.freeze({
   perf_mode: "default",
   fauna_birds_at_night: true,
 });
+const CHIP_STYLE_OVERRIDE_KEYS = Object.freeze([
+  "style",
+  "align",
+  "background",
+  "icon_background",
+  "background_color",
+  "icon_background_color",
+  "padding",
+  "text_size",
+  "label_size",
+  "inner_gap",
+  "text_gap",
+  "icon_size",
+  "icon_padding",
+  "width",
+  "height",
+  "value_weight",
+  "label_weight",
+  "chip_round",
+  "sub_value_size",
+  "sub_value_weight",
+]);
 const TOP_LEVEL_NUMBER_FIELDS = Object.freeze([
   "card_stack_order",
   "celestial_size",
@@ -595,6 +617,26 @@ const POSITION_GRIDS = Object.freeze({
     ],
   },
 });
+const PREPARED_POSITION_GRIDS = Object.freeze(
+  Object.fromEntries(
+    Object.entries(POSITION_GRIDS).map(([field, def]) => {
+      const valueMap = def.valueMap || {};
+      const reverseMap = Object.fromEntries(
+        Object.entries(valueMap).map(([k, v]) => [v, k]),
+      );
+      return [
+        field,
+        Object.freeze({
+          ...def,
+          valueMap,
+          reverseMap,
+          cellsFlat: def.cells.flat(),
+          disabledSet: new Set(def.disabled || []),
+        }),
+      ];
+    }),
+  ),
+);
 class AtmosphericWeatherCardEditor extends LitElement {
   static get properties() {
     return {
@@ -2073,18 +2115,24 @@ class AtmosphericWeatherCardEditor extends LitElement {
           html`<label class="toggle-row">
             <span>${t.label}</span>
             <ha-switch
+              data-key=${t.key}
               .checked=${this._formData[t.key] === true}
-              @change=${(e) => this._updateField(t.key, e.target.checked)}
+              @change=${this._onToggleGroupChange}
             ></ha-switch
           ></label> `,
       )}
     </div>`;
   }
+  _onToggleGroupChange(e) {
+    const key = e.target && e.target.dataset && e.target.dataset.key;
+    if (!key) return;
+    this._updateField(key, e.target.checked === true);
+  }
   _getChips() {
     const chips = (this._config || {}).chips;
-    return Array.isArray(chips) && chips.length > 0
-      ? chips.map((s) => (s && typeof s === "object" ? s : {}))
-      : [];
+    if (!Array.isArray(chips) || chips.length === 0) return [];
+    if (chips.every((s) => s && typeof s === "object")) return chips;
+    return chips.map((s) => (s && typeof s === "object" ? s : {}));
   }
   _imageStatusSchema() {
     const c = this._formData,
@@ -2262,7 +2310,6 @@ class AtmosphericWeatherCardEditor extends LitElement {
     if (Array.isArray(options.strip)) {
       for (const k of options.strip) delete next[k];
     }
-    this._normalizeConfigTypes(next);
     this._config = this._cleanConfig(next);
     this._emit();
   }
@@ -2324,8 +2371,6 @@ class AtmosphericWeatherCardEditor extends LitElement {
   }
   _emit() {
     const config = { ...(this._config || {}) };
-    this._normalizeConfigTypes(config);
-    this._normalizeConfigTypes(this._config);
     this.dispatchEvent(
       new CustomEvent("config-changed", {
         detail: { config },
@@ -2354,12 +2399,21 @@ class AtmosphericWeatherCardEditor extends LitElement {
             type="button"
             class="clear-btn"
             title="Clear"
-            @click=${() => this._updateField(name, "")}
+            data-field=${name}
+            @click=${this._onClearFieldClick}
           >
             <ha-icon icon="mdi:close"></ha-icon>
           </button>`
         : ""}
     </div>`;
+  }
+  _onClearFieldClick(e) {
+    const field =
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.field
+        : "";
+    if (!field) return;
+    this._updateField(field, "");
   }
   _renderDisclosure(label, content) {
     const isAdvanced = label === "Advanced options";
@@ -2384,14 +2438,17 @@ class AtmosphericWeatherCardEditor extends LitElement {
       });
   }
   _renderPositionGrid(field, gridDef) {
-    const valueMap = gridDef.valueMap || {};
-    const reverseMap = Object.fromEntries(
-      Object.entries(valueMap).map(([k, v]) => [v, k]),
-    );
+    const prepared = PREPARED_POSITION_GRIDS[field];
+    const valueMap = prepared ? prepared.valueMap : gridDef.valueMap || {};
+    const reverseMap = prepared
+      ? prepared.reverseMap
+      : Object.fromEntries(Object.entries(valueMap).map(([k, v]) => [v, k]));
     const stored = this._formData[field] || "",
       value = reverseMap[stored] || stored,
-      cells = gridDef.cells.flat();
-    const disabledSet = new Set(gridDef.disabled || []),
+      cells = prepared ? prepared.cellsFlat : gridDef.cells.flat();
+    const disabledSet = prepared
+        ? prepared.disabledSet
+        : new Set(gridDef.disabled || []),
       helper = HELPERS[field],
       labelText = LABELS[field] || field;
     return html`<div class="grid-picker">
@@ -2400,6 +2457,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
         ${cells.map((val) => {
           if (val === null) return html`<div class="grid-cell empty"></div>`;
           const isDisabled = disabledSet.has(val);
+          const mappedValue = valueMap[val] || val;
           return html`<button
             type="button"
             role="radio"
@@ -2407,11 +2465,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
               ? "disabled"
               : ""}"
             ?disabled=${isDisabled}
+            data-field=${field}
+            data-value=${mappedValue}
             title=${isDisabled ? `${val} (not supported here)` : val}
             aria-label=${val}
-            @click=${isDisabled
-              ? null
-              : () => this._setField(field, valueMap[val] || val)}
+            @click=${this._onPositionGridSelect}
           ></button>`;
         })}
       </div>
@@ -2423,7 +2481,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                   type="button"
                   class="grid-extra ${value === ex.value ? "active" : ""}"
                   aria-pressed=${value === ex.value ? "true" : "false"}
-                  @click=${() => this._setField(field, ex.value)}
+                  data-field=${field}
+                  data-value=${ex.value}
+                  @click=${this._onPositionGridSelect}
                 >
                   ${ex.label}
                 </button>`,
@@ -2432,6 +2492,14 @@ class AtmosphericWeatherCardEditor extends LitElement {
         : ""}
       ${helper ? html`<div class="grid-helper">${helper}</div>` : ""}
     </div>`;
+  }
+  _onPositionGridSelect(e) {
+    const target = e.currentTarget;
+    if (!target || target.disabled) return;
+    const field = target.dataset && target.dataset.field;
+    const value = target.dataset && target.dataset.value;
+    if (!field || value === undefined) return;
+    this._setField(field, value);
   }
   _setField(field, value) {
     const current = this._config || {};
@@ -2475,6 +2543,74 @@ class AtmosphericWeatherCardEditor extends LitElement {
     if (expanded) this._openPanel = id;
     else if (this._openPanel === id) this._openPanel = null;
   }
+  _onPanelExpandedChanged(e) {
+    const panel =
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.panel
+        : "";
+    if (!panel) return;
+    this._onPanelToggle(panel, !!(e.detail && e.detail.expanded));
+  }
+  _onTrimmedFieldChange(e) {
+    const field =
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.field
+        : "";
+    if (!field) return;
+    this._updateField(field, (e.target.value || "").trim());
+  }
+  _onRawFieldChange(e) {
+    const field =
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.field
+        : "";
+    if (!field) return;
+    this._updateField(field, e.target.value || "");
+  }
+  _onOffsetPartChange(e) {
+    const indexRaw =
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.offsetIndex
+        : "";
+    const index = Number(indexRaw);
+    if (!Number.isInteger(index)) return;
+    this._setOffsetPart(index, e.target.value);
+  }
+  _onSegmentedFieldSelect(e) {
+    const t = e.currentTarget;
+    const field = t && t.dataset ? t.dataset.field : "";
+    if (!field) return;
+    const value = t && t.dataset ? t.dataset.value : "";
+    const valueType = t && t.dataset ? t.dataset.valueType : "string";
+    if (valueType === "number") {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return;
+      this._updateField(field, n);
+      return;
+    }
+    if (valueType === "boolean") {
+      this._updateField(field, value === "true");
+      return;
+    }
+    if (valueType === "empty") {
+      this._updateField(field, "");
+      return;
+    }
+    this._updateField(field, value);
+  }
+  _onChipAreaBackgroundModeSelect(e) {
+    const mode =
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.bgMode
+        : "";
+    if (!mode) return;
+    if (mode === "off") {
+      this._updateField("chip_area_background", false);
+      return;
+    }
+    this._updateField("chip_area_background", true);
+    this._updateField("card_background_style", mode);
+  }
   _renderCardStyleSegmented() {
     const c = this._formData,
       isSquare = c.card_square === true,
@@ -2490,8 +2626,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
             html`<button
               type="button"
               role="radio"
+              data-value=${o.value}
               class=${current === o.value ? "active" : ""}
-              @click=${() => this._setCardStyle(o.value)}
+              @click=${this._onCardStyleSelect}
             >
               ${o.label}
             </button>`,
@@ -2510,6 +2647,14 @@ class AtmosphericWeatherCardEditor extends LitElement {
       </div>
     </div>`;
   }
+  _onCardStyleSelect(e) {
+    const value =
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.value
+        : "";
+    if (!value) return;
+    this._setCardStyle(value);
+  }
   _renderCelestialOffsetPicker() {
     const c = this._formData;
     return html`<div class="composite">
@@ -2521,9 +2666,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
           class="composite-number"
           placeholder="0"
           style="flex:1;min-width:0"
+          data-field="celestial_x"
           .value=${String(c.celestial_x || "")}
-          @change=${(e) =>
-            this._updateField("celestial_x", e.target.value.trim())}
+          @change=${this._onTrimmedFieldChange}
         />
         <span class="composite-unit">Y</span>
         <input
@@ -2531,9 +2676,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
           class="composite-number"
           placeholder="0"
           style="flex:1;min-width:0"
+          data-field="celestial_y"
           .value=${String(c.celestial_y || "")}
-          @change=${(e) =>
-            this._updateField("celestial_y", e.target.value.trim())}
+          @change=${this._onTrimmedFieldChange}
         />
       </div>
     </div>`;
@@ -2577,16 +2722,18 @@ class AtmosphericWeatherCardEditor extends LitElement {
           class="composite-textfield"
           placeholder="0"
           style="flex:1;min-width:0"
+          data-field="image_x"
           .value=${String(c.image_x || "")}
-          @change=${(e) => this._updateField("image_x", e.target.value.trim())}
+          @change=${this._onTrimmedFieldChange}
         ></ha-textfield>
         <span class="composite-unit">Y</span>
         <ha-textfield
           class="composite-textfield"
           placeholder="0"
           style="flex:1;min-width:0"
+          data-field="image_y"
           .value=${String(c.image_y || "")}
-          @change=${(e) => this._updateField("image_y", e.target.value.trim())}
+          @change=${this._onTrimmedFieldChange}
         ></ha-textfield>
       </div>
       <div class="composite-helper">
@@ -2607,8 +2754,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
               <input
                 type="number"
                 step="1"
+                data-offset-index=${String(i)}
                 .value=${String(parts[i])}
-                @change=${(e) => this._setOffsetPart(i, e.target.value)}
+                @change=${this._onOffsetPartChange}
             /></label>`,
         )}
       </div>
@@ -2649,7 +2797,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
         <ha-icon class="chevron" icon="mdi:chevron-right"></ha-icon>
         ${badge ? badge : ""}
         <span class="card-row-title">${title}</span>
-        <div class="card-row-actions" @click=${(e) => e.stopPropagation()}>
+        <div class="card-row-actions" @click=${this._onStopPropagation}>
           <button
             type="button"
             title="Move up"
@@ -2683,6 +2831,35 @@ class AtmosphericWeatherCardEditor extends LitElement {
       ${expanded ? html`<div class="card-row-body">${body}</div>` : ""}
     </div>`;
   }
+  _onStopPropagation(e) {
+    e.stopPropagation();
+  }
+  _onCustomCardSizeChange(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.cardIdx : NaN);
+    const key = t && t.dataset ? t.dataset.cardKey : "";
+    if (!Number.isInteger(idx) || idx < 0 || !key) return;
+    const cards = [...((this._config && this._config.custom_cards) || [])];
+    const card = cards[idx] && typeof cards[idx] === "object" ? cards[idx] : {};
+    const next = { ...card };
+    const v = (e.target.value || "").trim();
+    if (v) next[key] = v;
+    else delete next[key];
+    this._updateCardAt(idx, next);
+  }
+  _onCustomCardFormValueChanged(e) {
+    e.stopPropagation();
+    const idx = Number(
+      e.currentTarget && e.currentTarget.dataset
+        ? e.currentTarget.dataset.cardIdx
+        : NaN,
+    );
+    if (!Number.isInteger(idx) || idx < 0) return;
+    this._updateCardAt(
+      idx,
+      (e.detail && e.detail.value && e.detail.value._card) || {},
+    );
+  }
   _renderCardRow(card, idx, total) {
     const expanded = this._expandedCard === idx;
     const title =
@@ -2693,14 +2870,10 @@ class AtmosphericWeatherCardEditor extends LitElement {
           <input
             type="text"
             placeholder="e.g. 140px or 60%"
+            data-card-idx=${String(idx)}
+            data-card-key="custom_width"
             .value=${card.custom_width || ""}
-            @change=${(e) => {
-              const v = e.target.value.trim();
-              const nc = { ...card };
-              if (v) nc.custom_width = v;
-              else delete nc.custom_width;
-              this._updateCardAt(idx, nc);
-            }}
+            @change=${this._onCustomCardSizeChange}
           />
         </div>
         <div class="offset-field">
@@ -2708,14 +2881,10 @@ class AtmosphericWeatherCardEditor extends LitElement {
           <input
             type="text"
             placeholder="e.g. 110px"
+            data-card-idx=${String(idx)}
+            data-card-key="custom_height"
             .value=${card.custom_height || ""}
-            @change=${(e) => {
-              const v = e.target.value.trim();
-              const nc = { ...card };
-              if (v) nc.custom_height = v;
-              else delete nc.custom_height;
-              this._updateCardAt(idx, nc);
-            }}
+            @change=${this._onCustomCardSizeChange}
           />
         </div>
       </div>
@@ -2723,14 +2892,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
         .hass=${this.hass}
         .data=${{ _card: card }}
         .schema=${[{ name: "_card", selector: { object: {} } }]}
+        data-card-idx=${String(idx)}
         .computeLabel=${() => ""}
-        @value-changed=${(e) => {
-          e.stopPropagation();
-          this._updateCardAt(
-            idx,
-            (e.detail && e.detail.value && e.detail.value._card) || {},
-          );
-        }}
+        @value-changed=${this._onCustomCardFormValueChanged}
       ></ha-form>`;
     return this._renderListRow({
       idx,
@@ -2913,6 +3077,157 @@ class AtmosphericWeatherCardEditor extends LitElement {
   _toggleChipExpanded(idx) {
     this._expandedChip = this._expandedChip === idx ? null : idx;
   }
+  _getChipByIndex(idx) {
+    const i = Number(idx);
+    if (!Number.isInteger(i) || i < 0) return null;
+    const list = this._getChips();
+    return list[i] && typeof list[i] === "object" ? list[i] : null;
+  }
+  _onChipAccordionToggle(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.chipIdx : NaN);
+    const key = t && t.dataset ? t.dataset.accKey : "";
+    const kind = t && t.dataset ? t.dataset.accKind : "main";
+    if (!Number.isInteger(idx) || idx < 0 || !key) return;
+    const prop = kind === "text" ? `_text_acc_${idx}` : `_acc_open_${idx}`;
+    this[prop] = this[prop] === key ? null : key;
+    this.requestUpdate();
+  }
+  _onChipTypeModeSelect(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.chipIdx : NaN);
+    const mode = t && t.dataset ? t.dataset.mode : "";
+    if (!Number.isInteger(idx) || idx < 0 || !mode) return;
+    const chip = this._getChipByIndex(idx);
+    if (!chip) return;
+    if (mode === "sensor") {
+      const n = { ...chip };
+      delete n.forecast;
+      delete n.forecast_offset;
+      delete n.forecast_precision;
+      this._updateChipAt(idx, n);
+      return;
+    }
+    if (mode === "forecast") {
+      const cur = (chip.entity || "").toString().trim();
+      const cardWeatherEntity =
+        (this._config && this._config.weather_entity) || "";
+      const ent =
+        cur && cur.startsWith("weather.") ? cur : cardWeatherEntity || cur;
+      const n = {
+        ...chip,
+        forecast: "daily",
+        attribute: "temperature",
+        forecast_offset: 1,
+      };
+      if (ent) n.entity = ent;
+      this._updateChipAt(idx, n);
+    }
+  }
+  _onChipForecastTypeSelect(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.chipIdx : NaN);
+    const forecast = t && t.dataset ? t.dataset.forecastType : "";
+    if (!Number.isInteger(idx) || idx < 0 || !forecast) return;
+    const chip = this._getChipByIndex(idx);
+    if (!chip) return;
+    this._updateChipAt(idx, {
+      ...chip,
+      forecast,
+      forecast_offset: 0,
+    });
+  }
+  _onChipAnchorSelect(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.chipIdx : NaN);
+    const anchor = t && t.dataset ? t.dataset.anchor : "";
+    if (!Number.isInteger(idx) || idx < 0 || !anchor) return;
+    const chip = this._getChipByIndex(idx);
+    if (!chip) return;
+    this._updateChipAt(idx, { ...chip, position_anchor: anchor });
+  }
+  _onChipToggleChange(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.chipIdx : NaN);
+    const key = t && t.dataset ? t.dataset.key : "";
+    const mode = t && t.dataset ? t.dataset.mode : "true-delete";
+    if (!Number.isInteger(idx) || idx < 0 || !key) return;
+    const chip = this._getChipByIndex(idx);
+    if (!chip) return;
+    const next = { ...chip };
+    const checked = e.target && e.target.checked === true;
+    if (mode === "true-delete") {
+      if (checked) next[key] = true;
+      else delete next[key];
+    } else if (mode === "false-delete") {
+      if (!checked) next[key] = false;
+      else delete next[key];
+    } else if (mode === "true-false-if-defined") {
+      if (checked) next[key] = true;
+      else {
+        if (chip[key] !== undefined) next[key] = false;
+        else delete next[key];
+      }
+    }
+    this._updateChipAt(idx, next);
+  }
+  _onChipActionClick(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.chipIdx : NaN);
+    const action = t && t.dataset ? t.dataset.action : "";
+    if (!Number.isInteger(idx) || idx < 0 || !action) return;
+    const chip = this._getChipByIndex(idx);
+    if (!chip) return;
+    const next = { ...chip };
+    if (action === "remove-icon") {
+      delete next.icon;
+    } else if (action === "set-weather-icon") {
+      next.icon = "weather";
+    } else if (action === "clear-icon-path") {
+      delete next.icon_path;
+    } else if (action === "reset-styles") {
+      for (const k of CHIP_STYLE_OVERRIDE_KEYS) delete next[k];
+    } else {
+      return;
+    }
+    this._updateChipAt(idx, next);
+  }
+  _onChipSegmentedSelect(e) {
+    const t = e.currentTarget;
+    const idx = Number(t && t.dataset ? t.dataset.chipIdx : NaN);
+    const key = t && t.dataset ? t.dataset.key : "";
+    const mode = t && t.dataset ? t.dataset.mode : "set";
+    const valueType = t && t.dataset ? t.dataset.valueType : "string";
+    const raw = t && t.dataset ? t.dataset.value : "";
+    if (!Number.isInteger(idx) || idx < 0 || !key) return;
+    const chip = this._getChipByIndex(idx);
+    if (!chip) return;
+    const next = { ...chip };
+    let value = raw;
+    if (valueType === "number") {
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return;
+      value = n;
+    } else if (valueType === "boolean") {
+      value = raw === "true";
+    }
+    if (mode === "set-or-delete-empty") {
+      if (value === "") delete next[key];
+      else next[key] = value;
+    } else if (mode === "toggle-delete-if-same") {
+      if (chip[key] === value) delete next[key];
+      else next[key] = value;
+    } else if (mode === "beside-or-delete") {
+      if (value === "beside") next[key] = "beside";
+      else delete next[key];
+    } else if (mode === "solid-or-delete") {
+      if (value === "solid") delete next[key];
+      else next[key] = value;
+    } else {
+      next[key] = value;
+    }
+    this._updateChipAt(idx, next);
+  }
   _commitChips(list) {
     if (!Array.isArray(list) || list.length === 0) {
       this._patch({}, { strip: ["chips"] });
@@ -2961,8 +3276,6 @@ class AtmosphericWeatherCardEditor extends LitElement {
     const nameSensorId = (chip.name_sensor || "").toString().trim();
     const fcEntityMissing =
       isFc && entityId && !entityId.startsWith("weather.");
-    const cardWeatherEntity =
-      (this._config && this._config.weather_entity) || "";
     const accOpen = this[`_acc_open_${idx}`] || null;
     const update = (next) => this._updateChipAt(idx, next);
     const chipForm = (schema) =>
@@ -3000,10 +3313,10 @@ class AtmosphericWeatherCardEditor extends LitElement {
       return html`<div class="chip-accordion">
         <div
           class="chip-accordion-head ${isOpen ? "open" : ""}"
-          @click=${() => {
-            this[`_acc_open_${idx}`] = isOpen ? null : key;
-            this.requestUpdate();
-          }}
+          data-chip-idx=${idx}
+          data-acc-kind="main"
+          data-acc-key=${key}
+          @click=${this._onChipAccordionToggle}
         >
           <ha-icon class="chip-accordion-icon" icon="${icon}"></ha-icon>
           <span class="chip-accordion-title">${title}</span>
@@ -3017,13 +3330,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
       <button
         type="button"
         class="chip-type-btn ${!isFc ? "active" : ""}"
-        @click=${() => {
-          const n = { ...chip };
-          delete n.forecast;
-          delete n.forecast_offset;
-          delete n.forecast_precision;
-          update(n);
-        }}
+        data-chip-idx=${idx}
+        data-mode="sensor"
+        @click=${this._onChipTypeModeSelect}
       >
         <ha-icon
           class="chip-type-icon ${!isFc ? "active-icon" : ""}"
@@ -3037,19 +3346,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
       <button
         type="button"
         class="chip-type-btn ${isFc ? "active" : ""}"
-        @click=${() => {
-          const cur = (chip.entity || "").toString().trim();
-          const ent =
-            cur && cur.startsWith("weather.") ? cur : cardWeatherEntity || cur;
-          const n = {
-            ...chip,
-            forecast: "daily",
-            attribute: "temperature",
-            forecast_offset: 1,
-          };
-          if (ent) n.entity = ent;
-          update(n);
-        }}
+        data-chip-idx=${idx}
+        data-mode="forecast"
+        @click=${this._onChipTypeModeSelect}
       >
         <ha-icon
           class="chip-type-icon ${isFc ? "active-icon" : ""}"
@@ -3103,13 +3402,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
         <label class="toggle-row">
           <span>Hide icon</span>
           <ha-switch
+            data-chip-idx=${idx}
+            data-key="hide_icon"
+            data-mode="true-delete"
             .checked=${chip.hide_icon === true}
-            @change=${(e) => {
-              const n = { ...chip };
-              if (e.target.checked) n.hide_icon = true;
-              else delete n.hide_icon;
-              update(n);
-            }}
+            @change=${this._onChipToggleChange}
           ></ha-switch
         ></label>
       </div>
@@ -3129,11 +3426,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                   <button
                     type="button"
                     class="icon-weather-btn"
-                    @click=${() => {
-                      const n = { ...chip };
-                      delete n.icon;
-                      update(n);
-                    }}
+                    data-chip-idx=${idx}
+                    data-action="remove-icon"
+                    @click=${this._onChipActionClick}
                   >
                     Remove
                   </button>
@@ -3159,9 +3454,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                     type="button"
                     class="icon-weather-btn"
                     title="Use dynamic weather icon"
-                    @click=${() => {
-                      update({ ...chip, icon: "weather" });
-                    }}
+                    data-chip-idx=${idx}
+                    data-action="set-weather-icon"
+                    @click=${this._onChipActionClick}
                   >
                     <ha-icon
                       icon="mdi:weather-partly-cloudy"
@@ -3176,11 +3471,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                     type="button"
                     class="clear-btn"
                     title="Clear"
-                    @click=${() => {
-                      const n = { ...chip };
-                      delete n.icon_path;
-                      update(n);
-                    }}
+                    data-chip-idx=${idx}
+                    data-action="clear-icon-path"
+                    @click=${this._onChipActionClick}
                   >
                     <ha-icon icon="mdi:close"></ha-icon>
                   </button>`
@@ -3194,17 +3487,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
               <label class="toggle-row">
                 <span>Icon background</span>
                 <ha-switch
+                  data-chip-idx=${idx}
+                  data-key="icon_background"
+                  data-mode="true-false-if-defined"
                   .checked=${chip.icon_background === true}
-                  @change=${(e) => {
-                    const n = { ...chip };
-                    if (e.target.checked) n.icon_background = true;
-                    else {
-                      if (chip.icon_background !== undefined)
-                        n.icon_background = false;
-                      else delete n.icon_background;
-                    }
-                    update(n);
-                  }}
+                  @change=${this._onChipToggleChange}
                 ></ha-switch
               ></label>
             </div>
@@ -3234,10 +3521,10 @@ class AtmosphericWeatherCardEditor extends LitElement {
       return html`<div class="chip-accordion">
         <div
           class="chip-accordion-head ${isOpen ? "open" : ""}"
-          @click=${() => {
-            this[`_text_acc_${idx}`] = isOpen ? null : tKey;
-            this.requestUpdate();
-          }}
+          data-chip-idx=${idx}
+          data-acc-kind="text"
+          data-acc-key=${tKey}
+          @click=${this._onChipAccordionToggle}
         >
           <span class="chip-accordion-title">${title}</span>
           <ha-icon class="chevron" icon="mdi:chevron-right"></ha-icon>
@@ -3249,13 +3536,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
         <label class="toggle-row">
           <span>Hide</span>
           <ha-switch
+            data-chip-idx=${idx}
+            data-key="hide_label"
+            data-mode="true-delete"
             .checked=${chip.hide_label === true}
-            @change=${(e) => {
-              const n = { ...chip };
-              if (e.target.checked) n.hide_label = true;
-              else delete n.hide_label;
-              update(n);
-            }}
+            @change=${this._onChipToggleChange}
           ></ha-switch
         ></label>
       </div>
@@ -3316,12 +3601,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
                     class=${(chip.label_weight || "") === o.value
                       ? "active"
                       : ""}
-                    @click=${() => {
-                      const n = { ...chip };
-                      if (o.value) n.label_weight = o.value;
-                      else delete n.label_weight;
-                      update(n);
-                    }}
+                    data-chip-idx=${idx}
+                    data-key="label_weight"
+                    data-mode="set-or-delete-empty"
+                    data-value=${o.value}
+                    @click=${this._onChipSegmentedSelect}
                   >
                     ${o.label}
                   </button>`,
@@ -3340,13 +3624,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
         <label class="toggle-row">
           <span>Hide</span>
           <ha-switch
+            data-chip-idx=${idx}
+            data-key="hide_value"
+            data-mode="true-delete"
             .checked=${chip.hide_value === true}
-            @change=${(e) => {
-              const n = { ...chip };
-              if (e.target.checked) n.hide_value = true;
-              else delete n.hide_value;
-              update(n);
-            }}
+            @change=${this._onChipToggleChange}
           ></ha-switch
         ></label>
         ${!chip.hide_value &&
@@ -3361,13 +3643,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
           ? html`<label class="toggle-row">
               <span>Fancy unit</span>
               <ha-switch
+                data-chip-idx=${idx}
+                data-key="fancy_unit"
+                data-mode="true-delete"
                 .checked=${chip.fancy_unit === true}
-                @change=${(e) => {
-                  const n = { ...chip };
-                  if (e.target.checked) n.fancy_unit = true;
-                  else delete n.fancy_unit;
-                  update(n);
-                }}
+                @change=${this._onChipToggleChange}
               ></ha-switch
             ></label>`
           : ""}
@@ -3395,12 +3675,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
                     class=${(chip.value_weight || "") === o.value
                       ? "active"
                       : ""}
-                    @click=${() => {
-                      const n = { ...chip };
-                      if (o.value) n.value_weight = o.value;
-                      else delete n.value_weight;
-                      update(n);
-                    }}
+                    data-chip-idx=${idx}
+                    data-key="value_weight"
+                    data-mode="set-or-delete-empty"
+                    data-value=${o.value}
+                    @click=${this._onChipSegmentedSelect}
                   >
                     ${o.label}
                   </button>`,
@@ -3419,13 +3698,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
         <label class="toggle-row">
           <span>Hide</span>
           <ha-switch
+            data-chip-idx=${idx}
+            data-key="hide_sub_value"
+            data-mode="true-delete"
             .checked=${chip.hide_sub_value === true}
-            @change=${(e) => {
-              const n = { ...chip };
-              if (e.target.checked) n.hide_sub_value = true;
-              else delete n.hide_sub_value;
-              update(n);
-            }}
+            @change=${this._onChipToggleChange}
           ></ha-switch
         ></label>
       </div>
@@ -3491,12 +3768,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
                         class=${(chip.sub_value_weight || "") === o.value
                           ? "active"
                           : ""}
-                        @click=${() => {
-                          const n = { ...chip };
-                          if (o.value) n.sub_value_weight = o.value;
-                          else delete n.sub_value_weight;
-                          update(n);
-                        }}
+                        data-chip-idx=${idx}
+                        data-key="sub_value_weight"
+                        data-mode="set-or-delete-empty"
+                        data-value=${o.value}
+                        @click=${this._onChipSegmentedSelect}
                       >
                         ${o.label}
                       </button>`,
@@ -3513,13 +3789,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
                       type="button"
                       role="radio"
                       class=${cur === o.value ? "active" : ""}
-                      @click=${() => {
-                        const n = { ...chip };
-                        if (o.value === "beside")
-                          n.sub_value_position = "beside";
-                        else delete n.sub_value_position;
-                        update(n);
-                      }}
+                      data-chip-idx=${idx}
+                      data-key="sub_value_position"
+                      data-mode="beside-or-delete"
+                      data-value=${o.value}
+                      @click=${this._onChipSegmentedSelect}
                     >
                       ${o.label}
                     </button>`;
@@ -3543,13 +3817,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
               <label class="toggle-row">
                 <span>Right-to-left</span>
                 <ha-switch
+                  data-chip-idx=${idx}
+                  data-key="marquee_rtl"
+                  data-mode="true-delete"
                   .checked=${chip.marquee_rtl === true}
-                  @change=${(e) => {
-                    const n = { ...chip };
-                    if (e.target.checked) n.marquee_rtl = true;
-                    else delete n.marquee_rtl;
-                    update(n);
-                  }}
+                  @change=${this._onChipToggleChange}
                 ></ha-switch
               ></label>
             </div>
@@ -3633,12 +3905,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
               type="button"
               role="radio"
               class=${chip.style === o.value ? "active" : ""}
-              @click=${() => {
-                const n = { ...chip };
-                if (chip.style === o.value) delete n.style;
-                else n.style = o.value;
-                update(n);
-              }}
+              data-chip-idx=${idx}
+              data-key="style"
+              data-mode="toggle-delete-if-same"
+              data-value=${o.value}
+              @click=${this._onChipSegmentedSelect}
             >
               ${o.label}
             </button>`,
@@ -3656,12 +3927,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
               type="button"
               role="radio"
               class=${chip.align === o.value ? "active" : ""}
-              @click=${() => {
-                const n = { ...chip };
-                if (chip.align === o.value) delete n.align;
-                else n.align = o.value;
-                update(n);
-              }}
+              data-chip-idx=${idx}
+              data-key="align"
+              data-mode="toggle-delete-if-same"
+              data-value=${o.value}
+              @click=${this._onChipSegmentedSelect}
             >
               ${o.label}
             </button>`,
@@ -3671,25 +3941,21 @@ class AtmosphericWeatherCardEditor extends LitElement {
         <label class="toggle-row">
           <span>Round shape</span>
           <ha-switch
+            data-chip-idx=${idx}
+            data-key="chip_round"
+            data-mode="true-delete"
             .checked=${chip.chip_round === true}
-            @change=${(e) => {
-              const n = { ...chip };
-              if (e.target.checked) n.chip_round = true;
-              else delete n.chip_round;
-              update(n);
-            }}
+            @change=${this._onChipToggleChange}
           ></ha-switch
         ></label>
         <label class="toggle-row">
           <span>Background</span>
           <ha-switch
+            data-chip-idx=${idx}
+            data-key="background"
+            data-mode="false-delete"
             .checked=${chip.background !== false}
-            @change=${(e) => {
-              const n = { ...chip };
-              if (!e.target.checked) n.background = false;
-              else delete n.background;
-              update(n);
-            }}
+            @change=${this._onChipToggleChange}
           ></ha-switch
         ></label>
       </div>
@@ -3828,12 +4094,11 @@ class AtmosphericWeatherCardEditor extends LitElement {
                     class=${(chip[p + "threshold_mode"] || "solid") === o.value
                       ? "active"
                       : ""}
-                    @click=${() => {
-                      const n = { ...chip };
-                      if (o.value === "solid") delete n[p + "threshold_mode"];
-                      else n[p + "threshold_mode"] = o.value;
-                      update(n);
-                    }}
+                    data-chip-idx=${idx}
+                    data-key=${p + "threshold_mode"}
+                    data-mode="solid-or-delete"
+                    data-value=${o.value}
+                    @click=${this._onChipSegmentedSelect}
                   >
                     ${o.label}
                   </button>`,
@@ -4009,7 +4274,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                           : ""}"
                         title=${v}
                         aria-label=${v}
-                        @click=${() => update({ ...chip, position_anchor: v })}
+                        data-chip-idx=${idx}
+                        data-anchor=${v}
+                        @click=${this._onChipAnchorSelect}
                       ></button>`,
                   )}
                 </div>
@@ -4078,12 +4345,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                       type="button"
                       role="radio"
                       class=${chip.forecast === o.value ? "active" : ""}
-                      @click=${() =>
-                        update({
-                          ...chip,
-                          forecast: o.value,
-                          forecast_offset: 0,
-                        })}
+                      data-chip-idx=${idx}
+                      data-forecast-type=${o.value}
+                      @click=${this._onChipForecastTypeSelect}
                     >
                       ${o.label}
                     </button>`,
@@ -4247,29 +4511,7 @@ class AtmosphericWeatherCardEditor extends LitElement {
           </div>`
         : null;
     /* ── Style reset ── */
-    const CHIP_STYLE_KEYS = [
-      "style",
-      "align",
-      "background",
-      "icon_background",
-      "background_color",
-      "icon_background_color",
-      "padding",
-      "text_size",
-      "label_size",
-      "inner_gap",
-      "text_gap",
-      "icon_size",
-      "icon_padding",
-      "width",
-      "height",
-      "value_weight",
-      "label_weight",
-      "chip_round",
-      "sub_value_size",
-      "sub_value_weight",
-    ];
-    const hasStyleOverrides = CHIP_STYLE_KEYS.some(
+    const hasStyleOverrides = CHIP_STYLE_OVERRIDE_KEYS.some(
       (k) => chip[k] !== undefined && chip[k] !== "",
     );
     /* ── Assemble body ── */
@@ -4286,11 +4528,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
           type="button"
           class="add-card-btn"
           style="border-style:solid;border-color:rgba(var(--rgb-error-color,211,47,47),0.35);color:var(--error-color);margin-top:var(--awc-e-s3)"
-          @click=${() => {
-            const n = { ...chip };
-            for (const k of CHIP_STYLE_KEYS) delete n[k];
-            update(n);
-          }}
+          data-chip-idx=${idx}
+          data-action="reset-styles"
+          @click=${this._onChipActionClick}
         >
           <ha-icon icon="mdi:restore"></ha-icon><span>Reset all styles</span>
         </button>`
@@ -4448,8 +4688,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
       <input
         type="text"
         placeholder=${placeholder}
+        data-field=${field}
         .value=${current}
-        @change=${(e) => this._updateField(field, e.target.value || "")}
+        @change=${this._onRawFieldChange}
       />
       ${hasError
         ? html`<div class="compact-field-hint error">
@@ -4475,8 +4716,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
         <input
           type="text"
           placeholder=${placeholder}
+          data-field=${key}
           .value=${String(c[key] || "")}
-          @change=${(e) => this._updateField(key, e.target.value || "")}
+          @change=${this._onRawFieldChange}
         />
       </div>`;
     const containerContent = html`<div class="settings-group">
@@ -4494,9 +4736,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
               <input
                 type="text"
                 placeholder="auto"
+                data-field="chip_area_width"
                 .value=${String(c.chip_area_width || "")}
-                @change=${(e) =>
-                  this._updateField("chip_area_width", e.target.value || "")}
+                @change=${this._onRawFieldChange}
               />
             </div>
             <div class="css-field">
@@ -4504,9 +4746,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
               <input
                 type="text"
                 placeholder="auto"
+                data-field="chip_area_height"
                 .value=${String(c.chip_area_height || "")}
-                @change=${(e) =>
-                  this._updateField("chip_area_height", e.target.value || "")}
+                @change=${this._onRawFieldChange}
               />
             </div>
           </div>
@@ -4521,7 +4763,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 type="button"
                 role="radio"
                 class=${layout === o.value ? "active" : ""}
-                @click=${() => this._updateField("chip_area_layout", o.value)}
+                data-field="chip_area_layout"
+                data-value=${o.value}
+                @click=${this._onSegmentedFieldSelect}
               >
                 ${o.label}
               </button>`,
@@ -4598,7 +4842,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 type="button"
                 role="radio"
                 class=${chipFormat === o.value ? "active" : ""}
-                @click=${() => this._updateField("chip_style", o.value)}
+                data-field="chip_style"
+                data-value=${o.value}
+                @click=${this._onSegmentedFieldSelect}
               >
                 ${o.label}
               </button>`,
@@ -4619,7 +4865,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 type="button"
                 role="radio"
                 class=${align === o.value ? "active" : ""}
-                @click=${() => this._updateField("chip_area_align", o.value)}
+                data-field="chip_area_align"
+                data-value=${o.value}
+                @click=${this._onSegmentedFieldSelect}
               >
                 ${o.label}
               </button>`,
@@ -4634,9 +4882,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
             type="button"
             role="radio"
             class=${!bgActive ? "active" : ""}
-            @click=${() => {
-              this._updateField("chip_area_background", false);
-            }}
+            data-bg-mode="off"
+            @click=${this._onChipAreaBackgroundModeSelect}
           >
             Off
           </button>
@@ -4650,10 +4897,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 type="button"
                 role="radio"
                 class=${bgActive && bgStyle === o.value ? "active" : ""}
-                @click=${() => {
-                  this._updateField("chip_area_background", true);
-                  this._updateField("card_background_style", o.value);
-                }}
+                data-bg-mode=${o.value}
+                @click=${this._onChipAreaBackgroundModeSelect}
               >
                 ${o.label}
               </button>`,
@@ -4678,11 +4923,10 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 (o.value === undefined && c.chip_icon_background === undefined)
                   ? "active"
                   : ""}
-                @click=${() =>
-                  this._updateField(
-                    "chip_icon_background",
-                    o.value === undefined ? "" : o.value,
-                  )}
+                data-field="chip_icon_background"
+                data-value=${o.value === undefined ? "" : String(o.value)}
+                data-value-type=${o.value === undefined ? "empty" : "boolean"}
+                @click=${this._onSegmentedFieldSelect}
               >
                 ${o.label}
               </button>`,
@@ -4871,7 +5115,10 @@ class AtmosphericWeatherCardEditor extends LitElement {
                 type="button"
                 role="radio"
                 class=${v === o.value ? "active" : ""}
-                @click=${() => this._updateField(field, o.value)}
+                data-field=${field}
+                data-value=${String(o.value)}
+                data-value-type="number"
+                @click=${this._onSegmentedFieldSelect}
               >
                 ${o.label}
               </button>`,
@@ -4995,9 +5242,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
       ])}
       <ha-expansion-panel
         outlined
+        data-panel="sun_moon"
         .expanded=${this._openPanel === "sun_moon"}
-        @expanded-changed=${(e) =>
-          this._onPanelToggle("sun_moon", e.detail.expanded)}
+        @expanded-changed=${this._onPanelExpandedChanged}
       >
         <div slot="header" class="panel-header">
           <ha-icon icon="mdi:theme-light-dark"></ha-icon>
@@ -5067,9 +5314,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
       >
       <ha-expansion-panel
         outlined
+        data-panel="color_mode"
         .expanded=${this._openPanel === "color_mode"}
-        @expanded-changed=${(e) =>
-          this._onPanelToggle("color_mode", e.detail.expanded)}
+        @expanded-changed=${this._onPanelExpandedChanged}
       >
         <div slot="header" class="panel-header">
           <ha-icon icon="mdi:palette-outline"></ha-icon>
@@ -5090,9 +5337,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
       >
       <ha-expansion-panel
         outlined
+        data-panel="layout"
         .expanded=${this._openPanel === "layout"}
-        @expanded-changed=${(e) =>
-          this._onPanelToggle("layout", e.detail.expanded)}
+        @expanded-changed=${this._onPanelExpandedChanged}
       >
         <div slot="header" class="panel-header">
           <ha-icon icon="mdi:page-layout-body"></ha-icon>
@@ -5131,9 +5378,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
       >
       <ha-expansion-panel
         outlined
+        data-panel="text"
         .expanded=${this._openPanel === "text"}
-        @expanded-changed=${(e) =>
-          this._onPanelToggle("text", e.detail.expanded)}
+        @expanded-changed=${this._onPanelExpandedChanged}
       >
         <div slot="header" class="panel-header">
           <ha-icon icon="mdi:layers-outline"></ha-icon>
@@ -5148,7 +5395,8 @@ class AtmosphericWeatherCardEditor extends LitElement {
               <button
                 type="button"
                 class="inline-action-btn"
-                @click=${() => this._updateField("card_hide_text", "")}
+                data-field="card_hide_text"
+                @click=${this._onClearFieldClick}
               >
                 Show again
               </button>
