@@ -1,6 +1,6 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.5.8-beta
+ * Version: 6.5.8
  */
 import {
   advanceWindAndPulse,
@@ -41,7 +41,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.5.8-beta";
+const EDITOR_IMPORT_VERSION = "6.5.8";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
