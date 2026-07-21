@@ -1268,7 +1268,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     this._boundTap = this._handleTap.bind(this);
     this._fcData = new Map(_fcCache);
     this._fcSubs = new Map();
-    this._fcFmtCache = null;
+    this._precisionFmtCache = null;
   }
   get _isLightBackground() {
     return !this._isThemeDark;
@@ -2258,13 +2258,13 @@ class AtmosphericWeatherCard extends HTMLElement {
   }
   _getFcFmt(lang, precision) {
     const key = `${lang}|${precision}`;
-    if ((this._fcFmtCache && this._fcFmtCache[0]) === key)
-      return this._fcFmtCache[1];
+    if ((this._precisionFmtCache && this._precisionFmtCache[0]) === key)
+      return this._precisionFmtCache[1];
     const fmt = new Intl.NumberFormat(lang, {
       maximumFractionDigits: precision,
       minimumFractionDigits: 0,
     });
-    this._fcFmtCache = [key, fmt];
+    this._precisionFmtCache = [key, fmt];
     return fmt;
   }
   _cssVar(el, prop, val, key) {
