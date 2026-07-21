@@ -3874,9 +3874,15 @@ class AtmosphericWeatherCard extends HTMLElement {
         sensor &&
         sensor.attributes &&
         sensor.attributes.temperature !== undefined;
-      const rawTemp = isWeather
+      const rawTempCandidate = isWeather
         ? sensor.attributes.temperature
         : sensor && sensor.state;
+      const rawTempIsNumeric =
+        rawTempCandidate !== null &&
+        rawTempCandidate !== "" &&
+        !isNaN(parseFloat(rawTempCandidate)) &&
+        isFinite(rawTempCandidate);
+      const rawTemp = rawTempIsNumeric ? rawTempCandidate : null;
       const rawUnit = isWeather
         ? sensor.attributes.temperature_unit || ""
         : (sensor &&
