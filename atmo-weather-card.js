@@ -1,6 +1,6 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.5.8-beta
+ * Version: 6.5.11-beta
  */
 import {
   advanceWindAndPulse,
@@ -41,7 +41,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.5.8-beta";
+const EDITOR_IMPORT_VERSION = "6.5.11-beta";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
@@ -2023,6 +2023,7 @@ class AtmosphericWeatherCard extends HTMLElement {
         rawNumeric = raw;
       } else {
         value = raw;
+        rawNumeric = raw;
         unit =
           sensor.attributes[`${attribute}_unit`] ||
           sensor.attributes.unit_of_measurement ||
@@ -2034,6 +2035,7 @@ class AtmosphericWeatherCard extends HTMLElement {
       rawNumeric = sensor.state;
     } else {
       value = sensor.state;
+      rawNumeric = sensor.state;
       unit = sensor.attributes.unit_of_measurement || "";
     }
     let formatted = value;
@@ -2086,6 +2088,30 @@ class AtmosphericWeatherCard extends HTMLElement {
       }
     }
     return { formatted, unit, sensor, haFormatted, rawNumeric };
+  }
+  _resolveChipValueFormatted(
+    chip,
+    lang,
+    rawValue,
+    fallbackFormatted,
+    haFormatted = false,
+  ) {
+    if (rawValue === null || rawValue === undefined) return fallbackFormatted;
+    const isNumeric =
+      rawValue !== "" && !isNaN(parseFloat(rawValue)) && isFinite(rawValue);
+    if (!isNumeric) return fallbackFormatted;
+    const precisionRaw = chip && chip.value_precision;
+    if (precisionRaw !== undefined && precisionRaw !== null) {
+      const parsed = parseInt(precisionRaw, 10);
+      if (Number.isFinite(parsed)) {
+        const precision = Math.max(0, Math.min(2, parsed));
+        const fmt = this._getPrecisionFmt(lang, precision);
+        if (fmt) return fmt.format(rawValue);
+      }
+    }
+    if (haFormatted) return fallbackFormatted;
+    if (this._numFmt) return this._numFmt.format(rawValue);
+    return String(rawValue);
   }
   // FORECAST DATA LAYER
   _syncFc() {
@@ -2244,7 +2270,7 @@ class AtmosphericWeatherCard extends HTMLElement {
       const precision = chip.forecast_precision;
       const fmt =
         precision !== undefined && precision !== null
-          ? this._getFcFmt(lang, precision)
+          ? this._getPrecisionFmt(lang, precision)
           : this._numFmt;
       if (fmt) formatted = fmt.format(raw);
     }
@@ -2256,7 +2282,7 @@ class AtmosphericWeatherCard extends HTMLElement {
       entry,
     };
   }
-  _getFcFmt(lang, precision) {
+  _getPrecisionFmt(lang, precision) {
     const key = `${lang}|${precision}`;
     if ((this._precisionFmtCache && this._precisionFmtCache[0]) === key)
       return this._precisionFmtCache[1];
@@ -3633,6 +3659,8 @@ class AtmosphericWeatherCard extends HTMLElement {
       iconValue = "mdi:information-outline",
       formatted,
       unit;
+    let mainHaFormatted = false,
+      mainRawNumeric = null;
     const isForecast = !!chip.forecast;
     let fcCondition = null,
       fcDatetime = null,
@@ -3657,21 +3685,16 @@ class AtmosphericWeatherCard extends HTMLElement {
         chip.entity,
         chip.attribute,
       );
-      formatted = resolved.formatted;
+      mainHaFormatted = resolved.haFormatted === true;
+      mainRawNumeric = resolved.rawNumeric;
+      formatted = this._resolveChipValueFormatted(
+        chip,
+        lang,
+        mainRawNumeric,
+        resolved.formatted,
+        mainHaFormatted,
+      );
       unit = resolved.unit;
-      if (
-        resolved.haFormatted &&
-        chip.unit_format !== undefined &&
-        resolved.rawNumeric != null
-      ) {
-        const rawVal = resolved.rawNumeric;
-        const isNum =
-          rawVal !== "" && !isNaN(parseFloat(rawVal)) && isFinite(rawVal);
-        if (isNum)
-          formatted = this._numFmt
-            ? this._numFmt.format(rawVal)
-            : String(rawVal);
-      }
       const sensor = hass.states[chip.entity];
       if (sensor) {
         if (chip.attribute)
@@ -3781,7 +3804,13 @@ class AtmosphericWeatherCard extends HTMLElement {
               _w[_FC_UNIT_MAP[chip.name_attribute]]) ||
             _FC_UNIT_FALLBACK[chip.name_attribute] ||
             "";
-          const nFmt = this._numFmt ? this._numFmt.format(nRaw) : String(nRaw);
+          const nFmt = this._resolveChipValueFormatted(
+            chip,
+            lang,
+            nRaw,
+            String(nRaw),
+            false,
+          );
           name = nUnit ? `${nFmt} ${nUnit}` : `${nFmt}`;
         } else {
           name = String(nRaw);
@@ -3817,7 +3846,7 @@ class AtmosphericWeatherCard extends HTMLElement {
             const precision = chip.forecast_precision;
             const fmt =
               precision !== undefined && precision !== null
-                ? this._getFcFmt(lang, precision)
+                ? this._getPrecisionFmt(lang, precision)
                 : this._numFmt;
             if (fmt) svFmt = fmt.format(svRaw);
           }
@@ -3876,7 +3905,7 @@ class AtmosphericWeatherCard extends HTMLElement {
         sensor.attributes.temperature !== undefined;
       const rawTempCandidate = isWeather
         ? sensor.attributes.temperature
-        : sensor && sensor.state;
+        : mainRawNumeric;
       const rawTempIsNumeric =
         rawTempCandidate !== null &&
         rawTempCandidate !== "" &&
@@ -3889,12 +3918,22 @@ class AtmosphericWeatherCard extends HTMLElement {
             sensor.attributes &&
             sensor.attributes.unit_of_measurement) ||
           "";
+      const fancyCanUseAttrFormat =
+        isWeather && typeof hass.formatEntityAttributeValue === "function";
+      const fancyBaseFormatted = fancyCanUseAttrFormat
+        ? hass.formatEntityAttributeValue(sensor, "temperature")
+        : formatted;
+      const fancyHaFormatted = fancyCanUseAttrFormat ? true : mainHaFormatted;
       const fancyVal =
-        rawTemp != null && this._numFmt
-          ? this._numFmt.format(rawTemp)
-          : rawTemp != null
-            ? rawTemp
-            : formatted;
+        rawTemp != null
+          ? this._resolveChipValueFormatted(
+              chip,
+              lang,
+              rawTemp,
+              fancyBaseFormatted,
+              fancyHaFormatted,
+            )
+          : formatted;
       const fancyUnitStr = hasUnitFormat ? unit : rawUnit;
       inner = `${escapeHtml(fancyVal)}<span class="fancy-unit">${escapeHtml(fancyUnitStr)}</span>`;
     } else {

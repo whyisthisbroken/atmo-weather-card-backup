@@ -303,6 +303,7 @@ const TOP_LEVEL_BOOLEAN_FIELDS = Object.freeze([
 const CHIP_NUMBER_FIELDS = Object.freeze([
   "forecast_offset",
   "forecast_precision",
+  "value_precision",
   "marquee_speed",
   "ring_min",
   "ring_max",
@@ -3472,6 +3473,106 @@ class AtmosphericWeatherCardEditor extends LitElement {
       </div>
       ${chip.hide_value !== true
         ? html`${chipForm([{ name: "unit_format", selector: { text: {} } }])}
+            ${!isFc && entityId
+              ? html`${(() => {
+                  const hasManualPrecision =
+                    chip.value_precision !== undefined &&
+                    chip.value_precision !== null;
+                  const prec = hasManualPrecision
+                    ? Math.min(
+                        2,
+                        Math.max(0, parseInt(chip.value_precision, 10) || 0),
+                      )
+                    : 1;
+                  const pct = Math.round((prec / 2) * 100);
+                  return html`<div class="toggle-group">
+                      <label class="toggle-row">
+                        <span>Auto (Home Assistant)</span>
+                        <ha-switch
+                          .checked=${!hasManualPrecision}
+                          @change=${(e) => {
+                            if (e.target.checked) {
+                              const n = { ...chip };
+                              delete n.value_precision;
+                              update(n);
+                            } else {
+                              update({ ...chip, value_precision: prec });
+                            }
+                          }}
+                        ></ha-switch>
+                      </label>
+                    </div>
+                    <div class="awc-slider">
+                      <div class="awc-slider-head">
+                        <span class="awc-slider-label">Decimal places</span>
+                        <input
+                          type="number"
+                          class="awc-slider-num"
+                          min="0"
+                          max="2"
+                          step="1"
+                          placeholder=${hasManualPrecision ? "" : "Auto"}
+                          .value=${hasManualPrecision ? String(prec) : ""}
+                          @change=${(e) => {
+                            const raw = e.target.value.trim();
+                            if (raw === "") {
+                              const n = { ...chip };
+                              delete n.value_precision;
+                              update(n);
+                              return;
+                            }
+                            const v = Math.min(
+                              2,
+                              Math.max(0, parseInt(raw, 10) || 0),
+                            );
+                            const range = e.target
+                              .closest(".awc-slider")
+                              .querySelector(".awc-slider-range");
+                            if (range) {
+                              range.value = v;
+                              range.style.setProperty(
+                                "--awc-slider-pct",
+                                Math.round((v / 2) * 100) + "%",
+                              );
+                            }
+                            update({ ...chip, value_precision: v });
+                          }}
+                        />
+                      </div>
+                      <input
+                        type="range"
+                        class="awc-slider-range"
+                        min="0"
+                        max="2"
+                        step="1"
+                        .value=${String(prec)}
+                        style="--awc-slider-pct:${pct}%"
+                        @input=${(e) => {
+                          const v = parseInt(e.target.value, 10);
+                          const p = Math.round((v / 2) * 100);
+                          e.target.style.setProperty(
+                            "--awc-slider-pct",
+                            p + "%",
+                          );
+                          const n = e.target
+                            .closest(".awc-slider")
+                            .querySelector(".awc-slider-num");
+                          if (n) n.value = v;
+                        }}
+                        @change=${(e) =>
+                          update({
+                            ...chip,
+                            value_precision: parseInt(e.target.value, 10),
+                          })}
+                      />
+                      <div class="awc-slider-helper">
+                        ${hasManualPrecision
+                          ? "Manual override"
+                          : "Following Home Assistant display precision"}
+                      </div>
+                    </div>`;
+                })()}`
+              : ""}
             <div class="css-field-row cols-2">
               ${cssField("text_size", "Size", "auto")}
             </div>
