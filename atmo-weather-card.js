@@ -1,6 +1,6 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.6.5
+ * Version: 6.6.6
  */
 import {
   advanceWindAndPulse,
@@ -41,7 +41,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.6.5";
+const EDITOR_IMPORT_VERSION = "6.6.6";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
@@ -839,6 +839,15 @@ function escapeHtml(value) {
 }
 function escapeHtmlAttr(value) {
   return escapeHtml(value);
+}
+function thresholdSig(thresholds) {
+  if (!Array.isArray(thresholds)) return "";
+  let s = "";
+  for (let i = 0; i < thresholds.length; i++) {
+    const t = thresholds[i];
+    s += `${i > 0 ? "," : ""}${t && t.value != null ? t.value : ""}:${t && t.color ? t.color : ""}`;
+  }
+  return s;
 }
 function computeGauge(rawVal, min, max, colorRaw, thresholds, mode) {
   const range = max - min || 1;
@@ -4193,7 +4202,7 @@ class AtmosphericWeatherCard extends HTMLElement {
     if (isRingType) {
       chipHtml = `<div class="chip-ring-wrap${hasSegments ? " has-segments" : ""}${fcLoading ? " chip-loading" : ""}" data-idx="${idx}" style="${escapeHtmlAttr(ringWrapStyle)}">${ringHtml}${chipHtml}</div>`;
     }
-    const sig = `${idx}|${formatted}|${unit}|${iconValue}|${iconStrategy}|${showIcon}|${showLabel}|${showValue}|${overflowMode}|${labelOverflow}|${marqueeSpeed}|${marqueeRtl}|${width}|${height}|${nameSig}|${effectiveBg}|${bgStyle}|${effectiveFormat}|${iconBg != null ? iconBg : ""}|${isFree}|${posAnchor}|${posX}|${posY}|${effectiveBgColor}|${effectiveIconBgColor}|${chip.padding != null ? chip.padding : ""}|${chip.text_size || ""}|${chip.label_size || ""}|${chip.inner_gap || ""}|${chip.text_gap || ""}|${chip.icon_size || ""}|${chip.icon_padding || ""}|${chipAlignClass}|${subValueSig}|${chip.sub_value_position || ""}|${chip.sub_value_format != null ? chip.sub_value_format : ""}|${chip.sub_value_size || ""}|${chip.sub_value_weight || ""}|${chip.sub_value_overflow || ""}|${chip.hide_sub_value || ""}|${isBehind}|${useFancyUnit}|${chip.value_weight || ""}|${chip.label_weight || ""}|${chip.chip_round || ""}|${chip.type || ""}|${chip.ring_min != null ? chip.ring_min : ""}|${chip.ring_max != null ? chip.ring_max : ""}|${chip.ring_color || ""}|${chip.ring_width || ""}|${chip.ring_gap || ""}|${chip.ring_threshold_mode || ""}|${JSON.stringify(chip.ring_thresholds || "")}|${chip.bar_min != null ? chip.bar_min : ""}|${chip.bar_max != null ? chip.bar_max : ""}|${chip.bar_color || ""}|${chip.bar_height || ""}|${chip.bar_gap || ""}|${chip.bar_threshold_mode || ""}|${JSON.stringify(chip.bar_thresholds || "")}|${gaugeSig}`;
+    const sig = `${idx}|${formatted}|${unit}|${iconValue}|${iconStrategy}|${showIcon}|${showLabel}|${showValue}|${overflowMode}|${labelOverflow}|${marqueeSpeed}|${marqueeRtl}|${width}|${height}|${nameSig}|${effectiveBg}|${bgStyle}|${effectiveFormat}|${iconBg != null ? iconBg : ""}|${isFree}|${posAnchor}|${posX}|${posY}|${effectiveBgColor}|${effectiveIconBgColor}|${chip.padding != null ? chip.padding : ""}|${chip.text_size || ""}|${chip.label_size || ""}|${chip.inner_gap || ""}|${chip.text_gap || ""}|${chip.icon_size || ""}|${chip.icon_padding || ""}|${chipAlignClass}|${subValueSig}|${chip.sub_value_position || ""}|${chip.sub_value_format != null ? chip.sub_value_format : ""}|${chip.sub_value_size || ""}|${chip.sub_value_weight || ""}|${chip.sub_value_overflow || ""}|${chip.hide_sub_value || ""}|${isBehind}|${useFancyUnit}|${chip.value_weight || ""}|${chip.label_weight || ""}|${chip.chip_round || ""}|${chip.type || ""}|${chip.ring_min != null ? chip.ring_min : ""}|${chip.ring_max != null ? chip.ring_max : ""}|${chip.ring_color || ""}|${chip.ring_width || ""}|${chip.ring_gap || ""}|${chip.ring_threshold_mode || ""}|${thresholdSig(chip.ring_thresholds)}|${chip.bar_min != null ? chip.bar_min : ""}|${chip.bar_max != null ? chip.bar_max : ""}|${chip.bar_color || ""}|${chip.bar_height || ""}|${chip.bar_gap || ""}|${chip.bar_threshold_mode || ""}|${thresholdSig(chip.bar_thresholds)}|${gaugeSig}`;
     return {
       html: chipHtml,
       sig,

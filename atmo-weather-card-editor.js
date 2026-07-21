@@ -475,8 +475,9 @@ class AtmosphericWeatherCardEditor extends LitElement {
     } else if (old && val) {
       if (!this._hassThrottle) {
         this._hassThrottle = true;
-        setTimeout(() => {
+        this._hassThrottleTimer = setTimeout(() => {
           this._hassThrottle = false;
+          this._hassThrottleTimer = null;
           this.requestUpdate();
         }, 2000);
       }
@@ -484,6 +485,13 @@ class AtmosphericWeatherCardEditor extends LitElement {
   }
   get hass() {
     return this._hass;
+  }
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._hassThrottleTimer) {
+      clearTimeout(this._hassThrottleTimer);
+      this._hassThrottleTimer = null;
+    }
   }
   static get styles() {
     return css`
@@ -3758,61 +3766,18 @@ class AtmosphericWeatherCardEditor extends LitElement {
               ></label>
             </div>
             ${(() => {
-              const spd = parseFloat(chip.marquee_speed) || 30,
-                spdPct = Math.round(((spd - 5) / (100 - 5)) * 100);
-              return html`<div class="awc-slider">
-                <div class="awc-slider-head">
-                  <span class="awc-slider-label">Scroll speed</span>
-                  <input
-                    type="number"
-                    class="awc-slider-num"
-                    min="5"
-                    max="100"
-                    step="5"
-                    .value=${String(spd)}
-                    @change=${(e) => {
-                      const v = Math.min(
-                        100,
-                        Math.max(5, parseInt(e.target.value, 10) || 30),
-                      );
-                      const range = e.target
-                        .closest(".awc-slider")
-                        .querySelector(".awc-slider-range");
-                      if (range) {
-                        range.value = v;
-                        range.style.setProperty(
-                          "--awc-slider-pct",
-                          Math.round(((v - 5) / (100 - 5)) * 100) + "%",
-                        );
-                      }
-                      update({ ...chip, marquee_speed: v });
-                    }}
-                  />
-                </div>
-                <input
-                  type="range"
-                  class="awc-slider-range"
-                  min="5"
-                  max="100"
-                  step="5"
-                  .value=${String(spd)}
-                  style="--awc-slider-pct:${spdPct}%"
-                  @input=${(e) => {
-                    const v = parseInt(e.target.value, 10);
-                    const p = Math.round(((v - 5) / (100 - 5)) * 100);
-                    e.target.style.setProperty("--awc-slider-pct", p + "%");
-                    const n = e.target
-                      .closest(".awc-slider")
-                      .querySelector(".awc-slider-num");
-                    if (n) n.value = v;
-                  }}
-                  @change=${(e) =>
-                    update({
-                      ...chip,
-                      marquee_speed: parseInt(e.target.value, 10),
-                    })}
-                />
-              </div>`;
+              const spd = parseFloat(chip.marquee_speed) || 30;
+              return this._renderChipSlider(
+                chip,
+                update,
+                "marquee_speed",
+                "Scroll speed",
+                5,
+                100,
+                5,
+                spd,
+                30,
+              );
             })()}`
         : null;
     const textSection = html`${textAcc("text_label", "Label", labelContent)}
@@ -4301,61 +4266,18 @@ class AtmosphericWeatherCardEditor extends LitElement {
                       : fcOff === 1
                         ? "Tomorrow"
                         : `+${fcOff} days`;
-                const pct = Math.round((fcOff / fcMax) * 100);
-                return html`<div class="awc-slider">
-                  <div class="awc-slider-head">
-                    <span class="awc-slider-label">${fcLabel}</span>
-                    <input
-                      type="number"
-                      class="awc-slider-num"
-                      min="0"
-                      max=${fcMax}
-                      step="1"
-                      .value=${String(fcOff)}
-                      @change=${(e) => {
-                        const v = Math.min(
-                          fcMax,
-                          Math.max(0, parseInt(e.target.value, 10) || 0),
-                        );
-                        const range = e.target
-                          .closest(".awc-slider")
-                          .querySelector(".awc-slider-range");
-                        if (range) {
-                          range.value = v;
-                          range.style.setProperty(
-                            "--awc-slider-pct",
-                            Math.round((v / fcMax) * 100) + "%",
-                          );
-                        }
-                        update({ ...chip, forecast_offset: v });
-                      }}
-                    />
-                  </div>
-                  <input
-                    type="range"
-                    class="awc-slider-range"
-                    min="0"
-                    max=${fcMax}
-                    step="1"
-                    .value=${String(fcOff)}
-                    style="--awc-slider-pct:${pct}%"
-                    @input=${(e) => {
-                      const v = parseInt(e.target.value, 10);
-                      const p = Math.round((v / fcMax) * 100);
-                      e.target.style.setProperty("--awc-slider-pct", p + "%");
-                      const n = e.target
-                        .closest(".awc-slider")
-                        .querySelector(".awc-slider-num");
-                      if (n) n.value = v;
-                    }}
-                    @change=${(e) =>
-                      update({
-                        ...chip,
-                        forecast_offset: parseInt(e.target.value, 10),
-                      })}
-                  />
-                  <div class="awc-slider-helper">${fcHelper}</div>
-                </div>`;
+                return this._renderChipSlider(
+                  chip,
+                  update,
+                  "forecast_offset",
+                  fcLabel,
+                  0,
+                  fcMax,
+                  1,
+                  fcOff,
+                  0,
+                  fcHelper,
+                );
               })()}
               <ha-form
                 .hass=${this.hass}
@@ -4382,63 +4304,17 @@ class AtmosphericWeatherCardEditor extends LitElement {
                       chip.forecast_precision !== undefined
                         ? chip.forecast_precision
                         : 1;
-                    const pct = Math.round((prec / 2) * 100);
-                    return html`<div class="awc-slider">
-                      <div class="awc-slider-head">
-                        <span class="awc-slider-label">Decimal places</span>
-                        <input
-                          type="number"
-                          class="awc-slider-num"
-                          min="0"
-                          max="2"
-                          step="1"
-                          .value=${String(prec)}
-                          @change=${(e) => {
-                            const v = Math.min(
-                              2,
-                              Math.max(0, parseInt(e.target.value, 10) || 0),
-                            );
-                            const range = e.target
-                              .closest(".awc-slider")
-                              .querySelector(".awc-slider-range");
-                            if (range) {
-                              range.value = v;
-                              range.style.setProperty(
-                                "--awc-slider-pct",
-                                Math.round((v / 2) * 100) + "%",
-                              );
-                            }
-                            update({ ...chip, forecast_precision: v });
-                          }}
-                        />
-                      </div>
-                      <input
-                        type="range"
-                        class="awc-slider-range"
-                        min="0"
-                        max="2"
-                        step="1"
-                        .value=${String(prec)}
-                        style="--awc-slider-pct:${pct}%"
-                        @input=${(e) => {
-                          const v = parseInt(e.target.value, 10);
-                          const p = Math.round((v / 2) * 100);
-                          e.target.style.setProperty(
-                            "--awc-slider-pct",
-                            p + "%",
-                          );
-                          const n = e.target
-                            .closest(".awc-slider")
-                            .querySelector(".awc-slider-num");
-                          if (n) n.value = v;
-                        }}
-                        @change=${(e) =>
-                          update({
-                            ...chip,
-                            forecast_precision: parseInt(e.target.value, 10),
-                          })}
-                      />
-                    </div>`;
+                    return this._renderChipSlider(
+                      chip,
+                      update,
+                      "forecast_precision",
+                      "Decimal places",
+                      0,
+                      2,
+                      1,
+                      prec,
+                      0,
+                    );
                   })()}`
                 : ""}
             </div>
@@ -4608,6 +4484,74 @@ class AtmosphericWeatherCardEditor extends LitElement {
         style="--awc-slider-pct:${pct}%"
         @input=${onRange}
         @change=${onCommit}
+      />
+      ${helper ? html`<div class="awc-slider-helper">${helper}</div>` : ""}
+    </div>`;
+  }
+  /* Shared range-slider markup for per-chip numeric fields (e.g. marquee
+   * speed, forecast offset/precision). `val` and `fallback` are computed by
+   * the caller so each field keeps its own default-value semantics. */
+  _renderChipSlider(
+    chip,
+    update,
+    field,
+    label,
+    min,
+    max,
+    step,
+    val,
+    fallback,
+    helper,
+  ) {
+    const pct = Math.round(((val - min) / (max - min)) * 100);
+    return html`<div class="awc-slider">
+      <div class="awc-slider-head">
+        <span class="awc-slider-label">${label}</span>
+        <input
+          type="number"
+          class="awc-slider-num"
+          min=${min}
+          max=${max}
+          step=${step}
+          .value=${String(val)}
+          @change=${(e) => {
+            const v = Math.min(
+              max,
+              Math.max(min, parseInt(e.target.value, 10) || fallback),
+            );
+            const range = e.target
+              .closest(".awc-slider")
+              .querySelector(".awc-slider-range");
+            if (range) {
+              range.value = v;
+              range.style.setProperty(
+                "--awc-slider-pct",
+                Math.round(((v - min) / (max - min)) * 100) + "%",
+              );
+            }
+            update({ ...chip, [field]: v });
+          }}
+        />
+      </div>
+      <input
+        type="range"
+        class="awc-slider-range"
+        min=${min}
+        max=${max}
+        step=${step}
+        .value=${String(val)}
+        style="--awc-slider-pct:${pct}%"
+        @input=${(e) => {
+          const v = parseInt(e.target.value, 10);
+          const p = Math.round(((v - min) / (max - min)) * 100);
+          e.target.style.setProperty("--awc-slider-pct", p + "%");
+          const n = e.target
+            .closest(".awc-slider")
+            .querySelector(".awc-slider-num");
+          if (n) n.value = v;
+        }}
+        @change=${(e) =>
+          update({ ...chip, [field]: parseInt(e.target.value, 10) })}
       />
       ${helper ? html`<div class="awc-slider-helper">${helper}</div>` : ""}
     </div>`;
