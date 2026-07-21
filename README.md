@@ -583,6 +583,95 @@ The card has a visual editor for setting up layouts. All YAML settings are liste
 <br>
 
 <details>
+<summary><strong>Where to find things in the editor</strong></summary>
+
+<br>
+
+The visual editor groups settings into collapsible panels, top to bottom:
+
+```
+Card editor
+├─ weather_entity                          (always visible, top)
+├─ Sun & Moon
+│  ├─ sun_entity, moon_phase_entity
+│  ├─ Position & Size ▸ celestial_position, celestial_alignment,
+│  │                    celestial_x, celestial_y, celestial_size
+│  └─ Moon Style ▸ celestial_moon_style
+├─ Color Mode
+│  ├─ card_color_mode, theme_entity
+│  └─ Advanced options ▸ card_filter
+├─ Card Style
+│  ├─ card_style, card_height, card_padding
+│  └─ Advanced options ▸ card_hide_text, card_square, card_full_width,
+│                        card_mask_vertical, card_mask_horizontal,
+│                        card_stack_order, card_offset
+├─ Overlays
+│  ├─ Chips ▸ the chips list (see "Chip editor structure" below)
+│  ├─ Image ▸ image_day, image_night, image_scale, image_alignment,
+│  │          image offset, Status Override ▸ status_entity,
+│  │          status_day, status_night
+│  └─ Cards ▸ custom_cards_position, custom_cards_css_class, custom_cards
+├─ Performance
+│  └─ perf_mode, perf_fps, perf_cloud_quality, perf_effects, perf_dpr,
+│     perf_fauna, fauna_bird_density, fauna_plane_density,
+│     fauna_bird_flock_size, fauna_birds_at_night, animation_speed,
+│     bird_animation_speed, star_animation_speed
+└─ Tap Action                              (bottom)
+   └─ card_tap_action
+```
+
+**Quick lookup by option:**
+
+| Option                        | Editor location                    |
+| :---------------------------- | :--------------------------------- |
+| `weather_entity`              | Top of editor (always visible)     |
+| `sun_entity`                  | Sun & Moon                         |
+| `moon_phase_entity`           | Sun & Moon                         |
+| `celestial_position`          | Sun & Moon → Position & Size       |
+| `celestial_alignment`         | Sun & Moon → Position & Size       |
+| `celestial_x` / `celestial_y` | Sun & Moon → Position & Size       |
+| `celestial_size`              | Sun & Moon → Position & Size       |
+| `celestial_moon_style`        | Sun & Moon → Moon Style            |
+| `card_color_mode`             | Color Mode                         |
+| `theme_entity`                | Color Mode                         |
+| `card_filter`                 | Color Mode → Advanced options      |
+| `card_style`                  | Card Style                         |
+| `card_height`                 | Card Style                         |
+| `card_padding`                | Card Style                         |
+| `card_hide_text`              | Card Style → Advanced options      |
+| `card_square`                 | Card Style → Advanced options      |
+| `card_full_width`             | Card Style → Advanced options      |
+| `card_mask_vertical`          | Card Style → Advanced options      |
+| `card_mask_horizontal`        | Card Style → Advanced options      |
+| `card_stack_order`            | Card Style → Advanced options      |
+| `card_offset`                 | Card Style → Advanced options      |
+| `chips`                       | Overlays → Chips                   |
+| `image_day` / `image_night`   | Overlays → Image                   |
+| `image_scale`                 | Overlays → Image                   |
+| `image_alignment`             | Overlays → Image                   |
+| `status_entity`               | Overlays → Image → Status Override |
+| `status_day` / `status_night` | Overlays → Image → Status Override |
+| `custom_cards`                | Overlays → Cards                   |
+| `custom_cards_position`       | Overlays → Cards                   |
+| `custom_cards_css_class`      | Overlays → Cards                   |
+| `perf_mode`                   | Performance                        |
+| `perf_fps`                    | Performance                        |
+| `perf_cloud_quality`          | Performance                        |
+| `perf_effects`                | Performance                        |
+| `perf_dpr`                    | Performance                        |
+| `perf_fauna`                  | Performance                        |
+| `fauna_bird_density`          | Performance                        |
+| `fauna_plane_density`         | Performance                        |
+| `fauna_bird_flock_size`       | Performance                        |
+| `fauna_birds_at_night`        | Performance                        |
+| `animation_speed`             | Performance                        |
+| `bird_animation_speed`        | Performance                        |
+| `star_animation_speed`        | Performance                        |
+| `card_tap_action`             | Tap Action (bottom)                |
+
+</details>
+
+<details>
 <summary><strong>Card Style & Layout</strong></summary>
 
 | Option             | Type                | Default     | Description                                                                                                                                                                                                                                                                                                                                                                     |
@@ -631,6 +720,123 @@ The sun and moon share a single position and the card swaps them based on your `
 <summary><strong>Chips</strong></summary>
 
 Chips are the main layout element of this card. Each chip can show live entity data or forecast data, and you can add as many as you want. For a walkthrough on how to set them up, see the [Chips guide](#chips).
+
+<a name="chip-editor-structure"></a>
+
+<details>
+<summary><strong>Chip editor structure</strong></summary>
+
+<br>
+
+Each chip card in the editor is organized like this, top to bottom:
+
+```
+Chip
+├─ Sensor / Forecast toggle
+├─ Data source                    (always visible)
+│  ├─ entity
+│  └─ attribute
+├─ Forecast box                   (Forecast mode only, not in an accordion)
+│  ├─ forecast, forecast_offset
+│  ├─ attribute ("Show")
+│  └─ forecast_precision
+├─ Type                           (Ring/Bar chips only)
+│  ├─ type, ring_min/bar_min, ring_max/bar_max,
+│  │  ring_width/bar_height, ring_gap/bar_gap, ring_color/bar_color,
+│  │  ring_threshold_mode/bar_threshold_mode, ring_thresholds/bar_thresholds
+│  └─ Ring/Bar entity ▸ gauge_entity, gauge_attribute
+├─ Layout
+│  └─ style, align, chip_round, background, background_color,
+│     width, height, padding, inner_gap, text_gap
+├─ Text
+│  ├─ Label ▸ hide_label, name, name_sensor, name_attribute,
+│  │          label_size, label_weight, label_overflow
+│  ├─ Value ▸ hide_value, fancy_unit, unit_format, value_precision,
+│  │          text_size, value_weight, overflow
+│  ├─ Sub value ▸ hide_sub_value, sub_value_entity, sub_value_attribute,
+│  │              sub_value_format, sub_value_size, sub_value_weight,
+│  │              sub_value_position, sub_value_overflow
+│  └─ Scrolling ▸ marquee_rtl, marquee_speed  (only when overflow: marquee)
+├─ Icon
+│  └─ hide_icon, icon, icon_path, icon_size, icon_padding,
+│     icon_background, icon_background_color
+├─ Position
+│  └─ position, position_anchor, position_x, position_y, behind_effects
+└─ Tap Action
+   └─ card_tap_action              (scoped to this chip)
+```
+
+**Quick lookup by option:**
+
+| Option                                       | Editor location                                                 |
+| :------------------------------------------- | :-------------------------------------------------------------- |
+| `entity`                                     | Data source                                                     |
+| `attribute`                                  | Data source                                                     |
+| `forecast`                                   | Forecast box                                                    |
+| `forecast_offset`                            | Forecast box                                                    |
+| `forecast_precision`                         | Forecast box                                                    |
+| `forecast_show_min`                          | Text → Sub value _(internally: `sub_value_attribute: templow`)_ |
+| `forecast_low_position`                      | Text → Sub value _(internally: `sub_value_position`)_           |
+| `type`                                       | Type                                                            |
+| `ring_min` / `bar_min`                       | Type                                                            |
+| `ring_max` / `bar_max`                       | Type                                                            |
+| `ring_width` / `bar_height`                  | Type                                                            |
+| `ring_gap` / `bar_gap`                       | Type                                                            |
+| `ring_color` / `bar_color`                   | Type                                                            |
+| `ring_threshold_mode` / `bar_threshold_mode` | Type                                                            |
+| `ring_thresholds` / `bar_thresholds`         | Type                                                            |
+| `gauge_entity`                               | Type → Ring/Bar entity                                          |
+| `gauge_attribute`                            | Type → Ring/Bar entity                                          |
+| `style`                                      | Layout                                                          |
+| `align`                                      | Layout                                                          |
+| `chip_round`                                 | Layout                                                          |
+| `background`                                 | Layout                                                          |
+| `background_color`                           | Layout                                                          |
+| `width` / `height`                           | Layout                                                          |
+| `padding`                                    | Layout                                                          |
+| `inner_gap`                                  | Layout                                                          |
+| `text_gap`                                   | Layout                                                          |
+| `hide_label`                                 | Text → Label                                                    |
+| `name`                                       | Text → Label                                                    |
+| `name_sensor`                                | Text → Label                                                    |
+| `name_attribute`                             | Text → Label                                                    |
+| `label_size`                                 | Text → Label                                                    |
+| `label_weight`                               | Text → Label                                                    |
+| `label_overflow`                             | Text → Label                                                    |
+| `hide_value`                                 | Text → Value                                                    |
+| `fancy_unit`                                 | Text → Value                                                    |
+| `unit_format`                                | Text → Value                                                    |
+| `value_precision`                            | Text → Value                                                    |
+| `text_size`                                  | Text → Value                                                    |
+| `value_weight`                               | Text → Value                                                    |
+| `overflow`                                   | Text → Value                                                    |
+| `hide_sub_value`                             | Text → Sub value                                                |
+| `sub_value_entity`                           | Text → Sub value                                                |
+| `sub_value_attribute`                        | Text → Sub value                                                |
+| `sub_value_format`                           | Text → Sub value                                                |
+| `sub_value_size`                             | Text → Sub value                                                |
+| `sub_value_weight`                           | Text → Sub value                                                |
+| `sub_value_position`                         | Text → Sub value                                                |
+| `sub_value_overflow`                         | Text → Sub value                                                |
+| `marquee_rtl`                                | Text → Scrolling                                                |
+| `marquee_speed`                              | Text → Scrolling                                                |
+| `hide_icon`                                  | Icon                                                            |
+| `icon`                                       | Icon                                                            |
+| `icon_path`                                  | Icon                                                            |
+| `icon_size`                                  | Icon                                                            |
+| `icon_padding`                               | Icon                                                            |
+| `icon_background`                            | Icon                                                            |
+| `icon_background_color`                      | Icon                                                            |
+| `position`                                   | Position                                                        |
+| `position_anchor`                            | Position                                                        |
+| `position_x` / `position_y`                  | Position                                                        |
+| `behind_effects`                             | Position                                                        |
+| `card_tap_action`                            | Tap Action _(per chip)_                                         |
+
+> [!TIP]
+> Changing the entity in **Data source**, **Label** (`name_sensor`), **Sub value** (`sub_value_entity`), or the **Ring/Bar entity** disclosure (`gauge_entity`) automatically clears that field's attribute, since the previously selected attribute may not exist on the new entity.
+
+</details>
 
 <details>
 <summary><strong>Row options</strong></summary>
