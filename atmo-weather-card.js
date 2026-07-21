@@ -1,6 +1,6 @@
 /**
  * ATMO WEATHER CARD
- * Version: 6.5.8-beta
+ * Version: 6.5.11-beta
  */
 import {
   advanceWindAndPulse,
@@ -41,7 +41,7 @@ try {
   });
 } catch (_) {}
 // CONSTANTS & CONFIGURATION
-const EDITOR_IMPORT_VERSION = "6.5.8-beta";
+const EDITOR_IMPORT_VERSION = "6.5.11-beta";
 const NIGHT_MODES = Object.freeze([
   "dark",
   "night",
@@ -6360,3 +6360,4 @@ if (!customElements.get(CARD_NAME)) {
       "Animated weather effects with rain, snow, clouds, stars and more",
   });
 }
+
